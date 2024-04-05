@@ -1,0 +1,24 @@
+[build-system]
+requires = ['setuptools', 'setuptools_scm']
+build-backend = 'setuptools.build_meta'
+
+[project]
+name = 'polylaue'
+requires-python = '>=3.10'
+dynamic = ['version']
+dependencies = [
+    'numba',
+    'numpy',
+    'pyside6',
+    'pyqtgraph',
+    'pillow',
+    'scipy',
+]
+readme = 'REAMDE.md'
+
+[project.scripts]
+polylaue = 'polylaue.main:main'
+
+[tool.black]
+line-length = 79
+skip-string-normalization = true
