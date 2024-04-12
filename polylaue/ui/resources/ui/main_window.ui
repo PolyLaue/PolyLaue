@@ -14,7 +14,27 @@
    <string>PolyLaue</string>
   </property>
   <widget class="QWidget" name="central_widget">
-   <layout class="QVBoxLayout" name="verticalLayout"/>
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <layout class="QVBoxLayout" name="image_view_layout"/>
+    </item>
+    <item>
+     <widget class="QLabel" name="info_label">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+      </property>
+     </widget>
+    </item>
+   </layout>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
@@ -29,14 +49,14 @@
     <property name="title">
      <string>File</string>
     </property>
-    <addaction name="action_open_file"/>
+    <addaction name="action_open_series"/>
    </widget>
    <addaction name="menu_file"/>
   </widget>
-  <widget class="QStatusBar" name="statusbar"/>
-  <action name="action_open_file">
+  <widget class="QStatusBar" name="status_bar"/>
+  <action name="action_open_series">
    <property name="text">
-    <string>Open</string>
+    <string>Open Series</string>
    </property>
   </action>
  </widget>
