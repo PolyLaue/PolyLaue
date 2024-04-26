@@ -97,6 +97,10 @@ class MainWindow:
 
     def on_shift_scan_number(self, i: int):
         """Shift the scan number by `i`"""
+        if self.series is None:
+            # No series. Skip it.
+            return
+
         # Clip it so we don't go out of bounds
         max_idx = self.series.num_scans - 1
         self.scan_num = np.clip(self.scan_num + i, a_min=0, a_max=max_idx)
@@ -104,6 +108,10 @@ class MainWindow:
 
     def on_shift_scan_position(self, i: int, j: int):
         """Shift the scan position by `i` rows and `j` columns"""
+        if self.series is None:
+            # No series. Skip it.
+            return
+
         # Clip it so we don't go out of bounds
         np.clip(
             self.scan_pos + (i, j),
@@ -127,6 +135,10 @@ class MainWindow:
         self.image_view.setImage(img, autoRange=False, autoLevels=False)
 
     def on_mouse_move(self, pos: 'QPointF'):
+        if self.image_data is None:
+            # No data
+            return
+
         # Keep a record of the last position in case we change frames,
         # so we can call this function again.
         self._last_mouse_position = pos
