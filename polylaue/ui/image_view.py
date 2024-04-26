@@ -13,6 +13,9 @@ if TYPE_CHECKING:
 class PolyLaueImageView(ImageView):
     """Override some of the pyqtgraph behavior in our own ImageView"""
 
+    """Emitted when the scan number should be shifted"""
+    shift_scan_number = Signal(int)
+
     """Emitted when the scan position should be shifted"""
     shift_scan_position = Signal(int, int)
 
@@ -21,6 +24,10 @@ class PolyLaueImageView(ImageView):
 
         def shift_position(i, j):
             self.shift_scan_position.emit(i, j)
+            event.accept()
+
+        def shift_scan_number(i):
+            self.shift_scan_number.emit(i)
             event.accept()
 
         match event.key():
@@ -36,5 +43,11 @@ class PolyLaueImageView(ImageView):
             case Key.Key_Up:
                 # Move up one row
                 return shift_position(-1, 0)
+            case Key.Key_PageUp:
+                # Move up one scan
+                return shift_scan_number(1)
+            case Key.Key_PageDown:
+                # Move down one scan
+                return shift_scan_number(-1)
 
         return super().keyPressEvent(event)

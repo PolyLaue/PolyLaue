@@ -39,6 +39,7 @@ class MainWindow:
     def setup_connections(self):
         self.ui.action_open_series.triggered.connect(self.on_open_series)
 
+        self.image_view.shift_scan_number.connect(self.on_shift_scan_number)
         self.image_view.shift_scan_position.connect(
             self.on_shift_scan_position
         )
@@ -94,18 +95,25 @@ class MainWindow:
         self.image_view.autoLevels()
         self.image_view.autoRange()
 
+    def on_shift_scan_number(self, i: int):
+        """Shift the scan number by `i`"""
+        # Clip it so we don't go out of bounds
+        max_idx = self.series.num_scans - 1
+        self.scan_num = np.clip(self.scan_num + i, a_min=0, a_max=max_idx)
+        self.on_frame_changed()
+
     def on_shift_scan_position(self, i: int, j: int):
         """Shift the scan position by `i` rows and `j` columns"""
-        self.scan_pos += (i, j)
-
         # Clip it so we don't go out of bounds
         np.clip(
-            self.scan_pos,
+            self.scan_pos + (i, j),
             a_min=[0, 0],
             a_max=np.asarray(self.series.scan_shape) - 1,
             out=self.scan_pos,
         )
+        self.on_frame_changed()
 
+    def on_frame_changed(self):
         self.load_current_image()
         self.update_info_label()
 
