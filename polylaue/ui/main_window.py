@@ -92,8 +92,14 @@ class MainWindow:
         self.update_info_label()
 
     def reset_image_view_settings(self):
-        self.image_view.autoLevels()
+        self.auto_level_colors()
         self.image_view.autoRange()
+
+    def auto_level_colors(self):
+        data = self.image_data
+        lower = np.nanpercentile(data, 1.0)
+        upper = np.nanpercentile(data, 99.75)
+        self.image_view.setLevels(lower, upper)
 
     def on_shift_scan_number(self, i: int):
         """Shift the scan number by `i`"""
