@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from PySide6.QtWidgets import QFileDialog
@@ -85,6 +86,9 @@ class MainWindow:
             num_background_frames=10,
         )
 
+        # Set the window title to be the name of this directory
+        self.ui.setWindowTitle(f'PolyLaue - {Path(selected_directory).name}')
+
         # Reset scan position
         self.reset_scan_position()
         self.load_current_image()
@@ -169,8 +173,8 @@ class MainWindow:
             text = ''
         else:
             text = (
-                f'Scan Number: {self.scan_num + 1}, '
-                f'Position: {tuple(self.scan_pos + 1)}'
+                f'Scan {self.scan_num + 1}, '
+                f'Position {tuple(self.scan_pos + 1)}'
             )
 
         self.ui.info_label.setText(text)
