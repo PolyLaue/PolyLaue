@@ -1,13 +1,8 @@
-from typing import TYPE_CHECKING
-
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import QEvent, Qt, Signal
 
 from pyqtgraph import ImageView
 
 Key = Qt.Key
-
-if TYPE_CHECKING:
-    from PySide6.QtCore import QEvent
 
 
 class PolyLaueImageView(ImageView):
@@ -19,7 +14,7 @@ class PolyLaueImageView(ImageView):
     """Emitted when the scan position should be shifted"""
     shift_scan_position = Signal(int, int)
 
-    def keyPressEvent(self, event: 'QEvent'):
+    def keyPressEvent(self, event: QEvent):
         """Override the key press event to navigate between scan numbers"""
 
         def shift_position(i, j):

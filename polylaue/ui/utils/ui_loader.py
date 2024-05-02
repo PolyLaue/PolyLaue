@@ -1,6 +1,5 @@
-from typing import TYPE_CHECKING
-
-from PySide6.QtCore import QBuffer, QByteArray, QFile
+from PySide6.QtCore import QBuffer, QByteArray, QFile, QObject
+from PySide6.QtWidgets import QWidget
 from PySide6.QtUiTools import QUiLoader
 
 from polylaue.typing import PathLike
@@ -9,18 +8,13 @@ from polylaue.ui.utils.qsingleton import QSingleton
 import polylaue.ui.resources.ui
 
 
-if TYPE_CHECKING:
-    from PySide6.QtCore import QObject
-    from PySide6.QtWidgets import QWidget
-
-
 class UiLoader(QUiLoader, QSingleton):
-    def __init__(self, parent: 'QObject | None' = None):
+    def __init__(self, parent: QObject | None = None):
         super().__init__(parent)
 
     def load_file(
-        self, filename: PathLike, parent: 'QWidget | None' = None
-    ) -> 'QWidget':
+        self, filename: PathLike, parent: QWidget | None = None
+    ) -> QWidget:
         """Load a UI file and return the widget
 
         Returns a widget created from the UI file.
@@ -39,8 +33,8 @@ class UiLoader(QUiLoader, QSingleton):
         return ui
 
     def load_bytes(
-        self, data: bytes, parent: 'QWidget | None' = None
-    ) -> 'QWidget':
+        self, data: bytes, parent: QWidget | None = None
+    ) -> QWidget:
         """Load a UI file from a string and return the widget"""
         buf = QBuffer(QByteArray(data))
         ui = self.load(buf, parent)
@@ -49,6 +43,6 @@ class UiLoader(QUiLoader, QSingleton):
         self.process_ui(ui)
         return ui
 
-    def process_ui(self, ui: 'QWidget'):
+    def process_ui(self, ui: QWidget):
         """Perform any additional processing on loaded UI objects"""
         pass

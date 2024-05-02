@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 # The image file regular expression
 # Put the number in its own group.
-IMAGE_FILE_SUFFIX_REGEX = r'_(\d+)\.tif$'
+IMAGE_FILE_SUFFIX_REGEX = r'_(\d+)\.(tiff?|cbf)$'
 
 
 class Series:
@@ -68,7 +68,7 @@ class Series:
     def identify_file_prefix(self):
         """Inspect the tif files and identify the file template"""
 
-        regex = IMAGE_FILE_SUFFIX_REGEX
+        regex = re.compile(IMAGE_FILE_SUFFIX_REGEX, re.IGNORECASE)
 
         # Find the first file that matches the regular expression
         prefix = None
@@ -88,7 +88,7 @@ class Series:
             )
             raise ValidationError(msg)
 
-        logging.debug(
+        logger.debug(
             f'For series with dirpath "{self.dirpath}", file prefix was '
             f'identified to be {prefix}'
         )
@@ -103,7 +103,9 @@ class Series:
         file_dict = {}
 
         # Identify all files that match the full regex
-        full_regex = self.file_prefix + IMAGE_FILE_SUFFIX_REGEX
+        full_regex = re.compile(
+            self.file_prefix + IMAGE_FILE_SUFFIX_REGEX, re.IGNORECASE
+        )
 
         for path in self.dirpath.iterdir():
             if not path.is_file():
@@ -119,15 +121,23 @@ class Series:
         # The indices should be continuous from 1 to the max. Verify this.
         verify_indices = np.arange(1, indices[-1] + 1)
         if not np.array_equal(indices, verify_indices):
+            missing = set(verify_indices) - set(indices)
+            extra = set(indices) - set(verify_indices)
             msg = (
                 f'Files with prefix "{self.file_prefix}" are not continuous '
                 f'from 1 to the max value "{indices[-1]}"'
             )
+            if missing:
+                msg += f'\nMissing indices: {list(missing)}'
+
+            if extra:
+                msg += f'\nExtra indices: {list(extra)}'
+
             raise ValidationError(msg)
 
         self.file_list = [file_dict[i + 1] for i in range(len(indices))]
 
-        logging.debug(
+        logger.debug(
             f'For series with dirpath "{self.dirpath}", found '
             f'{len(self.file_list)} files'
         )
@@ -143,7 +153,7 @@ class Series:
         if num_files == expected_num_files + 1:
             # Assume the extra file is the final dark file
             self.has_final_dark_file = True
-            logging.debug(
+            logger.debug(
                 f'For series at "{self.dirpath}", assuming final file is a '
                 'dark file'
             )
@@ -159,7 +169,7 @@ class Series:
             )
             raise ValidationError(msg)
 
-        logging.debug(f'Validation for "{self.dirpath}" passed')
+        logger.debug(f'Validation for "{self.dirpath}" passed')
 
 
 class ValidationError(Exception):

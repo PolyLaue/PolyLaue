@@ -1,33 +1,36 @@
+import logging
 from pathlib import Path
-from typing import TYPE_CHECKING
 
-from PySide6.QtWidgets import QFileDialog
+from PySide6.QtCore import QPointF
+from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import QFileDialog, QWidget
 
 import numpy as np
+from pyqtgraph import GraphicsScene, ImageItem
 
 from polylaue.ui.image_view import PolyLaueImageView
 from polylaue.ui.utils.ui_loader import UiLoader
-from polylaue.model.io import load_image_file
+from polylaue.model.io import identify_loader_function
 from polylaue.model.series import Series
 from polylaue.typing import PathLike
 
 
-if TYPE_CHECKING:
-    from PySide6.QtCore import QPointF
-    from PySide6.QtGui import QIcon
-    from PySide6.QtWidgets import QWidget
-
-    from pyqtgraph import GraphicsScene, ImageItem
+logger = logging.getLogger(__name__)
 
 
 class MainWindow:
-    def __init__(self, parent: 'QWidget | None' = None):
+    def __init__(self, parent: QWidget | None = None):
         self.ui = UiLoader().load_file('main_window.ui', parent)
 
         # Keep track of the working directory
         self.working_dir = None
         self.series = None
         self._last_mouse_position = None
+
+        # We currently assume all image files in a series will have the
+        # same image loader. Cache that image loader so we do not have
+        # to identify the image loader every time a new file is opened.
+        self.image_loader_func = None
 
         self.reset_scan_position()
 
@@ -48,11 +51,11 @@ class MainWindow:
         self.scene.sigMouseMoved.connect(self.on_mouse_move)
 
     @property
-    def image_item(self) -> 'ImageItem':
+    def image_item(self) -> ImageItem:
         return self.image_view.getImageItem()
 
     @property
-    def scene(self) -> 'GraphicsScene':
+    def scene(self) -> GraphicsScene:
         return self.image_item.scene()
 
     @property
@@ -90,11 +93,27 @@ class MainWindow:
         # Set the window title to be the name of this directory
         self.ui.setWindowTitle(f'PolyLaue - {Path(selected_directory).name}')
 
+        # Identify the image loader we will use for the series
+        self.identify_image_loader()
+
         # Reset scan position
         self.reset_scan_position()
         self.load_current_image()
         self.reset_image_view_settings()
         self.update_info_label()
+
+    def identify_image_loader(self):
+        self.image_loader_func = None
+        if self.series is None:
+            return
+
+        # Assume that all files in the series use the same image loader.
+        # Use that loader for all files, rather than identifying the loader
+        # each time an individual file is loaded.
+        first_file = self.series.file_list[0]
+        logger.debug(f'Identifying loader function for: {first_file}')
+        self.image_loader_func = identify_loader_function(first_file)
+        logger.debug(f'Identified loader function: {self.image_loader_func}')
 
     def reset_image_view_settings(self):
         self.auto_level_colors()
@@ -151,12 +170,12 @@ class MainWindow:
 
     def load_current_image(self):
         filepath = self.series.filepath(*self.scan_pos, self.scan_num)
-        img = load_image_file(filepath)
+        img = self.image_loader_func(filepath)
         self.image_view.setImage(
             img, autoRange=False, autoLevels=False, autoHistogramRange=False
         )
 
-    def on_mouse_move(self, pos: 'QPointF'):
+    def on_mouse_move(self, pos: QPointF):
         if self.image_data is None:
             # No data
             return
@@ -194,7 +213,7 @@ class MainWindow:
 
         self.ui.info_label.setText(text)
 
-    def set_icon(self, icon: 'QIcon'):
+    def set_icon(self, icon: QIcon):
         self.ui.setWindowIcon(icon)
 
     def show(self):
