@@ -33,7 +33,7 @@ class MainWindow:
 
         # Add the pyqtgraph view to its layout
         self.image_view = PolyLaueImageView(self.ui, 'CentralView')
-        self.add_cmap_reverse_menu_action()
+        # self.add_cmap_reverse_menu_action()
         self.ui.image_view_layout.addWidget(self.image_view)
 
         self.setup_connections()
