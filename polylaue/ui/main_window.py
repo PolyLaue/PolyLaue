@@ -33,7 +33,7 @@ class MainWindow:
 
         # Add the pyqtgraph view to its layout
         self.image_view = PolyLaueImageView(self.ui, 'CentralView')
-        # self.add_cmap_reverse_menu_action()
+        self.add_cmap_reverse_menu_action()
         self.ui.image_view_layout.addWidget(self.image_view)
 
         self.setup_connections()
@@ -152,8 +152,9 @@ class MainWindow:
     def load_current_image(self):
         filepath = self.series.filepath(*self.scan_pos, self.scan_num)
         img = load_image_file(filepath)
-        self.image_view.setImage(img, autoRange=False, autoLevels=False,
-                                 autoHistogramRange=False)
+        self.image_view.setImage(
+            img, autoRange=False, autoLevels=False, autoHistogramRange=False
+        )
 
     def on_mouse_move(self, pos: 'QPointF'):
         if self.image_data is None:
@@ -229,17 +230,3 @@ class MainWindow:
         menu.addSeparator()
         action = menu.addAction('reverse')
         action.triggered.connect(reverse)
-
-        # Monkeypatch gradient.contextMenuClicked
-        # to prevent errors with this extra menu item
-        orig_func = gradient.contextMenuClicked
-
-        def new_func(triggered_action):
-            if triggered_action is action:
-                # It was the new reverse action. Don't do anything.
-                return
-
-            # Call the regular function
-            return orig_func(triggered_action)
-
-        gradient.contextMenuClicked = new_func
