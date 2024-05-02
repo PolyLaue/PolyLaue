@@ -33,6 +33,7 @@ class MainWindow:
 
         # Add the pyqtgraph view to its layout
         self.image_view = PolyLaueImageView(self.ui, 'CentralView')
+        self.add_cmap_reverse_menu_action()
         self.ui.image_view_layout.addWidget(self.image_view)
 
         self.setup_connections()
@@ -185,3 +186,47 @@ class MainWindow:
     def show(self):
         """Show the window"""
         self.ui.show()
+
+    def add_cmap_reverse_menu_action(self):
+        """Add a 'reverse' action to the pyqtgraph colormap menu
+
+        This assumes pyqtgraph won't change its internal attribute structure.
+        If it does change, then this function just won't work...
+        """
+        w = self.image_view.getHistogramWidget()
+        if not w:
+            # There should be a histogram widget. Not sure why it's missing...
+            return
+
+        try:
+            gradient = w.item.gradient
+            menu = gradient.menu
+        except AttributeError:
+            # pyqtgraph must have changed its attribute structure
+            return
+
+        if not menu:
+            return
+
+        def reverse():
+            cmap = gradient.colorMap()
+            cmap.reverse()
+            gradient.setColorMap(cmap)
+
+        menu.addSeparator()
+        action = menu.addAction('reverse')
+        action.triggered.connect(reverse)
+
+        # Monkeypatch gradient.contextMenuClicked
+        # to prevent errors with this extra menu item
+        orig_func = gradient.contextMenuClicked
+
+        def new_func(triggered_action):
+            if triggered_action is action:
+                # It was the new reverse action. Don't do anything.
+                return
+
+            # Call the regular function
+            return orig_func(triggered_action)
+
+        gradient.contextMenuClicked = new_func
