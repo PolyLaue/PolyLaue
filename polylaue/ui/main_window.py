@@ -166,8 +166,11 @@ class MainWindow:
             self.ui.status_bar.clearMessage()
             return
 
+        # For display, x and y are the same as j and i, respectively
+        x, y = j, i
+
         intensity = self.image_data[i, j]
-        self.ui.status_bar.showMessage(f'{i=}, {j=}, {intensity=}')
+        self.ui.status_bar.showMessage(f'{x=}, {y=}, {intensity=}')
 
     def update_info_label(self):
         if self.series is None:
