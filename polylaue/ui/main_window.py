@@ -98,13 +98,22 @@ class MainWindow:
 
     def reset_image_view_settings(self):
         self.auto_level_colors()
+        self.auto_level_histogram_range()
         self.image_view.autoRange()
 
     def auto_level_colors(self):
+        # These levels appear to work well for the data we have
         data = self.image_data
         lower = np.nanpercentile(data, 1.0)
         upper = np.nanpercentile(data, 99.75)
         self.image_view.setLevels(lower, upper)
+
+    def auto_level_histogram_range(self):
+        # Make the histogram range a little bigger than the auto level colors
+        data = self.image_data
+        lower = np.nanpercentile(data, 0.5)
+        upper = np.nanpercentile(data, 99.8)
+        self.image_view.setHistogramRange(lower, upper)
 
     def on_shift_scan_number(self, i: int):
         """Shift the scan number by `i`"""
@@ -143,7 +152,8 @@ class MainWindow:
     def load_current_image(self):
         filepath = self.series.filepath(*self.scan_pos, self.scan_num)
         img = load_image_file(filepath)
-        self.image_view.setImage(img, autoRange=False, autoLevels=False)
+        self.image_view.setImage(img, autoRange=False, autoLevels=False,
+                                 autoHistogramRange=False)
 
     def on_mouse_move(self, pos: 'QPointF'):
         if self.image_data is None:
