@@ -58,8 +58,7 @@ class Series:
             msg = f'Scan number "{scan_number}" is out of bounds'
             raise ValidationError(msg)
 
-        num_background = self.num_background_frames
-        scan_start = num_background + scan_number * np.prod(self.scan_shape)
+        scan_start = scan_number * np.prod(self.scan_shape)
         idx = scan_start + row * self.scan_shape[1] + column
         filename = self.file_list[idx]
 
@@ -70,8 +69,10 @@ class Series:
 
         regex = re.compile(IMAGE_FILE_SUFFIX_REGEX, re.IGNORECASE)
 
-        # Find the first file that matches the regular expression
-        prefix = None
+        # Find all prefixes that match the regex.
+        # We will choose the prefix with the most files.
+        # The key is the prefix, the value is the number of files that match.
+        prefix_counts = {}
         for path in self.dirpath.iterdir():
             if not path.is_file():
                 continue
@@ -79,20 +80,26 @@ class Series:
             name = path.name
             if result := re.search(regex, name):
                 prefix = name[: result.start()]
-                break
+                prefix_counts.setdefault(prefix, 0)
+                prefix_counts[prefix] += 1
 
-        if prefix is None:
+        if not prefix_counts:
             msg = (
                 f'In series dirpath "{self.dirpath}", failed to find image '
                 f'file matching regular expression: "{regex}"'
             )
             raise ValidationError(msg)
 
+        # Select the prefix with the most counts
+        prefixes = list(prefix_counts)
+        counts = list(prefix_counts.values())
+        selected_prefix = prefixes[np.argmax(counts)]
+
         logger.debug(
             f'For series with dirpath "{self.dirpath}", file prefix was '
-            f'identified to be {prefix}'
+            f'identified to be {selected_prefix}'
         )
-        self.file_prefix = prefix
+        self.file_prefix = selected_prefix
 
     def generate_file_list(self):
         """Generate a list of files ordered by their index
@@ -107,6 +114,9 @@ class Series:
             self.file_prefix + IMAGE_FILE_SUFFIX_REGEX, re.IGNORECASE
         )
 
+        # Ignore any indices for background frames.
+        start_idx = self.num_background_frames + 1
+
         for path in self.dirpath.iterdir():
             if not path.is_file():
                 continue
@@ -114,18 +124,23 @@ class Series:
             name = path.name
             if result := re.search(full_regex, name):
                 idx = int(result.groups()[0])
+                if idx < start_idx:
+                    # Ignore background frames.
+                    continue
+
                 file_dict[idx] = name
 
         indices = sorted(list(file_dict))
 
-        # The indices should be continuous from 1 to the max. Verify this.
-        verify_indices = np.arange(1, indices[-1] + 1)
+        # The indices should be continuous from the start to the max.
+        # Verify this.
+        verify_indices = np.arange(start_idx, indices[-1] + 1)
         if not np.array_equal(indices, verify_indices):
             missing = set(verify_indices) - set(indices)
             extra = set(indices) - set(verify_indices)
             msg = (
                 f'Files with prefix "{self.file_prefix}" are not continuous '
-                f'from 1 to the max value "{indices[-1]}"'
+                f'from "{start_idx}" to "{indices[-1]}"'
             )
             if missing:
                 msg += f'\nMissing indices: {list(missing)}'
@@ -135,7 +150,7 @@ class Series:
 
             raise ValidationError(msg)
 
-        self.file_list = [file_dict[i + 1] for i in range(len(indices))]
+        self.file_list = [file_dict[i] for i in indices]
 
         logger.debug(
             f'For series with dirpath "{self.dirpath}", found '
@@ -147,7 +162,7 @@ class Series:
         num_files = len(self.file_list)
 
         num_frames = self.num_scans * np.prod(self.scan_shape)
-        expected_num_files = self.num_background_frames + num_frames
+        expected_num_files = num_frames
 
         # The number of files should be equal to
         if num_files == expected_num_files + 1:
