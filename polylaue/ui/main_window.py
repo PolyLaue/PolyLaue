@@ -8,11 +8,12 @@ from PySide6.QtWidgets import QFileDialog, QWidget
 import numpy as np
 from pyqtgraph import GraphicsScene, ImageItem
 
-from polylaue.ui.image_view import PolyLaueImageView
-from polylaue.ui.utils.ui_loader import UiLoader
 from polylaue.model.io import identify_loader_function
 from polylaue.model.series import Series
 from polylaue.typing import PathLike
+from polylaue.ui.image_view import PolyLaueImageView
+from polylaue.ui.series_editor import SeriesEditorDialog
+from polylaue.ui.utils.ui_loader import UiLoader
 
 
 logger = logging.getLogger(__name__)
@@ -82,13 +83,13 @@ class MainWindow:
 
         This will also reset the current image settings and scan position.
         """
-        self.series = Series(
-            selected_directory,
-            # Hard-coded for now...
-            num_scans=3,
-            scan_shape=(21, 21),
-            num_background_frames=10,
-        )
+        series = Series(selected_directory)
+        editor = SeriesEditorDialog(series, self.ui)
+        if not editor.exec():
+            # User canceled.
+            return
+
+        self.series = series
 
         # Set the window title to be the name of this directory
         self.ui.setWindowTitle(f'PolyLaue - {Path(selected_directory).name}')

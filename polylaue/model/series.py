@@ -17,12 +17,12 @@ class Series:
     """The Series class is used to keep track of files within a series
 
     Several arguments are provided, including the directory path,
-    number of scans, scan shape, and number of background frames.
+    number of scans, scan shape, and a number of frames to skip.
 
     The Series will automatically identify the series files within
     the directory, validate that the file indices and number of files
     match what is expected (based upon the number of scans, scan shape,
-    and number of background frames), and provide a way to obtain a
+    and number of frames to skip), and provide a way to obtain a
     numpy array from a particular scan number, row, and column.
     """
 
@@ -31,18 +31,16 @@ class Series:
         dirpath: PathLike,
         num_scans: int = 3,
         scan_shape: tuple[int, int] = (21, 21),
-        num_background_frames: int = 10,
+        skip_frames: int = 10,
+        file_prefix: str | None = None,
     ):
-        self.dirpath = Path(dirpath).resolve()
+        self.dirpath = dirpath
         self.num_scans = num_scans
         self.scan_shape = scan_shape
-        self.num_background_frames = num_background_frames
+        self.skip_frames = skip_frames
         self.has_final_dark_file = False
-
-        self.identify_file_prefix()
-        self.generate_file_list()
-
-        self.validate()
+        self.file_prefix = file_prefix
+        self.file_list = []
 
     def filepath(self, row: int, column: int, scan_number: int = 0) -> Path:
         """Get the filepath for a specified, row, column, and scan_number"""
@@ -107,6 +105,11 @@ class Series:
         We will index into this file list to obtain the file
         name for that index.
         """
+        if self.file_prefix is None:
+            # Identify the file prefix automatically, if one was not
+            # provided.
+            self.identify_file_prefix()
+
         file_dict = {}
 
         # Identify all files that match the full regex
@@ -114,8 +117,8 @@ class Series:
             self.file_prefix + IMAGE_FILE_SUFFIX_REGEX, re.IGNORECASE
         )
 
-        # Ignore any indices for background frames.
-        start_idx = self.num_background_frames + 1
+        # Start after the number of frames to skip
+        start_idx = self.skip_frames + 1
 
         for path in self.dirpath.iterdir():
             if not path.is_file():
@@ -125,7 +128,7 @@ class Series:
             if result := re.search(full_regex, name):
                 idx = int(result.groups()[0])
                 if idx < start_idx:
-                    # Ignore background frames.
+                    # Ignore skip frames.
                     continue
 
                 file_dict[idx] = name
@@ -157,8 +160,19 @@ class Series:
             f'{len(self.file_list)} files'
         )
 
+    def invalidate(self):
+        self.file_prefix = None
+        self.file_list.clear()
+        self.has_final_dark_file = False
+
     def validate(self):
-        """Ensure that the files in the directory match the scan info"""
+        """Generate the file list if missing, and ensure that the files in the
+        directory match the scan info
+        """
+        if not self.file_list:
+            # Generate the file list if there is none
+            self.generate_file_list()
+
         num_files = len(self.file_list)
 
         num_frames = self.num_scans * np.prod(self.scan_shape)
@@ -178,13 +192,41 @@ class Series:
                 f'"{num_files}" does not match the '
                 f'expected number of files "{expected_num_files}", '
                 'which was computed based upon the number of scans '
-                f'({self.num_scans}), the shape ({self.scan_shape}), and '
-                'the number of background frames '
-                f'({self.num_background_frames}.'
+                f'({self.num_scans}) and the scan shape ({self.scan_shape}).'
             )
             raise ValidationError(msg)
 
         logger.debug(f'Validation for "{self.dirpath}" passed')
+
+    @property
+    def dirpath(self):
+        return self._dirpath
+
+    @dirpath.setter
+    def dirpath(self, v):
+        self._dirpath = Path(v).resolve()
+
+    _attrs_to_save = [
+        'dirpath',
+        'num_scans',
+        'scan_shape',
+        'skip_frames',
+        'file_prefix',
+    ]
+
+    def serialize(self) -> dict:
+        # Serialize the series into a dict that can be saved and loaded
+        return {k: getattr(self, k) for k in self._attrs_to_save}
+
+    def deserialize(self, d: dict):
+        # Set all of the settings on the dict
+        self.invalidate()
+        for k, v in d.items():
+            if k not in self._attrs_to_save:
+                msg = f'Unknown attribute provided to deserializer: {k}'
+                raise Exception(msg)
+
+            setattr(self, k, v)
 
 
 class ValidationError(Exception):
