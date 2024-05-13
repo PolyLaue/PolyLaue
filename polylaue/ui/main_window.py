@@ -1,5 +1,4 @@
 import logging
-from pathlib import Path
 
 from PySide6.QtCore import QPointF
 from PySide6.QtGui import QIcon
@@ -10,8 +9,10 @@ from pyqtgraph import GraphicsScene, ImageItem
 
 from polylaue.model.io import identify_loader_function
 from polylaue.model.series import Series
+from polylaue.model.state import load_project_manager, save_project_manager
 from polylaue.typing import PathLike
 from polylaue.ui.image_view import PolyLaueImageView
+from polylaue.ui.project_navigator.dialog import ProjectNavigatorDialog
 from polylaue.ui.series_editor import SeriesEditorDialog
 from polylaue.ui.utils.ui_loader import UiLoader
 
@@ -33,6 +34,9 @@ class MainWindow:
         # to identify the image loader every time a new file is opened.
         self.image_loader_func = None
 
+        # Load the project manager
+        self.project_manager = load_project_manager()
+
         self.reset_scan_position()
 
         # Add the pyqtgraph view to its layout
@@ -44,6 +48,9 @@ class MainWindow:
 
     def setup_connections(self):
         self.ui.action_open_series.triggered.connect(self.on_open_series)
+        self.ui.action_open_project_navigator.triggered.connect(
+            self.open_project_navigator
+        )
 
         self.image_view.shift_scan_number.connect(self.on_shift_scan_number)
         self.image_view.shift_scan_position.connect(
@@ -76,23 +83,24 @@ class MainWindow:
             # User canceled
             return
 
-        self.load_series(selected_directory)
+        self.create_and_load_series(selected_directory)
 
-    def load_series(self, selected_directory: PathLike):
-        """Load the series located in the directory.
-
-        This will also reset the current image settings and scan position.
-        """
+    def create_and_load_series(self, selected_directory: PathLike):
         series = Series(selected_directory)
         editor = SeriesEditorDialog(series, self.ui)
         if not editor.exec():
             # User canceled.
             return
 
-        self.series = series
+        self.load_series(series)
 
-        # Set the window title to be the name of this directory
-        self.ui.setWindowTitle(f'PolyLaue - {Path(selected_directory).name}')
+    def load_series(self, series: Series):
+        """Load the series located in the directory.
+
+        This will also reset the current image settings and scan position.
+        """
+
+        self.series = series
 
         # Identify the image loader we will use for the series
         self.identify_image_loader()
@@ -103,10 +111,18 @@ class MainWindow:
         self.reset_image_view_settings()
         self.update_info_label()
 
+        # After the data has been loaded, set the window title to be
+        # the name of this series
+        self.ui.setWindowTitle(f'PolyLaue - {series.name}')
+
     def identify_image_loader(self):
         self.image_loader_func = None
         if self.series is None:
             return
+
+        if not self.series.file_list:
+            # Might need to validate...
+            self.series.validate()
 
         # Assume that all files in the series use the same image loader.
         # Use that loader for all files, rather than identifying the loader
@@ -115,6 +131,23 @@ class MainWindow:
         logger.debug(f'Identifying loader function for: {first_file}')
         self.image_loader_func = identify_loader_function(first_file)
         logger.debug(f'Identified loader function: {self.image_loader_func}')
+
+    def open_project_navigator(self):
+        if not hasattr(self, '_project_navigator_dialog'):
+            self._project_navigator_dialog = ProjectNavigatorDialog(
+                self.project_manager, self.ui
+            )
+            self._project_navigator_dialog.model.data_modified.connect(
+                self.save_project_manager
+            )
+            self._project_navigator_dialog.view.open_series.connect(
+                self.load_series
+            )
+
+        self._project_navigator_dialog.show()
+
+    def save_project_manager(self):
+        save_project_manager(self.project_manager)
 
     def reset_image_view_settings(self):
         self.auto_level_colors()
