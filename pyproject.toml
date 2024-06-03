@@ -10,6 +10,7 @@ dependencies = [
     'fabio',
     'numba',
     'numpy',
+    'platformdirs',
     'pyside6',
     'pyqtgraph',
     'pillow',

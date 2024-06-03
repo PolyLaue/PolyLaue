@@ -51,12 +51,29 @@
     </property>
     <addaction name="action_open_series"/>
    </widget>
+   <widget class="QMenu" name="menu_projects">
+    <property name="title">
+     <string>Projects</string>
+    </property>
+    <addaction name="action_open_project_navigator"/>
+   </widget>
    <addaction name="menu_file"/>
+   <addaction name="menu_projects"/>
   </widget>
   <widget class="QStatusBar" name="status_bar"/>
   <action name="action_open_series">
    <property name="text">
     <string>Open Series</string>
+   </property>
+  </action>
+  <action name="actionProject_Navigator">
+   <property name="text">
+    <string>Project Navigator</string>
+   </property>
+  </action>
+  <action name="action_open_project_navigator">
+   <property name="text">
+    <string>Navigator</string>
    </property>
   </action>
  </widget>

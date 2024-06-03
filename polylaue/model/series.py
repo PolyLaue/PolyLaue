@@ -4,6 +4,7 @@ import re
 
 import numpy as np
 
+from polylaue.model.serializable import Serializable
 from polylaue.typing import PathLike
 
 logger = logging.getLogger(__name__)
@@ -13,7 +14,7 @@ logger = logging.getLogger(__name__)
 IMAGE_FILE_SUFFIX_REGEX = r'_(\d+)\.(tiff?|cbf)$'
 
 
-class Series:
+class Series(Serializable):
     """The Series class is used to keep track of files within a series
 
     Several arguments are provided, including the directory path,
@@ -28,12 +29,16 @@ class Series:
 
     def __init__(
         self,
-        dirpath: PathLike,
+        name='Series',
+        description='Description',
+        dirpath: PathLike = '.',
         num_scans: int = 3,
         scan_shape: tuple[int, int] = (21, 21),
         skip_frames: int = 10,
         file_prefix: str | None = None,
     ):
+        self.name = name
+        self.description = description
         self.dirpath = dirpath
         self.num_scans = num_scans
         self.scan_shape = scan_shape
@@ -206,27 +211,28 @@ class Series:
     def dirpath(self, v):
         self._dirpath = Path(v).resolve()
 
-    _attrs_to_save = [
-        'dirpath',
+    @property
+    def dirpath_str(self):
+        return str(self.dirpath)
+
+    @dirpath_str.setter
+    def dirpath_str(self, v):
+        self.dirpath = v
+
+    # Serialization code
+    _attrs_to_serialize = [
+        'name',
+        'description',
+        'dirpath_str',
         'num_scans',
         'scan_shape',
         'skip_frames',
         'file_prefix',
     ]
 
-    def serialize(self) -> dict:
-        # Serialize the series into a dict that can be saved and loaded
-        return {k: getattr(self, k) for k in self._attrs_to_save}
-
     def deserialize(self, d: dict):
-        # Set all of the settings on the dict
         self.invalidate()
-        for k, v in d.items():
-            if k not in self._attrs_to_save:
-                msg = f'Unknown attribute provided to deserializer: {k}'
-                raise Exception(msg)
-
-            setattr(self, k, v)
+        super().deserialize(d)
 
 
 class ValidationError(Exception):

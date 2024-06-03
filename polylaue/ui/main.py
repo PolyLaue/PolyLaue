@@ -53,7 +53,7 @@ def main():
 
     if load_series:
         # Load a file that was provided on the command-line
-        window.load_series(load_series)
+        window.create_and_load_series(load_series)
 
     # Run the application
     app.exec()

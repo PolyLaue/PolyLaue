@@ -1,0 +1,111 @@
+{
+    "projects_serialized": [
+        {
+            "name": "Project1",
+            "description": "First project",
+            "sections_serialized": [
+                {
+                    "name": "Section1",
+                    "description": "First section",
+                    "series_serialized": [
+                        {
+                            "name": "Series4",
+                            "description": "Fourth series",
+                            "dirpath_str": "/__test_series_path/series4",
+                            "num_scans": 3,
+                            "scan_shape": [
+                                21,
+                                21
+                            ],
+                            "skip_frames": 10,
+                            "file_prefix": null
+                        },
+                        {
+                            "name": "Series5",
+                            "description": "Fifth series",
+                            "dirpath_str": "/__test_series_path/series5",
+                            "num_scans": 3,
+                            "scan_shape": [
+                                21,
+                                21
+                            ],
+                            "skip_frames": 10,
+                            "file_prefix": null
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Project2",
+            "description": "Second project",
+            "sections_serialized": [
+                {
+                    "name": "Section2",
+                    "description": "Second section",
+                    "series_serialized": [
+                        {
+                            "name": "Series6",
+                            "description": "Sixth series",
+                            "dirpath_str": "/__test_series_path/series6",
+                            "num_scans": 3,
+                            "scan_shape": [
+                                21,
+                                21
+                            ],
+                            "skip_frames": 10,
+                            "file_prefix": null
+                        }
+                    ]
+                },
+                {
+                    "name": "Section3",
+                    "description": "Third section",
+                    "series_serialized": [
+                        {
+                            "name": "Series7",
+                            "description": "Seventh series",
+                            "dirpath_str": "/__test_series_path/series7",
+                            "num_scans": 3,
+                            "scan_shape": [
+                                21,
+                                21
+                            ],
+                            "skip_frames": 10,
+                            "file_prefix": null
+                        },
+                        {
+                            "name": "Series8",
+                            "description": "Eighth series",
+                            "dirpath_str": "/__test_series_path/series8",
+                            "num_scans": 3,
+                            "scan_shape": [
+                                21,
+                                21
+                            ],
+                            "skip_frames": 10,
+                            "file_prefix": null
+                        },
+                        {
+                            "name": "Series9",
+                            "description": "Ninth series",
+                            "dirpath_str": "/__test_series_path/series9",
+                            "num_scans": 3,
+                            "scan_shape": [
+                                21,
+                                21
+                            ],
+                            "skip_frames": 10,
+                            "file_prefix": null
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Empty Project",
+            "description": "empty project",
+            "sections_serialized": []
+        }
+    ]
+}
