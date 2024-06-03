@@ -124,6 +124,12 @@ class SeriesEditorDialog(QDialog):
 
         # Validation succeeded. Save to the original series. Accept the dialog.
         self.series_editor.save_ui_to_series(self.series)
+
+        if self.series.name == 'Series':
+            # If the series name is the default of 'Series', update the name to
+            # the name of the directory.
+            self.series.name = self.series.dirpath.name
+
         self.accept()
 
     def on_rejected(self):
