@@ -209,6 +209,9 @@ class ProjectNavigatorView(QTableView):
             # Indicate that the data was modified.
             self.model.data_modified.emit()
 
+            # Trigger the series to be re-opened
+            self.open_series.emit(series)
+
     def insert_row(self, row: int):
         # A row of -1 indicates it should be added to the end
         row = row if row != -1 else len(self.submodel.entry_list)
