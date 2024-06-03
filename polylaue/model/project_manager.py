@@ -5,7 +5,10 @@ from polylaue.model.serializable import Serializable
 class ProjectManager(Serializable):
     """The project manager contains a set of projects"""
 
-    def __init__(self, projects: list[Project] = []):
+    def __init__(self, projects: list[Project] | None = None):
+        if projects is None:
+            projects = []
+
         self.projects = projects
 
     @property

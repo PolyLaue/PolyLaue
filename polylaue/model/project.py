@@ -8,9 +8,12 @@ class Project(Serializable):
     def __init__(
         self,
         name: str = 'Project',
-        sections: list[Section] = [],
+        sections: list[Section] | None = None,
         description: str = 'Description',
     ):
+        if sections is None:
+            sections = []
+
         self.name = name
         self.sections = sections
         self.description = description

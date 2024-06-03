@@ -8,9 +8,12 @@ class Section(Serializable):
     def __init__(
         self,
         name: str = 'Section',
-        series: list[Series] = [],
+        series: list[Series] | None = None,
         description: str = 'Description',
     ):
+        if series is None:
+            series = []
+
         self.name = name
         self.series = series
         self.description = description
