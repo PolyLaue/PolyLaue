@@ -34,15 +34,23 @@ class SeriesEditor:
             'dirpath_str': self.ui.series_dir.text(),
             'scan_shape': self.ui_scan_shape,
             'skip_frames': self.ui.skip_frames.value(),
-            'num_scans': self.ui.num_scans.value(),
+            'scan_range_tuple': (
+                self.ui.scan_range_start.value(),
+                self.ui.scan_range_stop.value(),
+            ),
         }
 
     def deserialize_series_ui(self, d: dict):
+        def set_scan_range(start_stop):
+            start, stop = start_stop
+            self.ui.scan_range_start.setValue(start)
+            self.ui.scan_range_stop.setValue(stop)
+
         setters = {
             'dirpath_str': lambda v: self.ui.series_dir.setText(str(v)),
             'scan_shape': lambda v: setattr(self, 'ui_scan_shape', v),
             'skip_frames': self.ui.skip_frames.setValue,
-            'num_scans': self.ui.num_scans.setValue,
+            'scan_range_tuple': set_scan_range,
         }
         for k, v in d.items():
             if k in setters:

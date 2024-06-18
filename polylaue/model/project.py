@@ -10,6 +10,7 @@ class Project(Serializable):
         name: str = 'Project',
         sections: list[Section] | None = None,
         description: str = 'Description',
+        parent: Serializable | None = None,
     ):
         if sections is None:
             sections = []
@@ -17,6 +18,7 @@ class Project(Serializable):
         self.name = name
         self.sections = sections
         self.description = description
+        self.parent = parent
 
     @property
     def num_sections(self):
@@ -35,4 +37,4 @@ class Project(Serializable):
 
     @sections_serialized.setter
     def sections_serialized(self, v: list[dict]):
-        self.sections = [Section.from_serialized(x) for x in v]
+        self.sections = [Section.from_serialized(x, parent=self) for x in v]

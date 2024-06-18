@@ -14,7 +14,7 @@ class SeriesSubmodel(BaseSubmodel):
         return self.section.series
 
     def create(self) -> Series:
-        return Series()
+        return Series(parent=self.section)
 
     @property
     def columns(self) -> dict[str, str]:
@@ -22,5 +22,5 @@ class SeriesSubmodel(BaseSubmodel):
         return {
             'name': 'Name',
             'description': 'Description',
-            'num_scans': 'Number of Scans',
+            'scan_range_formatted': 'Scan Range',
         }

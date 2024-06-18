@@ -14,7 +14,7 @@ class SectionsSubmodel(BaseSubmodel):
         return self.project.sections
 
     def create(self) -> Section:
-        return Section()
+        return Section(parent=self.project)
 
     @property
     def columns(self) -> dict[str, str]:

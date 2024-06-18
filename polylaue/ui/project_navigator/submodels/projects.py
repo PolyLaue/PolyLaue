@@ -14,7 +14,7 @@ class ProjectsSubmodel(BaseSubmodel):
         return self.project_manager.projects
 
     def create(self) -> Project:
-        return Project()
+        return Project(parent=self.project_manager)
 
     @property
     def columns(self) -> dict[str, str]:

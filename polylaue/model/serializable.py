@@ -30,7 +30,7 @@ class Serializable:
             setattr(self, k, v)
 
     @classmethod
-    def from_serialized(cls, d: dict):
-        obj = cls()
+    def from_serialized(cls, d: dict, parent=None):
+        obj = cls(parent=parent)
         obj.deserialize(d)
         return obj

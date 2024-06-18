@@ -72,7 +72,12 @@ class MainWindow:
 
     def reset_scan_position(self):
         self.scan_pos = np.array([0, 0])
-        self.scan_num = 0
+
+        if self.series:
+            # Reset to the first available position on the series
+            self.scan_num = self.series.scan_range_tuple[0]
+        else:
+            self.scan_num = 1
 
     def on_open_series(self):
         selected_directory = QFileDialog.getExistingDirectory(
@@ -94,7 +99,7 @@ class MainWindow:
 
         self.load_series(series)
 
-    def load_series(self, series: Series):
+    def load_series(self, series: Series, reset_settings: bool = True):
         """Load the series located in the directory.
 
         This will also reset the current image settings and scan position.
@@ -105,10 +110,12 @@ class MainWindow:
         # Identify the image loader we will use for the series
         self.identify_image_loader()
 
-        # Reset scan position
-        self.reset_scan_position()
-        self.load_current_image()
-        self.reset_image_view_settings()
+        if reset_settings:
+            # Reset scan position
+            self.reset_scan_position()
+            self.load_current_image()
+            self.reset_image_view_settings()
+
         self.update_info_label()
 
         # After the data has been loaded, set the window title to be
@@ -141,10 +148,16 @@ class MainWindow:
                 self.save_project_manager
             )
             self._project_navigator_dialog.view.open_series.connect(
-                self.load_series
+                self.on_project_navigator_open_series
             )
 
         self._project_navigator_dialog.show()
+
+    def on_project_navigator_open_series(self, series):
+        self.load_series(series)
+
+        # Hide the project navigator dialog
+        self._project_navigator_dialog.hide()
 
     def save_project_manager(self):
         save_project_manager(self.project_manager)
@@ -174,9 +187,30 @@ class MainWindow:
             # No series. Skip it.
             return
 
-        # Clip it so we don't go out of bounds
-        max_idx = self.series.num_scans - 1
-        self.scan_num = np.clip(self.scan_num + i, a_min=0, a_max=max_idx)
+        new_scan_idx = self.scan_num + i
+        if new_scan_idx in self.series.scan_range:
+            # Just change the scan number
+            self.scan_num = new_scan_idx
+            self.on_frame_changed()
+            return
+
+        # See if we have a parent section, and switch to a different
+        # series if we can.
+        section = self.series.parent
+        if section is None:
+            # Just return - can't do anything
+            return
+
+        new_series = section.series_with_scan_index(new_scan_idx)
+        if new_series is None:
+            # Just return - can't do anything
+            return
+
+        self.scan_num = new_scan_idx
+
+        # Load this series without resetting the settings
+        self.load_series(new_series, reset_settings=False)
+        self.scan_num = new_scan_idx
         self.on_frame_changed()
 
     def on_shift_scan_position(self, i: int, j: int):
@@ -241,7 +275,7 @@ class MainWindow:
             text = ''
         else:
             text = (
-                f'Scan {self.scan_num + 1}, '
+                f'Scan {self.scan_num}, '
                 f'Position {tuple(self.scan_pos + 1)}'
             )
 

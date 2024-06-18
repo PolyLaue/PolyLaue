@@ -5,11 +5,16 @@ from polylaue.model.serializable import Serializable
 class ProjectManager(Serializable):
     """The project manager contains a set of projects"""
 
-    def __init__(self, projects: list[Project] | None = None):
+    def __init__(
+        self,
+        projects: list[Project] | None = None,
+        parent: Serializable | None = None,
+    ):
         if projects is None:
             projects = []
 
         self.projects = projects
+        self.parent = parent
 
     @property
     def num_projects(self):
@@ -26,4 +31,4 @@ class ProjectManager(Serializable):
 
     @projects_serialized.setter
     def projects_serialized(self, v: list[dict]):
-        self.projects = [Project.from_serialized(x) for x in v]
+        self.projects = [Project.from_serialized(x, parent=self) for x in v]

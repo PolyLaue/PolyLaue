@@ -10,6 +10,7 @@ class Section(Serializable):
         name: str = 'Section',
         series: list[Series] | None = None,
         description: str = 'Description',
+        parent: Serializable | None = None,
     ):
         if series is None:
             series = []
@@ -17,10 +18,21 @@ class Section(Serializable):
         self.name = name
         self.series = series
         self.description = description
+        self.parent = parent
 
     @property
     def num_series(self):
         return len(self.series)
+
+    def series_with_scan_index(self, scan_index: int) -> Series | None:
+        # Return the first series we can find that contains the scan
+        # index.
+        for series in self.series:
+            if scan_index in series.scan_range:
+                return series
+
+        # Did not find it. Returning None...
+        return None
 
     # Serialization code
     _attrs_to_serialize = [
@@ -35,4 +47,4 @@ class Section(Serializable):
 
     @series_serialized.setter
     def series_serialized(self, v: list[dict]):
-        self.series = [Series.from_serialized(x) for x in v]
+        self.series = [Series.from_serialized(x, parent=self) for x in v]

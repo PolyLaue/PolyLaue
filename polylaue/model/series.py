@@ -18,7 +18,8 @@ class Series(Serializable):
     """The Series class is used to keep track of files within a series
 
     Several arguments are provided, including the directory path,
-    number of scans, scan shape, and a number of frames to skip.
+    scan range (end-inclusive), scan shape, and a number of frames
+    to skip.
 
     The Series will automatically identify the series files within
     the directory, validate that the file indices and number of files
@@ -32,22 +33,27 @@ class Series(Serializable):
         name='Series',
         description='Description',
         dirpath: PathLike = '.',
-        num_scans: int = 3,
+        scan_range: tuple[int, int] | None = None,
         scan_shape: tuple[int, int] = (21, 21),
         skip_frames: int = 10,
         file_prefix: str | None = None,
+        parent: Serializable | None = None,
     ):
+        if scan_range is None:
+            scan_range = (1, 3)
+
         self.name = name
         self.description = description
         self.dirpath = dirpath
-        self.num_scans = num_scans
+        self.scan_range_tuple = scan_range
         self.scan_shape = scan_shape
         self.skip_frames = skip_frames
         self.has_final_dark_file = False
         self.file_prefix = file_prefix
         self.file_list = []
+        self.parent = parent
 
-    def filepath(self, row: int, column: int, scan_number: int = 0) -> Path:
+    def filepath(self, row: int, column: int, scan_number: int = 1) -> Path:
         """Get the filepath for a specified, row, column, and scan_number"""
         if row >= self.scan_shape[0]:
             msg = f'Row "{row}" is out of bounds'
@@ -57,15 +63,35 @@ class Series(Serializable):
             msg = f'Column "{column}" is out of bounds'
             raise ValidationError(msg)
 
-        if scan_number >= self.num_scans:
-            msg = f'Scan number "{scan_number}" is out of bounds'
+        if scan_number not in self.scan_range:
+            msg = (
+                f'Scan number "{scan_number}" is not in this '
+                f'series\' scan range: "{self.scan_range_tuple}"'
+            )
             raise ValidationError(msg)
 
-        scan_start = scan_number * np.prod(self.scan_shape)
+        scan_number_idx = self.scan_range.index(scan_number)
+        scan_start = scan_number_idx * np.prod(self.scan_shape)
         idx = scan_start + row * self.scan_shape[1] + column
         filename = self.file_list[idx]
 
         return self.dirpath / filename
+
+    @property
+    def scan_range(self):
+        # This tuple includes the end, so add 1 to the second value
+        return range(
+            self.scan_range_tuple[0],
+            self.scan_range_tuple[1] + 1,
+        )
+
+    @property
+    def scan_range_formatted(self):
+        return ' - '.join(map(str, self.scan_range_tuple))
+
+    @property
+    def num_scans(self):
+        return len(self.scan_range)
 
     def identify_file_prefix(self):
         """Inspect the tif files and identify the file template"""
@@ -224,7 +250,7 @@ class Series(Serializable):
         'name',
         'description',
         'dirpath_str',
-        'num_scans',
+        'scan_range_tuple',
         'scan_shape',
         'skip_frames',
         'file_prefix',
