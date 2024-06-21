@@ -33,20 +33,19 @@ class Series(Serializable):
         name='Series',
         description='Description',
         dirpath: PathLike = '.',
-        scan_range: tuple[int, int] | None = None,
+        scan_range: tuple[int, int] = (1, 3),
         scan_shape: tuple[int, int] = (21, 21),
+        scan_shift: tuple[int, int] = (0, 0),
         skip_frames: int = 10,
         file_prefix: str | None = None,
         parent: Serializable | None = None,
     ):
-        if scan_range is None:
-            scan_range = (1, 3)
-
         self.name = name
         self.description = description
         self.dirpath = dirpath
         self.scan_range_tuple = scan_range
         self.scan_shape = scan_shape
+        self.scan_shift = scan_shift
         self.skip_frames = skip_frames
         self.has_final_dark_file = False
         self.file_prefix = file_prefix
@@ -55,6 +54,11 @@ class Series(Serializable):
 
     def filepath(self, row: int, column: int, scan_number: int = 1) -> Path:
         """Get the filepath for a specified, row, column, and scan_number"""
+        # Adjust according to scan shift
+        row -= self.scan_shift[0]
+        column -= self.scan_shift[1]
+        print(f'Shift row from {row - self.scan_shift[0]} to {row}')
+
         if row >= self.scan_shape[0]:
             msg = f'Row "{row}" is out of bounds'
             raise ValidationError(msg)
@@ -252,6 +256,7 @@ class Series(Serializable):
         'dirpath_str',
         'scan_range_tuple',
         'scan_shape',
+        'scan_shift',
         'skip_frames',
         'file_prefix',
     ]

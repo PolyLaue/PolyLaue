@@ -72,6 +72,7 @@ class MainWindow:
 
     def reset_scan_position(self):
         self.scan_pos = np.array([0, 0])
+        self.relative_scan_pos = self.scan_pos.copy()
 
         if self.series:
             # Reset to the first available position on the series
@@ -141,15 +142,12 @@ class MainWindow:
 
     def open_project_navigator(self):
         if not hasattr(self, '_project_navigator_dialog'):
-            self._project_navigator_dialog = ProjectNavigatorDialog(
-                self.project_manager, self.ui
-            )
-            self._project_navigator_dialog.model.data_modified.connect(
-                self.save_project_manager
-            )
-            self._project_navigator_dialog.view.open_series.connect(
-                self.on_project_navigator_open_series
-            )
+            d = ProjectNavigatorDialog(self.project_manager, self.ui)
+            d.model.data_modified.connect(self.save_project_manager)
+            d.view.open_series.connect(self.on_project_navigator_open_series)
+            d.view.series_modified.connect(self.on_series_modified)
+
+            self._project_navigator_dialog = d
 
         self._project_navigator_dialog.show()
 
@@ -158,6 +156,12 @@ class MainWindow:
 
         # Hide the project navigator dialog
         self._project_navigator_dialog.hide()
+
+    def on_series_modified(self, series):
+        if series is self.series:
+            # We need to reload it, as some rendering settings may have
+            # changed.
+            self.load_series(series)
 
     def save_project_manager(self):
         save_project_manager(self.project_manager)
@@ -219,13 +223,28 @@ class MainWindow:
             # No series. Skip it.
             return
 
+        section = self.series.parent
+        scan_shape = np.asarray(self.series.scan_shape)
+
+        # Get the overlapping scan region
+        overlap_region = np.asarray(section.overlapping_scan_region)
+
+        # Clip to this overlapping region
+        a_min = overlap_region[:, 0]
+        a_max = scan_shape + overlap_region[:, 1] - 1
+        print(f'{a_min=} {a_max=}')
+
         # Clip it so we don't go out of bounds
         np.clip(
             self.scan_pos + (i, j),
-            a_min=[0, 0],
-            a_max=np.asarray(self.series.scan_shape) - 1,
+            a_min=a_min,
+            a_max=a_max,
             out=self.scan_pos,
         )
+        print('New scan pos is:', self.scan_pos)
+
+        self.relative_scan_pos = self.scan_pos - a_min
+
         self.on_frame_changed()
 
     def on_frame_changed(self):
@@ -274,10 +293,18 @@ class MainWindow:
         if self.series is None:
             text = ''
         else:
-            text = (
-                f'Scan {self.scan_num}, '
-                f'Position {tuple(self.scan_pos + 1)}'
-            )
+            shift = self.series.scan_shift
+            text = f'Scan {self.scan_num}, '
+            if (
+                np.array_equal(self.scan_pos, self.relative_scan_pos)
+                and np.all(shift == 0)
+            ):
+                text += f'Position {tuple(self.scan_pos + 1)}'
+            else:
+                text += (
+                    f'Relative Position {tuple(self.relative_scan_pos + 1)}, '
+                    f'Absolute Position {tuple(self.scan_pos - shift + 1)}'
+                )
 
         self.ui.info_label.setText(text)
 

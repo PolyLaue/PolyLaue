@@ -29,6 +29,9 @@ class ProjectNavigatorView(QTableView):
     """Emitted when a series should be opened"""
     open_series = Signal(Series)
 
+    """Emitted when a series was modified"""
+    series_modified = Signal(Series)
+
     def __init__(
         self,
         navigation_bar: NavigationBar | None = None,
@@ -209,8 +212,8 @@ class ProjectNavigatorView(QTableView):
             # Indicate that the data was modified.
             self.model.data_modified.emit()
 
-            # Trigger the series to be re-opened
-            self.open_series.emit(series)
+            # Indicate that the series was modified
+            self.series_modified.emit(series)
 
     def insert_row(self, row: int):
         # A row of -1 indicates it should be added to the end

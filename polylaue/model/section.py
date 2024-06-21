@@ -34,6 +34,40 @@ class Section(Serializable):
         # Did not find it. Returning None...
         return None
 
+    @property
+    def overlapping_scan_region(self) -> tuple[tuple[int, int], tuple[int, int]]:
+        """Compute the overlapping scan region of the series
+
+        This looks at the scan_shift of each series to compute the common
+        region that all series will contain.
+
+        This function returns (i_offsets, j_offsets), where each is comprised
+        of a (start_offset, stop_offset).
+
+        For example, if one series is shifted +1 in i, and one series is
+        shifted -1 in j, then this function will return ((1, 0), (0, -1)),
+        indicating that the overlapping region is offset at the start by
+        `i == 1` and `j == 0`, and offset at the end by `i == 0` and `j == -1`.
+        If the scan shape is (21, 21), then the overlapping scan region will
+        have a shape of (20, 20), which is offset by 1 from the start in `i`
+        and 1 from the end in `j`.
+        """
+        i_min = 0
+        i_max = 0
+        j_min = 0
+        j_max = 0
+        for series in self.series:
+            i, j = series.scan_shift
+            i_min = min(i_min, i)
+            i_max = max(i_max, i)
+            j_min = min(j_min, j)
+            j_max = max(j_max, j)
+
+        i_offsets = (i_max, i_min)
+        j_offsets = (j_max, j_min)
+        print(f'{i_offsets=} {j_offsets=}')
+        return i_offsets, j_offsets
+
     # Serialization code
     _attrs_to_serialize = [
         'name',
@@ -48,3 +82,4 @@ class Section(Serializable):
     @series_serialized.setter
     def series_serialized(self, v: list[dict]):
         self.series = [Series.from_serialized(x, parent=self) for x in v]
+        self.overlapping_scan_region

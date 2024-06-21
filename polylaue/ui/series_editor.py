@@ -34,23 +34,17 @@ class SeriesEditor:
             'dirpath_str': self.ui.series_dir.text(),
             'scan_shape': self.ui_scan_shape,
             'skip_frames': self.ui.skip_frames.value(),
-            'scan_range_tuple': (
-                self.ui.scan_range_start.value(),
-                self.ui.scan_range_stop.value(),
-            ),
+            'scan_range_tuple': self.ui_scan_range,
+            'scan_shift': self.ui_scan_shift,
         }
 
     def deserialize_series_ui(self, d: dict):
-        def set_scan_range(start_stop):
-            start, stop = start_stop
-            self.ui.scan_range_start.setValue(start)
-            self.ui.scan_range_stop.setValue(stop)
-
         setters = {
             'dirpath_str': lambda v: self.ui.series_dir.setText(str(v)),
             'scan_shape': lambda v: setattr(self, 'ui_scan_shape', v),
             'skip_frames': self.ui.skip_frames.setValue,
-            'scan_range_tuple': set_scan_range,
+            'scan_range_tuple': lambda v: setattr(self, 'ui_scan_range', v),
+            'scan_shift': lambda v: setattr(self, 'ui_scan_shift', v),
         }
         for k, v in d.items():
             if k in setters:
@@ -58,6 +52,7 @@ class SeriesEditor:
 
     def update_ui(self):
         self.deserialize_series_ui(self.series.serialize())
+        self.ui.setWindowTitle(f'Edit: {self.series.name}')
 
     def save_ui_to_series(self, series):
         # Deserialize the ui settings into the series
@@ -88,6 +83,30 @@ class SeriesEditor:
     def ui_scan_shape(self, v: tuple[int, int]):
         self.ui.scan_shape_i.setValue(v[0])
         self.ui.scan_shape_j.setValue(v[1])
+
+    @property
+    def ui_scan_range(self) -> tuple[int, int]:
+        return (
+            self.ui.scan_range_start.value(),
+            self.ui.scan_range_stop.value(),
+        )
+
+    @ui_scan_range.setter
+    def ui_scan_range(self, v: tuple[int, int]):
+        self.ui.scan_range_start.setValue(v[0])
+        self.ui.scan_range_stop.setValue(v[1])
+
+    @property
+    def ui_scan_shift(self) -> tuple[int, int]:
+        return (
+            self.ui.scan_shift_i.value(),
+            self.ui.scan_shift_j.value(),
+        )
+
+    @ui_scan_shift.setter
+    def ui_scan_shift(self, v: tuple[int, int]):
+        self.ui.scan_shift_i.setValue(v[0])
+        self.ui.scan_shift_j.setValue(v[1])
 
 
 class SeriesEditorDialog(QDialog):
