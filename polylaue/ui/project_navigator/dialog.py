@@ -44,7 +44,7 @@ class ProjectNavigatorDialog(QDialog):
         # Can we come up with something without hard-coding, though?
         self.resize(600, 300)
 
-        self.on_selection_changed()
+        self.update_enable_states()
 
         self.setup_connections()
 
@@ -52,8 +52,9 @@ class ProjectNavigatorDialog(QDialog):
         self.add_button.clicked.connect(self.on_add_clicked)
         self.remove_button.clicked.connect(self.on_remove_clicked)
         self.view.selectionModel().selectionChanged.connect(
-            self.on_selection_changed
+            self.update_enable_states
         )
+        self.view.path_changed.connect(self.update_enable_states)
 
     def on_add_clicked(self):
         self.view.insert_row(-1)
@@ -61,9 +62,12 @@ class ProjectNavigatorDialog(QDialog):
     def on_remove_clicked(self):
         self.view.remove_selected_rows()
 
-    def on_selection_changed(self):
+    def update_enable_states(self):
         num_rows_selected = len(self.view.selected_rows)
-        self.remove_button.setEnabled(num_rows_selected > 0)
+        is_scans = self.view.is_submodel_scans
+
+        self.add_button.setEnabled(not is_scans)
+        self.remove_button.setEnabled(not is_scans and num_rows_selected > 0)
 
     @property
     def layout(self):

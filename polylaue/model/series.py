@@ -4,6 +4,7 @@ import re
 
 import numpy as np
 
+from polylaue.model.scan import Scan
 from polylaue.model.serializable import Serializable
 from polylaue.typing import PathLike
 
@@ -33,19 +34,22 @@ class Series(Serializable):
         name='Series',
         description='Description',
         dirpath: PathLike = '.',
-        scan_range: tuple[int, int] | None = None,
+        scans: list[Scan] | None = None,
+        scan_start_number: int = 1,
         scan_shape: tuple[int, int] = (21, 21),
         skip_frames: int = 10,
         file_prefix: str | None = None,
         parent: Serializable | None = None,
     ):
-        if scan_range is None:
-            scan_range = (1, 3)
+        if scans is None:
+            # Default to 3 scans
+            scans = [Scan(parent=self) for _ in range(3)]
 
         self.name = name
         self.description = description
         self.dirpath = dirpath
-        self.scan_range_tuple = scan_range
+        self.scans = scans
+        self.scan_start_number = scan_start_number
         self.scan_shape = scan_shape
         self.skip_frames = skip_frames
         self.has_final_dark_file = False
@@ -77,13 +81,42 @@ class Series(Serializable):
 
         return self.dirpath / filename
 
+    def scan_number(self, scan: Scan) -> int:
+        # Get the number of the provided scan
+        if scan not in self.scans:
+            return -1
+
+        return self.scan_start_number + self.scans.index(scan)
+
     @property
-    def scan_range(self):
-        # This tuple includes the end, so add 1 to the second value
-        return range(
-            self.scan_range_tuple[0],
-            self.scan_range_tuple[1] + 1,
+    def scan_range(self) -> range:
+        """Return a Python range representing the scan range"""
+        start, stop = self.scan_range_tuple
+        return range(start, stop + 1)
+
+    @property
+    def scan_range_tuple(self) -> tuple[int, int]:
+        """Returns [start, stop] (both inclusive)"""
+        if not self.scans:
+            raise Exception('No scans')
+
+        return (
+            self.scan_start_number,
+            self.scan_start_number + self.num_scans - 1,
         )
+
+    @scan_range_tuple.setter
+    def scan_range_tuple(self, v: tuple[int, int]):
+        # Update the scan start number and the scans list
+        # to reflect the scan range tuple provided.
+        self.scan_start_number = v[0]
+        num_scans = v[1] - v[0] + 1
+
+        while self.num_scans < num_scans:
+            self.scans.append(Scan())
+
+        while self.num_scans > num_scans:
+            self.scans.pop()
 
     @property
     def scan_range_formatted(self):
@@ -91,7 +124,7 @@ class Series(Serializable):
 
     @property
     def num_scans(self):
-        return len(self.scan_range)
+        return len(self.scans)
 
     def identify_file_prefix(self):
         """Inspect the tif files and identify the file template"""
@@ -250,11 +283,20 @@ class Series(Serializable):
         'name',
         'description',
         'dirpath_str',
-        'scan_range_tuple',
+        'scan_start_number',
         'scan_shape',
+        'scans_serialized',
         'skip_frames',
         'file_prefix',
     ]
+
+    @property
+    def scans_serialized(self) -> list[dict]:
+        return [x.serialize() for x in self.scans]
+
+    @scans_serialized.setter
+    def scans_serialized(self, v: list[dict]):
+        self.scans = [Scan.from_serialized(x, parent=self) for x in v]
 
     def deserialize(self, d: dict):
         self.invalidate()
