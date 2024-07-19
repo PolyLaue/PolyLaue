@@ -12,6 +12,15 @@ class UiLoader(QUiLoader, QSingleton):
     def __init__(self, parent: QObject | None = None):
         super().__init__(parent)
 
+        self.register_custom_widgets()
+
+    def register_custom_widgets(self):
+        from polylaue.ui.scientificspinbox import ScientificDoubleSpinBox
+
+        register_list = (ScientificDoubleSpinBox,)
+        for item in register_list:
+            self.registerCustomWidget(item)
+
     def load_file(
         self, filename: PathLike, parent: QWidget | None = None
     ) -> QWidget:

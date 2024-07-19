@@ -1,18 +1,18 @@
 import logging
 
-from PySide6.QtCore import QPointF
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QFileDialog, QWidget
 
 import numpy as np
-from pyqtgraph import GraphicsScene, ImageItem
 
 from polylaue.model.io import identify_loader_function
 from polylaue.model.scan import Scan
 from polylaue.model.series import Series
 from polylaue.model.state import load_project_manager, save_project_manager
 from polylaue.typing import PathLike
+from polylaue.ui.frame_tracker import FrameTracker
 from polylaue.ui.image_view import PolyLaueImageView
+from polylaue.ui.reflections_editor import ReflectionsEditor
 from polylaue.ui.project_navigator.dialog import ProjectNavigatorDialog
 from polylaue.ui.series_editor import SeriesEditorDialog
 from polylaue.ui.utils.ui_loader import UiLoader
@@ -28,7 +28,7 @@ class MainWindow:
         # Keep track of the working directory
         self.working_dir = None
         self.series = None
-        self._last_mouse_position = None
+        self.frame_tracker = FrameTracker()
 
         # We currently assume all image files in a series will have the
         # same image loader. Cache that image loader so we do not have
@@ -41,9 +41,12 @@ class MainWindow:
         self.reset_scan_position()
 
         # Add the pyqtgraph view to its layout
-        self.image_view = PolyLaueImageView(self.ui, 'CentralView')
-        self.add_cmap_reverse_menu_action()
+        self.image_view = PolyLaueImageView(
+            self.ui, 'CentralView', frame_tracker=self.frame_tracker
+        )
         self.ui.image_view_layout.addWidget(self.image_view)
+
+        self.reflections_editor = ReflectionsEditor(self.ui)
 
         self.setup_connections()
 
@@ -52,24 +55,38 @@ class MainWindow:
         self.ui.action_open_project_navigator.triggered.connect(
             self.open_project_navigator
         )
+        self.ui.action_overlays_reflections.triggered.connect(
+            self.open_reflections_editor
+        )
 
         self.image_view.shift_scan_number.connect(self.on_shift_scan_number)
         self.image_view.shift_scan_position.connect(
             self.on_shift_scan_position
         )
-        self.scene.sigMouseMoved.connect(self.on_mouse_move)
+        self.image_view.mouse_move_message.connect(self.on_mouse_move_message)
+
+        self.reflections_editor.reflections_changed.connect(
+            self.on_reflections_changed
+        )
+        self.reflections_editor.reflections_style_changed.connect(
+            self.on_reflections_style_changed
+        )
 
     @property
-    def image_item(self) -> ImageItem:
-        return self.image_view.getImageItem()
+    def scan_pos(self) -> np.ndarray:
+        return np.asarray(self.frame_tracker.scan_pos)
+
+    @scan_pos.setter
+    def scan_pos(self, v: np.ndarray):
+        self.frame_tracker.scan_pos = tuple(v)
 
     @property
-    def scene(self) -> GraphicsScene:
-        return self.image_item.scene()
+    def scan_num(self) -> int:
+        return self.frame_tracker.scan_num
 
-    @property
-    def image_data(self) -> np.ndarray:
-        return self.image_item.image
+    @scan_num.setter
+    def scan_num(self, v: int):
+        self.frame_tracker.scan_num = v
 
     def reset_scan_position(self):
         self.scan_pos = np.array([0, 0])
@@ -181,23 +198,9 @@ class MainWindow:
         save_project_manager(self.project_manager)
 
     def reset_image_view_settings(self):
-        self.auto_level_colors()
-        self.auto_level_histogram_range()
+        self.image_view.auto_level_colors()
+        self.image_view.auto_level_histogram_range()
         self.image_view.autoRange()
-
-    def auto_level_colors(self):
-        # These levels appear to work well for the data we have
-        data = self.image_data
-        lower = np.nanpercentile(data, 1.0)
-        upper = np.nanpercentile(data, 99.75)
-        self.image_view.setLevels(lower, upper)
-
-    def auto_level_histogram_range(self):
-        # Make the histogram range a little bigger than the auto level colors
-        data = self.image_data
-        lower = np.nanpercentile(data, 0.5)
-        upper = np.nanpercentile(data, 99.8)
-        self.image_view.setHistogramRange(lower, upper)
 
     def on_shift_scan_number(self, i: int):
         """Shift the scan number by `i`"""
@@ -238,11 +241,10 @@ class MainWindow:
             return
 
         # Clip it so we don't go out of bounds
-        np.clip(
+        self.scan_pos = np.clip(
             self.scan_pos + (i, j),
             a_min=[0, 0],
             a_max=np.asarray(self.series.scan_shape) - 1,
-            out=self.scan_pos,
         )
         self.on_frame_changed()
 
@@ -250,43 +252,17 @@ class MainWindow:
         self.load_current_image()
         self.update_info_label()
 
-        if self._last_mouse_position:
-            # Update the mouse hover info with the new frame
-            self.on_mouse_move(self._last_mouse_position)
+        # Update the mouse hover info with the new frame
+        self.image_view.on_mouse_move()
+        self.image_view.update_reflection_overlays()
 
     def load_current_image(self):
         filepath = self.series.filepath(*self.scan_pos, self.scan_num)
+        self.ui.setWindowTitle(filepath.name)
         img = self.image_loader_func(filepath)
         self.image_view.setImage(
             img, autoRange=False, autoLevels=False, autoHistogramRange=False
         )
-
-    def on_mouse_move(self, pos: QPointF):
-        if self.image_data is None:
-            # No data
-            return
-
-        # Keep a record of the last position in case we change frames,
-        # so we can call this function again.
-        self._last_mouse_position = pos
-
-        # First, map the scene coordinates to the view
-        pos = self.image_view.view.mapSceneToView(pos)
-
-        # We get the correct pixel coordinates by flooring these
-        j, i = np.floor(pos.toTuple()).astype(int)
-
-        data_shape = self.image_data.shape
-        if not 0 <= i < data_shape[0] or not 0 <= j < data_shape[1]:
-            # The mouse is out of bounds
-            self.ui.status_bar.clearMessage()
-            return
-
-        # For display, x and y are the same as j and i, respectively
-        x, y = j, i
-
-        intensity = self.image_data[i, j]
-        self.ui.status_bar.showMessage(f'{x=}, {y=}, {intensity=}')
 
     def update_info_label(self):
         if self.series is None:
@@ -306,32 +282,16 @@ class MainWindow:
         """Show the window"""
         self.ui.show()
 
-    def add_cmap_reverse_menu_action(self):
-        """Add a 'reverse' action to the pyqtgraph colormap menu
+    def on_mouse_move_message(self, message: str):
+        self.ui.status_bar.showMessage(message)
 
-        This assumes pyqtgraph won't change its internal attribute structure.
-        If it does change, then this function just won't work...
-        """
-        w = self.image_view.getHistogramWidget()
-        if not w:
-            # There should be a histogram widget. Not sure why it's missing...
-            return
+    def open_reflections_editor(self):
+        self.reflections_editor.ui.show()
 
-        try:
-            gradient = w.item.gradient
-            menu = gradient.menu
-        except AttributeError:
-            # pyqtgraph must have changed its attribute structure
-            return
+    def on_reflections_changed(self):
+        new_reflections = self.reflections_editor.reflections
+        self.image_view.reflections = new_reflections
 
-        if not menu:
-            return
-
-        def reverse():
-            cmap = gradient.colorMap()
-            cmap.reverse()
-            gradient.setColorMap(cmap)
-
-        menu.addSeparator()
-        action = menu.addAction('reverse')
-        action.triggered.connect(reverse)
+    def on_reflections_style_changed(self):
+        new_style = self.reflections_editor.style
+        self.image_view.reflections_style = new_style
