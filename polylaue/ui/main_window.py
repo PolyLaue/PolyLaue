@@ -8,6 +8,7 @@ import numpy as np
 from pyqtgraph import GraphicsScene, ImageItem
 
 from polylaue.model.io import identify_loader_function
+from polylaue.model.scan import Scan
 from polylaue.model.series import Series
 from polylaue.model.state import load_project_manager, save_project_manager
 from polylaue.typing import PathLike
@@ -141,23 +142,40 @@ class MainWindow:
 
     def open_project_navigator(self):
         if not hasattr(self, '_project_navigator_dialog'):
-            self._project_navigator_dialog = ProjectNavigatorDialog(
-                self.project_manager, self.ui
+            d = ProjectNavigatorDialog(self.project_manager, self.ui)
+            d.model.data_modified.connect(self.save_project_manager)
+            d.view.series_modified.connect(
+                self.on_project_navigator_series_modified
             )
-            self._project_navigator_dialog.model.data_modified.connect(
-                self.save_project_manager
-            )
-            self._project_navigator_dialog.view.open_series.connect(
-                self.on_project_navigator_open_series
-            )
+            d.view.open_scan.connect(self.on_project_navigator_open_scan)
+            self._project_navigator_dialog = d
 
         self._project_navigator_dialog.show()
 
-    def on_project_navigator_open_series(self, series):
+    def on_project_navigator_series_modified(self, series: Series):
+        if series is self.series:
+            # Reload the series
+            prev_scan_number = self.scan_num
+            self.load_series(series)
+
+            # Set the scan number
+            self.scan_num = prev_scan_number
+            self.on_frame_changed()
+
+    def on_project_navigator_open_scan(self, scan: Scan):
+        series = scan.parent
+        if series is None:
+            raise Exception('Scan does not have a parent')
+
+        # Load the series
         self.load_series(series)
 
         # Hide the project navigator dialog
         self._project_navigator_dialog.hide()
+
+        # Set the scan number
+        self.scan_num = scan.number
+        self.on_frame_changed()
 
     def save_project_manager(self):
         save_project_manager(self.project_manager)

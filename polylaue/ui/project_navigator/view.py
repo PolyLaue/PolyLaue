@@ -8,6 +8,7 @@ from PySide6.QtCore import (
 from PySide6.QtGui import QCursor
 from PySide6.QtWidgets import QMenu, QMessageBox, QTableView, QWidget
 
+from polylaue.model.scan import Scan
 from polylaue.model.series import Series
 from polylaue.ui.project_navigator.navigation_bar import NavigationBar
 from polylaue.ui.series_editor import SeriesEditorDialog
@@ -26,8 +27,17 @@ class ProjectNavigatorView(QTableView):
     is a series, in which case it will be opened.
     """
 
-    """Emitted when a series should be opened"""
-    open_series = Signal(Series)
+    """Emitted when a series was modified"""
+    series_modified = Signal(Series)
+
+    """Emitted when a specific scan should be opened
+
+    The scan should have a parent which is the series
+    """
+    open_scan = Signal(Scan)
+
+    """Emitted when the current path changes"""
+    path_changed = Signal()
 
     def __init__(
         self,
@@ -75,8 +85,12 @@ class ProjectNavigatorView(QTableView):
         return self.model.submodel
 
     @property
-    def is_submodel_series(self):
+    def is_submodel_series(self) -> bool:
         return self.submodel.type == 'series'
+
+    @property
+    def is_submodel_scans(self) -> bool:
+        return self.submodel.type == 'scans'
 
     @property
     def selected_rows(self):
@@ -118,11 +132,19 @@ class ProjectNavigatorView(QTableView):
         def edit_series():
             self.edit_series(row_clicked)
 
+        def edit_scan_shifts():
+            self.descend_into_row(row_clicked)
+
         if ItemFlag.ItemIsEditable in index.flags():
             add_actions({'Edit': edit_item})
 
         if is_series:
-            add_actions({'Series Settings': edit_series})
+            add_actions(
+                {
+                    'Series Settings': edit_series,
+                    'Scan Shifts': edit_scan_shifts,
+                }
+            )
 
         if actions:
             add_separator()
@@ -161,14 +183,20 @@ class ProjectNavigatorView(QTableView):
         index = self.proxy_model.mapToSource(index)
         row = index.row()
 
-        if self.model.submodel.type == 'series':
-            # We double-clicked on a series. Open it.
+        if self.is_submodel_series:
             series = self.model.submodel.entry_list[row]
-            self.open_series.emit(series)
+            # Get the first scan and open that.
+            self.open_scan.emit(series.scans[0])
+        elif self.is_submodel_scans:
+            scan = self.model.submodel.entry_list[row]
+            self.open_scan.emit(scan)
         else:
             # If it is anything except a series, navigate inside it.
-            self.model.set_path(self.model.path + [row])
-            self.on_path_modified()
+            self.descend_into_row(row)
+
+    def descend_into_row(self, row: int):
+        self.model.set_path(self.model.path + [row])
+        self.on_path_modified()
 
     def keyPressEvent(self, event: QEvent):
         if event.key() == Qt.Key_Delete:
@@ -198,6 +226,8 @@ class ProjectNavigatorView(QTableView):
         # Invalidate the sorting
         self.sortByColumn(-1, Qt.SortOrder.AscendingOrder)
 
+        self.path_changed.emit()
+
     def on_navigation_bar_button_clicked(self, i: int):
         # Truncate the path based upon the index the user clicked
         self.model.set_path(self.model.path[:i])
@@ -210,7 +240,7 @@ class ProjectNavigatorView(QTableView):
             self.model.data_modified.emit()
 
             # Trigger the series to be re-opened
-            self.open_series.emit(series)
+            self.series_modified.emit(series)
 
     def insert_row(self, row: int):
         # A row of -1 indicates it should be added to the end

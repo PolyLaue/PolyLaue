@@ -18,7 +18,6 @@ class SeriesSubmodel(BaseSubmodel):
 
     @property
     def columns(self) -> dict[str, str]:
-        # FIXME: there should potentially be more for series
         return {
             'name': 'Name',
             'description': 'Description',
