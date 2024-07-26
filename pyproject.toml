@@ -8,6 +8,7 @@ requires-python = '>=3.10'
 dynamic = ['version']
 dependencies = [
     'fabio',
+    'h5py',
     'numba',
     'numpy',
     'platformdirs',

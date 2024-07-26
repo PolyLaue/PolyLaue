@@ -12,7 +12,7 @@ conda activate polylaue
 Next, install dependencies into the conda environment, including Python3.11:
 
 ```bash
-conda install -y -c conda-forge python=3.11 fabio numba numpy pyside6 pyqtgraph pillow scipy
+conda install -y -c conda-forge python=3.11 fabio h5py numba numpy platformdirs pyside6 pyqtgraph pillow scipy
 ```
 
 Now, in the same directory as the `polylaue` source code directory, run this:
