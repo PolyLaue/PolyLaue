@@ -213,9 +213,12 @@ class PolyLaueImageView(pg.ImageView):
     def format_reflection_metadata(
         self, rows: np.ndarray, delim: str = ', '
     ) -> str:
+        # Convert some of these to lists, so that we get native
+        # types instead of numpy types. Otherwise, they will
+        # be printed like `np.int64(1)`.
         hkls = np.asarray(rows[:, 2:5].astype(int))
-        d_spacings = rows[:, 8]
-        crystal_ids = rows[:, 9].astype(int)
+        d_spacings = rows[:, 8].tolist()
+        crystal_ids = rows[:, 9].astype(int).tolist()
 
         # Convert hkls to list of strings
         hkls = [' '.join(str(y) for y in x) for x in hkls]

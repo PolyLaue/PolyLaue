@@ -268,9 +268,11 @@ class MainWindow:
         if self.series is None:
             text = ''
         else:
+            # Make sure these are native types, or else on Mac and
+            # Windows, they might appear as `np.int64(1)`.
             text = (
-                f'Scan {self.scan_num}, '
-                f'Position {tuple(self.scan_pos + 1)}'
+                f'Scan {int(self.scan_num)}, '
+                f'Position {tuple(map(int, self.scan_pos + 1))}'
             )
 
         self.ui.info_label.setText(text)
