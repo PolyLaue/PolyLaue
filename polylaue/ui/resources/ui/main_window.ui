@@ -57,8 +57,15 @@
     </property>
     <addaction name="action_open_project_navigator"/>
    </widget>
+   <widget class="QMenu" name="menu_overlays">
+    <property name="title">
+     <string>Overlays</string>
+    </property>
+    <addaction name="action_overlays_reflections"/>
+   </widget>
    <addaction name="menu_file"/>
    <addaction name="menu_projects"/>
+   <addaction name="menu_overlays"/>
   </widget>
   <widget class="QStatusBar" name="status_bar"/>
   <action name="action_open_series">
@@ -74,6 +81,16 @@
   <action name="action_open_project_navigator">
    <property name="text">
     <string>Navigator</string>
+   </property>
+  </action>
+  <action name="action_open_predicted_reflections">
+   <property name="text">
+    <string>Open Predicted Reflections</string>
+   </property>
+  </action>
+  <action name="action_overlays_reflections">
+   <property name="text">
+    <string>Reflections</string>
    </property>
   </action>
  </widget>
