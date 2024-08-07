@@ -125,6 +125,12 @@ class PolyLaueImageView(pg.ImageView):
         self.reflection_artist.clear()
         self.reflections_array = None
 
+        # This fixes a bug where off-image overlays would stick around
+        # after changing frames when they shouldn't be (but they would
+        # disappear immediately after any interaction). I'm guessing
+        # pyqtgraph should be doing this.
+        self.reflection_artist.prepareGeometryChange()
+
     def update_reflection_overlays(self):
         self.clear_reflection_overlays()
         if self.reflections is None:
