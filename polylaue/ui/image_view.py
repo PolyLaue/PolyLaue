@@ -206,7 +206,9 @@ class PolyLaueImageView(pg.ImageView):
         x, y = j, i
 
         intensity = self.image_data[i, j]
-        message = f'{x=}, {y=}, {intensity=}'
+        # Unfortunately, if we do f'{x=}', it includes the numpy
+        # dtype, which we don't want.
+        message = f'x={x}, y={y}, intensity={intensity}'
         message += self.reflection_status_message
         self.mouse_move_message.emit(message)
 
