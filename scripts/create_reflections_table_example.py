@@ -19,17 +19,29 @@ crystals_table = np.array([
 
 
 # Now write it to a file
-with h5py.File('reflections.h5', 'w') as wf:
+
+with h5py.File('reflections.h5', 'a') as wf:
     # Write the crystals table
-    wf['crystals'] = crystals_table
+    if 'crystals' in wf:
+        # If it already exists, verify it is the same. If not, raise an error.
+        if not np.array_equal(wf['crystals'][()], crystals_table):
+            raise Exception('Cannot overwrite crystals table currently')
+    else:
+        wf['crystals'] = crystals_table
 
     # For every table of reflections, you must specify the scan number,
     # scan position (x), and scan position (y).
-    scan_number = 1
+    scan_number = 24
     scan_pos_x = 1
     scan_pos_y = 1
 
-    wf[f'/predictions/{scan_number}/{scan_pos_x}/{scan_pos_y}'] = table_of_reflections
+    path = f'/predictions/{scan_number}/{scan_pos_x}/{scan_pos_y}'
+    if path in wf:
+        # If it already exists, verify it is the same. If not, raise an error.
+        if not np.array_equal(wf[path][()], table_of_reflections):
+            raise Exception(f'Cannot overwrite already existing table: {path}')
+    else:
+        wf[path] = table_of_reflections
 
 # Now, if you open up the file in PolyLaue, you will see these predictions
 # if you navigate to scan 1 at scan position (1, 1).
