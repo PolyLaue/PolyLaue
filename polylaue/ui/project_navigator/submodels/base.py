@@ -39,6 +39,12 @@ class BaseSubmodel(ABC):
         return []
 
     @property
+    def custom_edit_column_keys(self) -> dict[str, str]:
+        # A set of column keys which have custom edit functions.
+        # The value is the name of the custom edit function.
+        return {}
+
+    @property
     def default_flags(self):
         x = ItemFlags
         return x.ItemIsSelectable | x.ItemIsEditable | x.ItemIsEnabled

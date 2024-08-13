@@ -108,7 +108,9 @@ class ProjectNavigatorModel(QAbstractTableModel):
         return self.submodel.data(index, role)
 
     def setData(self, index: QModelIndex, value: Any, role: int = Qt.EditRole):
+        self.beginResetModel()
         self.submodel.set_data(index, value, role)
+        self.endResetModel()
         self.data_modified.emit()
         return True
 

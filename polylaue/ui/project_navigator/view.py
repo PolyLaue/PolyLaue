@@ -3,12 +3,15 @@
 from PySide6.QtCore import (
     QAbstractItemModel,
     QEvent,
+    QModelIndex,
     QSortFilterProxyModel,
     Qt,
     Signal,
 )
 from PySide6.QtGui import QCursor
-from PySide6.QtWidgets import QMenu, QMessageBox, QTableView, QWidget
+from PySide6.QtWidgets import (
+    QFileDialog, QMenu, QMessageBox, QTableView, QWidget
+)
 
 from polylaue.model.scan import Scan
 from polylaue.model.series import Series
@@ -65,6 +68,12 @@ class ProjectNavigatorView(QTableView):
 
         self.setSortingEnabled(True)
 
+        # The directory names are really long. Only show the
+        # right side of them, and elide to the left.
+        # This will apply to all cells, however.
+        self.setTextElideMode(Qt.ElideLeft)
+        self.setWordWrap(False)
+
         self.setup_connections()
 
     def setup_connections(self):
@@ -108,6 +117,7 @@ class ProjectNavigatorView(QTableView):
         index = self.indexAt(event.pos())
         source_index = self.proxy_model.mapToSource(index)
         row_clicked = source_index.row()
+        col_clicked = source_index.column()
         is_series = self.is_submodel_series
         selected_rows = self.selected_rows
         num_selected_rows = len(selected_rows)
@@ -129,6 +139,14 @@ class ProjectNavigatorView(QTableView):
             self.insert_row(row_clicked)
 
         def edit_item():
+            column_name = self.model.submodel.column_to_key(col_clicked)
+            custom_edit_keys = self.model.submodel.custom_edit_column_keys
+            if column_name in custom_edit_keys:
+                edit_function_name = custom_edit_keys[column_name]
+                self.custom_edit_functions[edit_function_name](source_index)
+                return
+
+            # Default behavior is to just use the regular editor
             self.edit(index)
 
         def edit_series():
@@ -282,3 +300,19 @@ class ProjectNavigatorView(QTableView):
         for i, row in enumerate(sorted(rows)):
             # Offset according to previously removed rows
             self.model.removeRows(row - i, 1)
+
+    # These are custom edit functions for certain columns
+    @property
+    def custom_edit_functions(self) -> dict:
+        return {
+            'directory_path': self.edit_directory_path,
+        }
+
+    def edit_directory_path(self, index: QModelIndex):
+        current_dir = index.data()
+        path = QFileDialog.getExistingDirectory(self, 'Select Directory',
+                                                current_dir)
+        if not path:
+            return
+
+        self.model.setData(index, path)

@@ -22,9 +22,13 @@ class ProjectsSubmodel(BaseSubmodel):
     def columns(self) -> dict[str, str]:
         return {
             'name': 'Name',
-            'description': 'Description',
+            'directory': 'Directory',
             'num_sections': 'Number of Sections',
         }
+
+    @property
+    def custom_edit_column_keys(self) -> dict[str, str]:
+        return {'directory': 'directory_path'}
 
     @property
     def uneditable_column_keys(self) -> list[str]:
