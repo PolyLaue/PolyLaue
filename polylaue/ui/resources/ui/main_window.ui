@@ -63,9 +63,16 @@
     </property>
     <addaction name="action_overlays_reflections"/>
    </widget>
+   <widget class="QMenu" name="menu_indexing">
+    <property name="title">
+     <string>Indexing</string>
+    </property>
+    <addaction name="action_select_indexing_points"/>
+   </widget>
    <addaction name="menu_file"/>
    <addaction name="menu_projects"/>
    <addaction name="menu_overlays"/>
+   <addaction name="menu_indexing"/>
   </widget>
   <widget class="QStatusBar" name="status_bar"/>
   <action name="action_open_series">
@@ -91,6 +98,11 @@
   <action name="action_overlays_reflections">
    <property name="text">
     <string>Reflections</string>
+   </property>
+  </action>
+  <action name="action_select_indexing_points">
+   <property name="text">
+    <string>Select Points</string>
    </property>
   </action>
  </widget>

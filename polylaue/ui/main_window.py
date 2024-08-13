@@ -13,6 +13,7 @@ from polylaue.typing import PathLike
 from polylaue.ui.frame_tracker import FrameTracker
 from polylaue.ui.image_view import PolyLaueImageView
 from polylaue.ui.reflections_editor import ReflectionsEditor
+from polylaue.ui.point_selector import PointSelectorDialog
 from polylaue.ui.project_navigator.dialog import ProjectNavigatorDialog
 from polylaue.ui.series_editor import SeriesEditorDialog
 from polylaue.ui.utils.ui_loader import UiLoader
@@ -57,6 +58,9 @@ class MainWindow:
         )
         self.ui.action_overlays_reflections.triggered.connect(
             self.open_reflections_editor
+        )
+        self.ui.action_select_indexing_points.triggered.connect(
+            self.begin_select_indexing_points
         )
 
         self.image_view.shift_scan_number.connect(self.on_shift_scan_number)
@@ -297,3 +301,35 @@ class MainWindow:
     def on_reflections_style_changed(self):
         new_style = self.reflections_editor.style
         self.image_view.reflections_style = new_style
+
+    def begin_select_indexing_points(self):
+        if hasattr(self, '_point_selector_dialog'):
+            self._point_selector_dialog.on_finished()
+
+        d = PointSelectorDialog(
+            self.image_view,
+            window_title='Select Points',
+            parent=self.ui,
+        )
+        d.show()
+        d.accepted.connect(self.select_indexing_points_accepted)
+
+        self._point_selector_dialog = d
+
+    def select_indexing_points_accepted(self):
+        # Get the points
+        d = self._point_selector_dialog
+
+        selected_file, _ = QFileDialog.getSaveFileName(
+            self.ui,
+            'Save Indexing Points',
+            self.working_dir,
+            'xy files (*.xy)',
+        )
+
+        if not selected_file:
+            # User canceled
+            return
+
+        points = np.asarray(d.points)
+        np.savetxt(selected_file, points, fmt='%8.3f')
