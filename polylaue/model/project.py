@@ -9,7 +9,8 @@ class Project(Serializable):
         self,
         name: str = 'Project',
         sections: list[Section] | None = None,
-        description: str = 'Description',
+        directory: str = '',
+        description: str = '',
         parent: Serializable | None = None,
     ):
         if sections is None:
@@ -17,6 +18,7 @@ class Project(Serializable):
 
         self.name = name
         self.sections = sections
+        self.directory = directory
         self.description = description
         self.parent = parent
 
@@ -27,6 +29,7 @@ class Project(Serializable):
     # Serialization code
     _attrs_to_serialize = [
         'name',
+        'directory',
         'description',
         'sections_serialized',
     ]
