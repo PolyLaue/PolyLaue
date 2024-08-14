@@ -33,6 +33,8 @@ class PolyLaueImageView(pg.ImageView):
         self.frame_tracker = frame_tracker
         self._reflections = None
         self.reflection_pens = []
+        self.lock_reflections_array = False
+
         # FIXME: load this from the settings
         self._reflections_style = ReflectionsStyle()
         self.reflection_artist = artist = pg.ScatterPlotItem(
@@ -123,7 +125,11 @@ class PolyLaueImageView(pg.ImageView):
 
     def clear_reflection_overlays(self):
         self.reflection_artist.clear()
-        self.reflections_array = None
+
+        if not self.lock_reflections_array:
+            # Only clear the array if we are not locked (which usually
+            # means we are searching for a matching prediction).
+            self.reflections_array = None
 
         # This fixes a bug where off-image overlays would stick around
         # after changing frames when they shouldn't be (but they would
@@ -137,14 +143,20 @@ class PolyLaueImageView(pg.ImageView):
             # Nothing to do...
             return
 
-        reflections = self.reflections.reflections_table(
-            *self.frame_tracker.scan_pos, self.frame_tracker.scan_num
-        )
-        if reflections is None:
-            # Nothing to do...
-            return
+        # Verify we aren't locking the reflections array (which usually
+        # means we are searching for a matching prediction).
+        if not self.lock_reflections_array:
+            reflections = self.reflections.reflections_table(
+                *self.frame_tracker.scan_pos, self.frame_tracker.scan_num
+            )
+            if reflections is None:
+                # Nothing to do...
+                return
 
-        self.reflections_array = reflections
+            self.reflections_array = reflections
+        else:
+            reflections = self.reflections_array
+
         crystal_ids = reflections[:, 9].astype(int)
         pens = self.reflection_pens[crystal_ids]
 

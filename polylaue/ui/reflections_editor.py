@@ -12,6 +12,9 @@ class ReflectionsEditor(QObject):
 
     reflections_changed = Signal()
 
+    """Emitted when the prediction matcher should be started"""
+    prediction_matcher_triggered = Signal()
+
     """Emitted when the reflections style was modified"""
     reflections_style_changed = Signal()
 
@@ -29,6 +32,10 @@ class ReflectionsEditor(QObject):
     def setup_connections(self):
         self.ui.open_external_reflections.clicked.connect(
             self.open_external_reflections
+        )
+
+        self.ui.prediction_matcher.clicked.connect(
+            self.prediction_matcher_triggered.emit
         )
 
         self.reflections_style_editor.style_edited.connect(
@@ -53,6 +60,7 @@ class ReflectionsEditor(QObject):
     def update_info(self):
         self.ui.file.setText(str(self.reflections.filepath))
         self.ui.number_of_crystals.setValue(self.reflections.num_crystals)
+        self.ui.prediction_matcher.setEnabled(True)
 
     @property
     def style(self) -> ReflectionsStyle:

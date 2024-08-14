@@ -7,29 +7,25 @@
     <x>0</x>
     <y>0</y>
     <width>358</width>
-    <height>193</height>
+    <height>230</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Reflections Editor</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="0" column="0" colspan="2">
-    <widget class="QPushButton" name="open_external_reflections">
-     <property name="focusPolicy">
-      <enum>Qt::NoFocus</enum>
+   <item row="5" column="0" colspan="2">
+    <spacer name="vertical_spacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
      </property>
-     <property name="text">
-      <string>Open External Reflections</string>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
      </property>
-    </widget>
-   </item>
-   <item row="2" column="0">
-    <widget class="QLabel" name="number_of_crystals_label">
-     <property name="text">
-      <string>Number of Crystals:</string>
-     </property>
-    </widget>
+    </spacer>
    </item>
    <item row="2" column="1">
     <widget class="QSpinBox" name="number_of_crystals">
@@ -44,19 +40,6 @@
      </property>
     </widget>
    </item>
-   <item row="4" column="0" colspan="2">
-    <spacer name="vertical_spacer">
-     <property name="orientation">
-      <enum>Qt::Vertical</enum>
-     </property>
-     <property name="sizeHint" stdset="0">
-      <size>
-       <width>20</width>
-       <height>40</height>
-      </size>
-     </property>
-    </spacer>
-   </item>
    <item row="1" column="1">
     <widget class="QLineEdit" name="file">
      <property name="text">
@@ -67,7 +50,14 @@
      </property>
     </widget>
    </item>
-   <item row="3" column="0" colspan="2">
+   <item row="2" column="0">
+    <widget class="QLabel" name="number_of_crystals_label">
+     <property name="text">
+      <string>Number of Crystals:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="0" colspan="2">
     <widget class="QGroupBox" name="groupBox">
      <property name="title">
       <string>Style</string>
@@ -79,10 +69,33 @@
      </layout>
     </widget>
    </item>
+   <item row="0" column="0" colspan="2">
+    <widget class="QPushButton" name="open_external_reflections">
+     <property name="focusPolicy">
+      <enum>Qt::NoFocus</enum>
+     </property>
+     <property name="text">
+      <string>Open External Reflections</string>
+     </property>
+    </widget>
+   </item>
    <item row="1" column="0">
     <widget class="QLabel" name="file_label">
      <property name="text">
       <string>File:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="0" colspan="2">
+    <widget class="QPushButton" name="prediction_matcher">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="focusPolicy">
+      <enum>Qt::NoFocus</enum>
+     </property>
+     <property name="text">
+      <string>Prediction Matcher</string>
      </property>
     </widget>
    </item>

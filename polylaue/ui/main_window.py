@@ -14,6 +14,7 @@ from polylaue.ui.frame_tracker import FrameTracker
 from polylaue.ui.image_view import PolyLaueImageView
 from polylaue.ui.reflections_editor import ReflectionsEditor
 from polylaue.ui.point_selector import PointSelectorDialog
+from polylaue.ui.prediction_matcher import PredictionMatcherDialog
 from polylaue.ui.project_navigator.dialog import ProjectNavigatorDialog
 from polylaue.ui.series_editor import SeriesEditorDialog
 from polylaue.ui.utils.ui_loader import UiLoader
@@ -71,6 +72,9 @@ class MainWindow:
 
         self.reflections_editor.reflections_changed.connect(
             self.on_reflections_changed
+        )
+        self.reflections_editor.prediction_matcher_triggered.connect(
+            self.begin_prediction_matcher
         )
         self.reflections_editor.reflections_style_changed.connect(
             self.on_reflections_style_changed
@@ -297,6 +301,30 @@ class MainWindow:
     def on_reflections_changed(self):
         new_reflections = self.reflections_editor.reflections
         self.image_view.reflections = new_reflections
+
+    def begin_prediction_matcher(self):
+        selected_file, selected_filter = QFileDialog.getOpenFileName(
+            self.ui,
+            'Open Reflections Table for Matching',
+            None,
+            'CSV files (*.csv)',
+        )
+
+        if not selected_file:
+            # We cannot continue
+            return
+
+        array = np.loadtxt(selected_file, delimiter=',', skiprows=1)
+
+        if hasattr(self, '_prediction_matcher_dialog'):
+            self._prediction_matcher_dialog.disconnect()
+            self._prediction_matcher_dialog.hide()
+            self._prediction_matcher_dialog = None
+
+        d = PredictionMatcherDialog(self.image_view, array, self.ui)
+        d.run()
+
+        self._prediction_matcher_dialog = d
 
     def on_reflections_style_changed(self):
         new_style = self.reflections_editor.style

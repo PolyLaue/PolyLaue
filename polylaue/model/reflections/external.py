@@ -32,6 +32,19 @@ class ExternalReflections(BaseReflections):
         with h5py.File(self.filepath, 'r') as f:
             return len(f['/crystals'])
 
+    def write_reflections_table(self, table: np.ndarray, row: int, column: int,
+                                scan_number: int):
+        path = self._reflections_table_path(row, column, scan_number)
+        with h5py.File(self.filepath, 'a') as f:
+            if path in f:
+                del f[path]
+            f[path] = table
+
+    def path_exists(self, row: int, column: int, scan_number: int) -> bool:
+        path = self._reflections_table_path(row, column, scan_number)
+        with h5py.File(self.filepath, 'r') as f:
+            return path in f
+
     def _reflections_table_path(
         self, row: int, column: int, scan_number: int
     ) -> str:
