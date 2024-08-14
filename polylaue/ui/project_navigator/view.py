@@ -249,6 +249,14 @@ class ProjectNavigatorView(QTableView):
         self.model.insertRows(row, 1)
         if self.is_submodel_series:
             # Bring up the series editor dialog
+            series_list = self.submodel.entry_list
+            if len(series_list) > 1:
+                # Set the directory to be the parent of a neighboring series,
+                # since the user will probably need to navigate there anyways.
+                neighbor_row = row - 1 if row > 0 else len(series_list) - 1
+                neighbor_series = series_list[neighbor_row]
+                series_list[row].dirpath = neighbor_series.dirpath.parent
+
             self.edit_series(row)
 
     def remove_selected_rows(self):
