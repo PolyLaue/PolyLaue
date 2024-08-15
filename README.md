@@ -1,5 +1,11 @@
 # PolyLaue
 
+![image](https://github.com/user-attachments/assets/ad01aa2a-69ee-466e-acba-0079acf86e2b)
+
+PolyLaue is a tool for visualizing and analyzing scans of Laue x-ray diffraction patterns.
+It is developed in collaboration with the High-Pressure Collaborative Access Team (HPCAT)
+located in the Advanced Photon Source (APS) of Argonne National Laboratory.
+
 ## Conda Development Environment
 
 First, create and activate a new conda environment for PolyLaue:
