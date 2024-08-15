@@ -1,3 +1,5 @@
+# Copyright © 2024, UChicago Argonne, LLC. See "LICENSE" for full details.
+
 from .base import BaseSubmodel
 from .projects import ProjectsSubmodel
 from .scans import ScansSubmodel

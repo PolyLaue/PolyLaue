@@ -1,3 +1,5 @@
+# Copyright © 2024, UChicago Argonne, LLC. See "LICENSE" for full details.
+
 from PySide6.QtCore import QEvent, QPointF, Qt, Signal
 
 from polylaue.model.reflections.base import BaseReflections

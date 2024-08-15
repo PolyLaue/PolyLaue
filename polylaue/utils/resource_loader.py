@@ -1,3 +1,5 @@
+# Copyright © 2024, UChicago Argonne, LLC. See "LICENSE" for full details.
+
 from contextlib import contextmanager
 from importlib.resources import (  # noqa
     as_file,

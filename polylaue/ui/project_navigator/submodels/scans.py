@@ -1,3 +1,5 @@
+# Copyright © 2024, UChicago Argonne, LLC. See "LICENSE" for full details.
+
 from polylaue.model.scan import Scan
 from polylaue.model.series import Series
 from polylaue.ui.project_navigator.submodels.base import BaseSubmodel

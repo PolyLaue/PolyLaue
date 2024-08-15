@@ -1,3 +1,5 @@
+# Copyright © 2024, UChicago Argonne, LLC. See "LICENSE" for full details.
+
 from contextlib import contextmanager
 
 from PySide6.QtCore import QSignalBlocker

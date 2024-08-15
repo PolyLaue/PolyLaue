@@ -1,3 +1,6 @@
+# Copyright © 2024, UChicago Argonne, LLC. See "LICENSE" for full details.
+
+
 class Serializable:
     """The Serializable class is a class that can be serialized to a dict
 

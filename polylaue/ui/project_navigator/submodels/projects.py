@@ -1,3 +1,5 @@
+# Copyright © 2024, UChicago Argonne, LLC. See "LICENSE" for full details.
+
 from polylaue.model.project_manager import ProjectManager
 from polylaue.model.project import Project
 from polylaue.ui.project_navigator.submodels.base import BaseSubmodel

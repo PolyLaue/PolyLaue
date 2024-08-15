@@ -1,3 +1,5 @@
+# Copyright © 2024, UChicago Argonne, LLC. See "LICENSE" for full details.
+
 # This is available from Python 3.8
 from importlib.metadata import version, PackageNotFoundError
 

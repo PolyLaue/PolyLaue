@@ -1,3 +1,6 @@
+# Copyright © 2024, UChicago Argonne, LLC. See "LICENSE" for full details.
+
+
 class SingletonMetaclass(type):
     """A metaclass used to make a class into a singleton"""
 

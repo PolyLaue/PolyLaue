@@ -1,3 +1,5 @@
+# Copyright © 2024, UChicago Argonne, LLC. See "LICENSE" for full details.
+
 from PySide6.QtCore import QObject, Signal
 
 from polylaue.ui.reflections_style import ReflectionsStyle

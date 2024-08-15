@@ -1,3 +1,5 @@
+# Copyright © 2024, UChicago Argonne, LLC. See "LICENSE" for full details.
+
 from PySide6.QtCore import QBuffer, QByteArray, QFile, QObject
 from PySide6.QtWidgets import QWidget
 from PySide6.QtUiTools import QUiLoader
