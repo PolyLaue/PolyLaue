@@ -25,3 +25,7 @@ class SeriesSubmodel(BaseSubmodel):
             'description': 'Description',
             'scan_range_formatted': 'Scan Range',
         }
+
+    @property
+    def uneditable_column_keys(self) -> list[str]:
+        return ['scan_range_formatted']
