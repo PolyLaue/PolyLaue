@@ -4,7 +4,7 @@ import logging
 from pathlib import Path
 
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QFileDialog, QMessageBox, QWidget
+from PySide6.QtWidgets import QFileDialog, QInputDialog, QMessageBox, QWidget
 
 import numpy as np
 
@@ -319,12 +319,39 @@ class MainWindow:
 
         array = np.loadtxt(selected_file, delimiter=',', skiprows=1)
 
+        # Validate that there are 9 columns
+        if array.shape[1] != 9:
+            msg = (
+                'Expected 9 columns in CSV file, but only found '
+                f'{array.shape[1]}. Columns are as follows: '
+                'x (predicted),y (predicted),h,k,l,Energy (keV),'
+                'First Order,Last Order,d (Å)'
+            )
+            QMessageBox.critical(self.ui, 'Invalid CSV File', msg)
+            return
+
+        # Now figure out what crystal ID should be used.
+        num_crystals = self.image_view.reflections.num_crystals
+        crystal_id, accepted = QInputDialog.getInt(
+            self.ui,
+            'Select Crystal ID',
+            'Select the Crystal ID associated with these reflections',
+            value=0,
+            minValue=0,
+            maxValue=num_crystals - 1,
+        )
+        if not accepted:
+            # User canceled
+            return
+
         if hasattr(self, '_prediction_matcher_dialog'):
             self._prediction_matcher_dialog.disconnect()
             self._prediction_matcher_dialog.hide()
             self._prediction_matcher_dialog = None
 
-        d = PredictionMatcherDialog(self.image_view, array, self.ui)
+        d = PredictionMatcherDialog(
+            self.image_view, array, crystal_id, self.ui
+        )
         d.run()
 
         self._prediction_matcher_dialog = d

@@ -12,13 +12,17 @@ class PredictionMatcherDialog(QDialog):
         self,
         image_view: pg.ImageView,
         reflections_array: np.ndarray,
+        crystal_id: int,
         parent=None,
     ):
         super().__init__(parent=parent)
         self.image_view = image_view
         self.reflections_array = reflections_array
+        self.crystal_id = crystal_id
 
-        self.setWindowTitle('Find Matching Reflections')
+        self.setWindowTitle(
+            f'Find Matching Reflections for Crystal ID "{crystal_id}"'
+        )
 
         layout = QVBoxLayout(self)
         self.setLayout(layout)
@@ -46,6 +50,7 @@ class PredictionMatcherDialog(QDialog):
 
     def accept(self):
         # Save the reflections pattern the external predictions file
+        crystal_id = self.crystal_id
         external_reflections = self.image_view.reflections
 
         # Get the current scan number and scan position
@@ -54,17 +59,37 @@ class PredictionMatcherDialog(QDialog):
         row = frame_tracker.scan_pos_x
         col = frame_tracker.scan_pos_y
 
-        if external_reflections.path_exists(row, col, scan_num):
-            # If it already exists, warn the user
-            # FIXME
-            pass
-
-        # Write it to the HDF5 file
-        external_reflections.write_reflections_table(
-            self.reflections_array, row, col, scan_num
+        # Add the crystal ID to our array
+        reflections_array = np.insert(
+            self.reflections_array, 9, crystal_id, axis=1
         )
 
-        print('Pattern saved to:', external_reflections.filepath)
+        # Get the reflections table
+        current_table = external_reflections.reflections_table(
+            row, col, scan_num
+        )
+        if current_table is not None:
+            # Remove all rows that match our crystal id
+            array = np.delete(
+                current_table,
+                np.where(current_table[:, 9].astype(int) == crystal_id)[0],
+                axis=0,
+            )
+            # Append our array to the end
+            array = np.vstack((array, reflections_array))
+            # Sort by crystal ID
+            array = array[array[:, 9].argsort()]
+        else:
+            # The current table doesn't exist, and ours is the only one
+            array = reflections_array
+
+        # Write it to the HDF5 file
+        external_reflections.write_reflections_table(array, row, col, scan_num)
+
+        print(
+            f'Reflections for Crystal ID "{crystal_id}" written to:',
+            external_reflections.filepath,
+        )
 
         super().accept()
 
@@ -73,11 +98,12 @@ class PredictionMatcherDialog(QDialog):
 
     def run(self):
         # Set the reflections array to be the one we provided and lock it
-        self.image_view.reflections_array = self.reflections_array
-        self.image_view.lock_reflections_array = True
+        self.image_view.active_search_crystal_id = self.crystal_id
+        self.image_view.active_search_array = self.reflections_array
         self.image_view.update_reflection_overlays()
         self.show()
 
     def disconnect(self):
-        self.image_view.lock_reflections_array = False
+        self.image_view.active_search_crystal_id = None
+        self.image_view.active_search_array = None
         self.image_view.update_reflection_overlays()

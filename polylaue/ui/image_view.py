@@ -35,7 +35,10 @@ class PolyLaueImageView(pg.ImageView):
         self.frame_tracker = frame_tracker
         self._reflections = None
         self.reflection_pens = []
-        self.lock_reflections_array = False
+
+        # For prediction match searching
+        self.active_search_crystal_id = None
+        self.active_search_array = None
 
         # FIXME: load this from the settings
         self._reflections_style = ReflectionsStyle()
@@ -127,11 +130,7 @@ class PolyLaueImageView(pg.ImageView):
 
     def clear_reflection_overlays(self):
         self.reflection_artist.clear()
-
-        if not self.lock_reflections_array:
-            # Only clear the array if we are not locked (which usually
-            # means we are searching for a matching prediction).
-            self.reflections_array = None
+        self.reflections_array = None
 
         # This fixes a bug where off-image overlays would stick around
         # after changing frames when they shouldn't be (but they would
@@ -145,19 +144,38 @@ class PolyLaueImageView(pg.ImageView):
             # Nothing to do...
             return
 
-        # Verify we aren't locking the reflections array (which usually
-        # means we are searching for a matching prediction).
-        if not self.lock_reflections_array:
-            reflections = self.reflections.reflections_table(
-                *self.frame_tracker.scan_pos, self.frame_tracker.scan_num
-            )
-            if reflections is None:
-                # Nothing to do...
-                return
+        reflections = self.reflections.reflections_table(
+            *self.frame_tracker.scan_pos, self.frame_tracker.scan_num
+        )
 
-            self.reflections_array = reflections
-        else:
-            reflections = self.reflections_array
+        if self.active_search_crystal_id is not None:
+            # If we are performing an active reflections search,
+            # remove any rows that match the search ID, and add
+            # our search array instead.
+            crystal_id = self.active_search_crystal_id
+            search_array = self.active_search_array
+
+            # Add the crystal ID to our array
+            search_array = np.insert(search_array, 9, crystal_id, axis=1)
+            if reflections is not None:
+                # Remove all rows that match our search crystal id
+                reflections = np.delete(
+                    reflections,
+                    np.where(reflections[:, 9].astype(int) == crystal_id)[0],
+                    axis=0,
+                )
+                # Append our array to the end
+                reflections = np.vstack((reflections, search_array))
+                # Sort by crystal ID
+                reflections = reflections[reflections[:, 9].argsort()]
+            else:
+                reflections = search_array
+
+        if reflections is None:
+            # Nothing to do...
+            return
+
+        self.reflections_array = reflections
 
         crystal_ids = reflections[:, 9].astype(int)
         pens = self.reflection_pens[crystal_ids]
