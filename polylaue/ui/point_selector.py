@@ -1,7 +1,13 @@
 # Copyright © 2024, UChicago Argonne, LLC. See "LICENSE" for full details.
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QDialog, QDialogButtonBox, QLabel, QVBoxLayout
+from PySide6.QtWidgets import (
+    QComboBox,
+    QDialog,
+    QDialogButtonBox,
+    QLabel,
+    QVBoxLayout,
+)
 
 import numpy as np
 import pyqtgraph as pg
@@ -105,12 +111,34 @@ class PointSelectorDialog(QDialog):
         layout.addWidget(label)
         layout.setAlignment(label, Qt.AlignHCenter)
 
+        combo = QComboBox()
+        combo.addItems(['Indexing', 'Refinement', 'Arbitrary File'])
+        combo.setToolTip(
+            'The type of picks indicates where they should be saved.\n\n'
+            'If "Indexing" or "Refinement" is selected, the file is '
+            'saved at the root of the Project directory as '
+            '"indexing.xy" or "refinement.xy", respectively.\n\n'
+            'If "Arbitrary File" is selected, a file dialog will '
+            'appear, allowing the user to specify a file.'
+        )
+        layout.addWidget(combo)
+        self.save_file_combo = combo
+
         # Add a button box for accept/cancel
         buttons = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
         self.button_box = QDialogButtonBox(buttons, self)
         layout.addWidget(self.button_box)
 
         self.setup_connections()
+
+    @property
+    def filename(self) -> str | None:
+        filenames = {
+            'Indexing': 'indexing.xy',
+            'Refinement': 'refinement.xy',
+            'Arbitrary File': None,
+        }
+        return filenames[self.save_file_combo.currentText()]
 
     def setup_connections(self):
         self.button_box.accepted.connect(self.accept)

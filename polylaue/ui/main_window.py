@@ -1,9 +1,10 @@
 # Copyright © 2024, UChicago Argonne, LLC. See "LICENSE" for full details.
 
 import logging
+from pathlib import Path
 
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QFileDialog, QWidget
+from PySide6.QtWidgets import QFileDialog, QMessageBox, QWidget
 
 import numpy as np
 
@@ -333,6 +334,11 @@ class MainWindow:
         self.image_view.reflections_style = new_style
 
     def begin_select_indexing_points(self):
+        if self.series is None:
+            msg = 'A series must be loaded to select indexing points'
+            QMessageBox.warning(self.ui, 'No Series Loaded', msg)
+            return
+
         if hasattr(self, '_point_selector_dialog'):
             self._point_selector_dialog.on_finished()
 
@@ -349,17 +355,54 @@ class MainWindow:
     def select_indexing_points_accepted(self):
         # Get the points
         d = self._point_selector_dialog
-
-        selected_file, _ = QFileDialog.getSaveFileName(
-            self.ui,
-            'Save Indexing Points',
-            self.working_dir,
-            'xy files (*.xy)',
-        )
-
-        if not selected_file:
-            # User canceled
+        if not d.points:
+            # No points, just return
             return
 
+        project = self.series.parent.parent
+        project_dir = project.directory
+
+        filename = d.filename
+        select_file_manually = (
+            filename is None
+            or not project_dir
+            or not Path(project_dir).exists()
+        )
+        if not select_file_manually:
+            path = Path(project_dir) / filename
+            if path.exists():
+                msg = f'"{path}"\nAlready exists. Overwrite?'
+                if (
+                    QMessageBox.question(self.ui, 'File exists', msg)
+                    == QMessageBox.No
+                ):
+                    # Force the file to be selected manually.
+                    select_file_manually = True
+
+        if select_file_manually:
+            if not project_dir or not Path(project_dir).exists():
+                msg = (
+                    f'Project directory for "{project.name}" does not '
+                    'exist. It may be set in the Project Navigator.\n\n'
+                    'You must specify the save file path manually.'
+                )
+                QMessageBox.warning(self.ui, 'No Project Directory', msg)
+
+            # Get the user to specify
+            path, _ = QFileDialog.getSaveFileName(
+                self.ui,
+                'Save Indexing Points',
+                str(project_dir),
+                'xy files (*.xy)',
+            )
+
+            if not path:
+                # User canceled
+                return
+
         points = np.asarray(d.points)
-        np.savetxt(selected_file, points, fmt='%8.3f')
+        np.savetxt(path, points, fmt='%8.3f')
+        if not select_file_manually:
+            # Tell the user where it was saved
+            msg = f'File saved to:\n{path}'
+            QMessageBox.information(self.ui, 'File Saved', msg)
