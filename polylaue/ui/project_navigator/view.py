@@ -10,7 +10,11 @@ from PySide6.QtCore import (
 )
 from PySide6.QtGui import QCursor
 from PySide6.QtWidgets import (
-    QFileDialog, QMenu, QMessageBox, QTableView, QWidget
+    QFileDialog,
+    QMenu,
+    QMessageBox,
+    QTableView,
+    QWidget,
 )
 
 from polylaue.model.scan import Scan
@@ -310,8 +314,9 @@ class ProjectNavigatorView(QTableView):
 
     def edit_directory_path(self, index: QModelIndex):
         current_dir = index.data()
-        path = QFileDialog.getExistingDirectory(self, 'Select Directory',
-                                                current_dir)
+        path = QFileDialog.getExistingDirectory(
+            self, 'Select Directory', current_dir
+        )
         if not path:
             return
 
