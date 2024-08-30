@@ -8,7 +8,7 @@ from PySide6.QtWidgets import QFileDialog, QInputDialog, QMessageBox, QWidget
 
 import numpy as np
 
-from polylaue.model.io import identify_loader_function
+from polylaue.model.io import identify_loader_function, Bounds
 from polylaue.model.scan import Scan
 from polylaue.model.series import Series
 from polylaue.model.state import load_project_manager, save_project_manager
@@ -298,9 +298,10 @@ class MainWindow:
         series: Series,
         scan_number: int,
         scan_position: np.ndarray,
+        bounds: Bounds | None = None,
     ):
         filepath = series.filepath(*scan_position, scan_number)
-        img = self.image_loader_func(filepath)
+        img = self.image_loader_func(filepath, bounds)
 
         return filepath, img
 

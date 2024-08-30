@@ -23,10 +23,37 @@ import pyqtgraph as pg
 
 import numpy as np
 
+from polylaue.model.io import Bounds
 from polylaue.model.series import Series
 from polylaue.model.roi_manager import ROIManager
 from polylaue.ui.region_mapping.grid_item import CustomGridItem
 from polylaue.utils.coordinates import clamp, xy_to_ij, ij_to_xy
+
+
+class Debouncer:
+    def __init__(self, callable: Callable, msec: int):
+        self.msec = msec
+        self.callable = callable
+        self.args = []
+        self.kwargs = {}
+        self.timer = QTimer()
+        self.timer.setSingleShot(True)
+        self.timer.timeout.connect(self._invoke)
+
+    def cancel(self):
+        self.timer.stop()
+        self.args = []
+        self.kwargs = {}
+
+    def __call__(self, *args, **kwargs):
+        self.args = args
+        self.kwargs = kwargs
+        self.timer.start(self.msec)
+
+    def _invoke(self):
+        self.callable(*self.args, **self.kwargs)
+        self.args = []
+        self.kwargs = {}
 
 
 class RegionMappingDialog(QDialog):
@@ -37,6 +64,10 @@ class RegionMappingDialog(QDialog):
         parent: Optional[QWidget] = None,
     ):
         super().__init__(parent)
+
+        self.auto_refresh = True
+        self.visible = False
+        self.debounced_refresh = Debouncer(self.on_refresh_clicked, 250)
 
         self.setLayout(QVBoxLayout())
 
@@ -71,7 +102,10 @@ class RegionMappingDialog(QDialog):
         self.grid_item = grid_item
 
         self.open_image_fn: Optional[
-            Callable[[Series, int, np.ndarray], tuple[Any, np.ndarray]]
+            Callable[
+                [Series, int, np.ndarray, Optional[Bounds]],
+                tuple[Any, np.ndarray],
+            ]
         ] = None
         self.roi_manager = roi_manager
         self.series = None
@@ -81,11 +115,20 @@ class RegionMappingDialog(QDialog):
 
         self.linked_histogram_item: Optional[pg.HistogramLUTItem] = None
 
+        self.accepted.connect(self.on_close)
+        self.rejected.connect(self.on_close)
+
         self._update_window_title()
 
     def showEvent(self, event: QShowEvent) -> None:
-        QTimer.singleShot(100, self, self.on_refresh_clicked)
+        self.visible = True
+        self.debounced_refresh()
+
         return super().showEvent(event)
+
+    def on_close(self):
+        self.visible = False
+        self.debounced_refresh.cancel()
 
     def set_series(self, series: Series):
         self.series = series
@@ -118,6 +161,9 @@ class RegionMappingDialog(QDialog):
         self.stale = stale
         self.refresh_button.setEnabled(self.stale)
         self._update_window_title()
+
+        if self.visible and self.auto_refresh:
+            self.debounced_refresh()
 
     def on_levels_changed(self, *args):
         if self.linked_histogram_item:
@@ -175,20 +221,31 @@ class RegionMappingDialog(QDialog):
 
         scan_position = np.array([0, 0])
         # open first image to figure out width and height
-        _, img = self.open_image_fn(series, scan_number, scan_position)
+        _, img = self.open_image_fn(series, scan_number, scan_position, None)
 
         w, h = img.shape
 
         pos_xy = roi['position']
         size_xy = roi['size']
 
-        pos_ij = xy_to_ij(pos_xy, 'row-major', int)
-        pos_ij = (clamp(pos_ij[0], 0, w - 1), clamp(pos_ij[1], 0, h - 1))
+        pos_ij_unclamped = xy_to_ij(pos_xy, 'row-major', int)
+        pos_ij = (
+            clamp(pos_ij_unclamped[0], 0, w - 1),
+            clamp(pos_ij_unclamped[1], 0, h - 1),
+        )
 
         size_ij = xy_to_ij(size_xy, 'row-major', int)
         size_ij = (
-            clamp(size_ij[0], 0, w - pos_ij[0]),
-            clamp(size_ij[1], 0, h - pos_ij[1]),
+            clamp(
+                size_ij[0] - max(0, pos_ij[0] - pos_ij_unclamped[0]),
+                0,
+                w - pos_ij[0],
+            ),
+            clamp(
+                size_ij[1] - max(0, pos_ij[1] - pos_ij_unclamped[1]),
+                0,
+                h - pos_ij[1],
+            ),
         )
 
         n_x, n_y = series.scan_shape
@@ -206,7 +263,6 @@ class RegionMappingDialog(QDialog):
                 scan_position[0] = i
                 scan_position[1] = j
 
-                _, img = self.open_image_fn(series, scan_number, scan_position)
                 i_start = i * size_ij[0]
                 i_end = i_start + size_ij[0]
                 j_start = j * size_ij[1]
@@ -217,9 +273,12 @@ class RegionMappingDialog(QDialog):
                 frame_j_start = pos_ij[1]
                 frame_j_end = frame_j_start + size_ij[1]
 
-                map_img[i_start:i_end, j_start:j_end] = img[
-                    frame_i_start:frame_i_end, frame_j_start:frame_j_end
-                ]
+                _, map_img[i_start:i_end, j_start:j_end] = self.open_image_fn(
+                    series,
+                    scan_number,
+                    scan_position,
+                    (frame_i_start, frame_i_end, frame_j_start, frame_j_end),
+                )
 
         self.progress_bar.setValue(n_x)
 
