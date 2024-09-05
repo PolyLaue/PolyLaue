@@ -27,7 +27,7 @@ from polylaue.model.io import Bounds
 from polylaue.model.series import Series
 from polylaue.model.roi_manager import ROIManager
 from polylaue.ui.region_mapping.grid_item import CustomGridItem
-from polylaue.utils.coordinates import clamp, xy_to_ij, ij_to_xy
+from polylaue.utils.coordinates import world_to_display, ij_to_xy
 
 
 class Debouncer:
@@ -115,8 +115,7 @@ class RegionMappingDialog(QDialog):
 
         self.linked_histogram_item: Optional[pg.HistogramLUTItem] = None
 
-        self.accepted.connect(self.on_close)
-        self.rejected.connect(self.on_close)
+        self.finished.connect(self.on_close)
 
         self._update_window_title()
 
@@ -126,7 +125,7 @@ class RegionMappingDialog(QDialog):
 
         return super().showEvent(event)
 
-    def on_close(self):
+    def on_close(self, *_args):
         self.visible = False
         self.debounced_refresh.cancel()
 
@@ -195,7 +194,7 @@ class RegionMappingDialog(QDialog):
             self.roi_id, self.series, self.scan_number
         )
         roi_size_xy = ij_to_xy(roi_size_ij, 'row-major')
-        map_size_xy = xy_to_ij(img.shape, 'row-major')
+        map_size_xy = ij_to_xy(img.shape, 'row-major')
         n_x, n_y = self.series.scan_shape
         x_ticks = tuple(i * roi_size_xy[0] for i in range(n_x + 1))
         y_ticks = tuple(i * roi_size_xy[1] for i in range(n_y + 1))
@@ -228,25 +227,11 @@ class RegionMappingDialog(QDialog):
         pos_xy = roi['position']
         size_xy = roi['size']
 
-        pos_ij_unclamped = xy_to_ij(pos_xy, 'row-major', int)
-        pos_ij = (
-            clamp(pos_ij_unclamped[0], 0, w - 1),
-            clamp(pos_ij_unclamped[1], 0, h - 1),
-        )
+        pos_ij_unclamped = world_to_display(pos_xy)
+        pos_ij = np.clip(pos_ij_unclamped, (0, 0), (w - 1, h - 1))
 
-        size_ij = xy_to_ij(size_xy, 'row-major', int)
-        size_ij = (
-            clamp(
-                size_ij[0] - max(0, pos_ij[0] - pos_ij_unclamped[0]),
-                0,
-                w - pos_ij[0],
-            ),
-            clamp(
-                size_ij[1] - max(0, pos_ij[1] - pos_ij_unclamped[1]),
-                0,
-                h - pos_ij[1],
-            ),
-        )
+        size_ij = world_to_display(size_xy)
+        size_ij = np.clip(size_ij, (0, 0), (w - pos_ij[0], h - pos_ij[1]))
 
         n_x, n_y = series.scan_shape
 

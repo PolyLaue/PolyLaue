@@ -11,6 +11,7 @@ from PySide6.QtCore import (
 )
 
 from polylaue.model.roi_manager import ROIManager
+from polylaue.typing import WorldPoint
 
 
 ID_COL = 0
@@ -18,6 +19,14 @@ POS_X_COL = 1
 POS_Y_COL = 2
 SIZE_X_COL = 3
 SIZE_Y_COL = 4
+
+COL_HEADERS = {
+    ID_COL: 'ID',
+    POS_X_COL: 'Pox X',
+    POS_Y_COL: 'Pos Y',
+    SIZE_X_COL: 'Size X',
+    SIZE_Y_COL: 'Size Y',
+}
 
 
 class RegionsNavigatorModel(QAbstractTableModel):
@@ -35,18 +44,7 @@ class RegionsNavigatorModel(QAbstractTableModel):
         role: int = Qt.DisplayRole,
     ) -> Any:
         if role == Qt.DisplayRole and orientation == Qt.Orientation.Horizontal:
-            col = section
-
-            if col == ID_COL:
-                return 'ID'
-            elif col == POS_X_COL:
-                return 'Pos X'
-            elif col == POS_Y_COL:
-                return 'Pos Y'
-            elif col == SIZE_X_COL:
-                return 'Size X'
-            elif col == SIZE_Y_COL:
-                return 'Size Y'
+            return COL_HEADERS.get(section, "")
         else:
             return super().headerData(section, orientation, role)
 
@@ -60,13 +58,13 @@ class RegionsNavigatorModel(QAbstractTableModel):
             if col == ID_COL:
                 return roi['id']
             elif col == POS_X_COL:
-                return roi['position'][0]
+                return float(roi['position'][0])
             elif col == POS_Y_COL:
-                return roi['position'][1]
+                return float(roi['position'][1])
             elif col == SIZE_X_COL:
-                return roi['size'][0]
+                return float(roi['size'][0])
             elif col == SIZE_Y_COL:
-                return roi['size'][1]
+                return float(roi['size'][1])
 
     def setData(self, index: QModelIndex, value: Any, role: int = Qt.EditRole):
         if role == Qt.EditRole:
@@ -134,3 +132,24 @@ class RegionsNavigatorModel(QAbstractTableModel):
                 | Qt.ItemFlag.ItemNeverHasChildren
                 | Qt.ItemFlag.ItemIsEditable
             )
+
+    def add_roi(self, position: WorldPoint, size: WorldPoint) -> str:
+        row_count = self.rowCount()
+        self.beginInsertRows(QModelIndex(), row_count, row_count)
+        id = self.roi_manager.add_roi(position, size)
+        self.endInsertRows()
+
+        return id
+
+    def remove_roi(self, id: str):
+        row = self.roi_manager.id_to_index(id)
+        self.beginRemoveRows(QModelIndex(), row, row)
+        self.roi_manager.remove_roi(id)
+        self.endRemoveRows()
+
+    def refresh_roi(self, id: str, position: WorldPoint, size: WorldPoint):
+        row = self.roi_manager.id_to_index(id)
+        self.roi_manager.update_roi(id, position, size)
+        top_left = self.createIndex(row, 1)
+        bottom_right = self.createIndex(row, 4)
+        self.dataChanged.emit(top_left, bottom_right, Qt.EditRole)

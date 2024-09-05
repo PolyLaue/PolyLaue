@@ -1,39 +1,51 @@
 # Copyright © 2024, UChicago Argonne, LLC. See "LICENSE" for full details.
 
-from typing import Literal, Callable, TypeVar
+from typing import Literal, Callable
+import numpy as np
+
+from functools import partial
+
+from polylaue.typing import Array2, T, S, WorldPoint, DisplayPoint
 
 RowMajor = 'row-major'
 ColMajor = 'col-major'
 AxisOrder = Literal['row-major', 'col-major']
 
-T = TypeVar('T', int, float)
-S = TypeVar('S', int, float)
-
-Transform = Callable[[T], S]
+Transform = Callable[[Array2[T]], Array2[S]]
 
 
-def clamp(value: T, low: T, high: T) -> T:
-    return min(max(value, low), high)
-
-
-def identity(val: T) -> T:
+def identity(val: Array2[T]) -> Array2[T]:
     return val
 
 
 def xy_to_ij(
-    xy: tuple[T, T],
+    xy: Array2[T],
     axisOrder: AxisOrder = RowMajor,
     transform: Transform[T, S] = identity,
-) -> tuple[S, S]:
+) -> Array2[S]:
+    t_xy = transform(xy)
+
     if axisOrder == RowMajor:
-        return transform(xy[1]), transform(xy[0])
+        return np.array((t_xy[1], t_xy[0]))
     else:
-        return transform(xy[0]), transform(xy[0])
+        return t_xy
 
 
 def ij_to_xy(
-    ij: tuple[T, T],
+    ij: Array2[T],
     axisOrder: AxisOrder = RowMajor,
     transform: Transform[T, S] = identity,
-) -> tuple[S, S]:
+) -> Array2[S]:
     return xy_to_ij(ij, axisOrder, transform)
+
+
+TO_INT32 = partial(lambda d, a: np.astype(a, d), np.int32)
+TO_FLOAT32 = partial(lambda d, a: np.astype(a, d), np.float32)
+
+
+def world_to_display(p: WorldPoint) -> DisplayPoint:
+    return xy_to_ij(p, 'row-major', TO_INT32)
+
+
+def display_to_world(p: DisplayPoint) -> WorldPoint:
+    return ij_to_xy(p, 'row-major', TO_FLOAT32)

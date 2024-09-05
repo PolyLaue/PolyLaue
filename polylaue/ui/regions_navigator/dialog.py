@@ -30,7 +30,10 @@ from PySide6.QtGui import (
 
 import pyqtgraph as pg
 
+import numpy as np
+
 from polylaue.model.roi_manager import ROIManager
+from polylaue.typing import WorldPoint
 from polylaue.ui.regions_navigator.model import RegionsNavigatorModel
 from polylaue.ui.regions_navigator.view import RegionsNavigatorView
 
@@ -74,14 +77,13 @@ class RegionItemsManager(QObject):
 
     def enable_interactive_add(self):
         self.image_view.getView().installEventFilter(self)
-        for id, roi_item in self.roi_items.items():
+        for roi_item in self.roi_items.values():
             roi_item.translatable = False
             roi_item.resizable = False
 
     def disable_interactive_add(self):
         self.image_view.getView().removeEventFilter(self)
-        for id, roi_item in self.roi_items.items():
-            pass
+        for roi_item in self.roi_items.values():
             roi_item.translatable = True
             roi_item.resizable = True
 
@@ -101,14 +103,12 @@ class RegionItemsManager(QObject):
 
         pos = self.image_view.getView().mapSceneToView(event.scenePos())
 
-        initial_size = (1, 1)
+        position: WorldPoint = np.array((pos.x(), pos.y()), dtype=np.float32)
+        np.round(position, out=position)
 
-        position = (round(pos.x()), round(pos.y()))
+        initial_size: WorldPoint = np.array((1, 1), dtype=np.float32)
 
-        row_count = self.roi_model.rowCount()
-        self.roi_model.beginInsertRows(QModelIndex(), row_count, row_count)
-        id = self.roi_manager.add_roi(position, initial_size)
-        self.roi_model.endInsertRows()
+        id = self.roi_model.add_roi(position, initial_size)
 
         self.current_roi_id = id
 
@@ -160,32 +160,32 @@ class RegionItemsManager(QObject):
         return False
 
     def on_roi_update(self, id: str, roi_item: pg.ROI):
-        pos = (round(roi_item.pos()[0]), round(roi_item.pos()[1]))
-        size = (round(roi_item.size()[0]), round(roi_item.size()[1]))
+        pos: WorldPoint = np.empty(2, dtype=np.float32)
+        np.round(roi_item.pos(), out=pos)
+
+        size: WorldPoint = np.empty(2, dtype=np.float32)
+        np.round(roi_item.size(), out=size)
 
         roi = self.roi_manager.get_roi(id)
 
-        if pos == roi['position'] and size == roi['size']:
+        if np.array_equal(pos, roi['position']) and np.array_equal(
+            size, roi['size']
+        ):
             return
 
-        row = self.roi_manager.id_to_index(id)
-        self.roi_manager.update_roi(id, pos, size)
-        top_left = self.roi_model.createIndex(row, 1)
-        bottom_right = self.roi_model.createIndex(row, 4)
-        self.roi_model.dataChanged.emit(top_left, bottom_right, Qt.EditRole)
+        self.roi_model.refresh_roi(id, pos, size)
 
         self.sigActiveROIChanged.emit(id)
         self.sigROIModified.emit(id)
 
-    def on_roi_table_update(self, index: QModelIndex, *args):
+    def on_roi_table_update(self, index: QModelIndex):
         row = index.row()
         id = self.roi_manager.index_to_id(row)
         roi = self.roi_manager.get_roi(id)
         roi_item = self.roi_items[id]
 
-        if (
-            roi_item.pos() == roi['position']
-            and roi_item.size() == roi['size']
+        if np.array_equal(roi_item.pos(), roi['position']) and np.array_equal(
+            roi_item.size(), roi['size']
         ):
             return
 
@@ -219,7 +219,7 @@ STOP_INTERACTIVE_MSG = 'Stop Interactive Add'
 SHOW_MSG = 'Show Regions'
 HIDE_MSG = 'Hide Regions'
 REMOVE_MSG = 'Remove Region'
-DISPLAY_MSG = 'Dispay Region'
+DISPLAY_MSG = 'Display Region'
 
 
 class RegionsNavigatorDialog(QDialog):
@@ -279,8 +279,7 @@ class RegionsNavigatorDialog(QDialog):
         self.setup_connections()
 
     def setup_connections(self):
-        self.rejected.connect(self.on_close)
-        self.accepted.connect(self.on_close)
+        self.finished.connect(self.on_close)
         self.add_button.clicked.connect(self.on_add_clicked)
         self.show_button.clicked.connect(self.on_show_clicked)
         self.remove_button.clicked.connect(self.on_remove_clicked)
@@ -293,7 +292,7 @@ class RegionsNavigatorDialog(QDialog):
             self.on_selection_changed
         )
 
-    def on_close(self):
+    def on_close(self, *_args):
         # Disable interactive add when the dialog is closed
         self.add_status = True
         self.on_add_clicked()
@@ -338,12 +337,8 @@ class RegionsNavigatorDialog(QDialog):
             return
 
         id = self.selected_roi_id
-        row = self.roi_manager.id_to_index(id)
-
-        self.model.beginRemoveRows(QModelIndex(), row, row)
-        self.roi_manager.remove_roi(id)
+        self.model.remove_roi(id)
         self.roi_items_manager.remove_roi_item(id)
-        self.model.endRemoveRows()
         self.view.selectionModel().clear()
 
         self.sigRemoveRoiClicked.emit(id)

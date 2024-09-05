@@ -3,13 +3,13 @@
 from typing import TypedDict, Tuple
 from collections import OrderedDict
 
-Point = Tuple[int, int]
+from polylaue.typing import WorldPoint
 
 
 class ROI(TypedDict):
     id: str
-    position: Point
-    size: Point
+    position: WorldPoint
+    size: WorldPoint
 
 
 class ROIManager:
@@ -19,7 +19,7 @@ class ROIManager:
         self._ordered_keys: list[str] = []
         self._indices: dict[str, int] = {}
 
-    def add_roi(self, position: Point, size: Point) -> str:
+    def add_roi(self, position: WorldPoint, size: WorldPoint) -> str:
         id = str(self._unique_id)
         self._unique_id += 1
 
@@ -47,7 +47,7 @@ class ROIManager:
 
         return False
 
-    def update_roi(self, id: str, position: Point, size: Point):
+    def update_roi(self, id: str, position: WorldPoint, size: WorldPoint):
         if id in self.rois:
             self.rois[id]['position'] = position
             self.rois[id]['size'] = size
