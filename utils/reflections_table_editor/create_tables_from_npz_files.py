@@ -16,7 +16,7 @@ scan_pos_y = 1
 # The key is the crystal ID. The value is the file name.
 npz_files = {
     0: 'predicted_list.npz',
-    1: 'predicted_list0.npz',
+    # 1: 'predicted_list0.npz',
     # Add more, one for each crystal
 }
 
@@ -54,16 +54,47 @@ for crystal_id, filename in npz_files.items():
             # d-spacing
             pred_list2[:, 3:4],
         )
-    )
+    )[:3]
 
     # Add the crystal ID into the 9th column
     table = np.insert(table, 9, crystal_id, axis=1)
 
     all_tables.append(table)
 
+reflections = np.vstack(all_tables)
+
+# Pull the existing reflections table out of the file, remove any
+# reflections that match the crystal IDs we will insert, and stack
+# this with the new reflections.
+existing_reflections = editor.reflections_table(
+    scan_num,
+    scan_pos_x,
+    scan_pos_y,
+)
+if existing_reflections is not None:
+    # Delete any existing reflections that match any crystal IDs
+    # that we are inserting.
+    for crystal_id in npz_files:
+        existing_reflections = np.delete(
+            existing_reflections,
+            np.where(existing_reflections[:, 9].astype(int) == crystal_id)[0],
+            axis=0,
+        )
+
+    # Stack together with the new reflections
+    reflections = np.vstack(
+        (
+            reflections,
+            existing_reflections,
+        )
+    )
+
+    # Sort by crystal ID
+    reflections = reflections[reflections[:, 9].argsort()]
+
 # Now write all tables to the HDF5 file
 editor.set_reflections_table(
-    np.vstack(all_tables),
+    reflections,
     scan_num,
     scan_pos_x,
     scan_pos_y,
