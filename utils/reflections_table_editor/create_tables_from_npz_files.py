@@ -54,7 +54,7 @@ for crystal_id, filename in npz_files.items():
             # d-spacing
             pred_list2[:, 3:4],
         )
-    )[:3]
+    )
 
     # Add the crystal ID into the 9th column
     table = np.insert(table, 9, crystal_id, axis=1)
