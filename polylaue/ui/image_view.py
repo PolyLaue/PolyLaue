@@ -257,7 +257,8 @@ class PolyLaueImageView(pg.ImageView):
         # types instead of numpy types. Otherwise, they will
         # be printed like `np.int64(1)`.
         hkls = np.asarray(rows[:, 2:5].astype(int))
-        d_spacings = rows[:, 8].tolist()
+        energies = np.round(rows[:, 5], 2).tolist()
+        d_spacings = np.round(rows[:, 8], 4).tolist()
         crystal_ids = rows[:, 9].astype(int).tolist()
 
         # Convert hkls to list of strings
@@ -265,14 +266,22 @@ class PolyLaueImageView(pg.ImageView):
 
         if len(hkls) == 1:
             hkl = hkls[0]
+            energy = energies[0]
             d_spacing = d_spacings[0]
             crystal_id = crystal_ids[0]
-            return f'{delim}{hkl=}{delim}{d_spacing=}{delim}{crystal_id=}'
+            return (
+                f'{delim}{hkl=}{delim}{d_spacing=}'
+                f'{delim}keV={energy}{delim}{crystal_id=}'
+            )
 
         hkls = f'[{", ".join(hkls)}]'
+        energies = f'[{", ".join(map(str, energies))}]'
         d_spacings = f'[{", ".join(map(str, d_spacings))}]'
         crystal_ids = f'[{", ".join(map(str, crystal_ids))}]'
-        return f'{delim}{hkls=}{delim}{d_spacings=}{delim}{crystal_ids=}'
+        return (
+            f'{delim}{hkls=}{delim}{d_spacings=}'
+            f'{delim}keV={energies}{delim}{crystal_ids=}'
+        )
 
     @property
     def image_data(self) -> np.ndarray:
