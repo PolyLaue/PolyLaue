@@ -11,6 +11,7 @@ editor = ReflectionsTableEditor('predictions.h5')
 scan_num = 1
 scan_pos_x = 1
 scan_pos_y = 1
+overwrite_entire_table = False
 
 # Each NPZ file is for a separate crystal ID
 # The key is the crystal ID. The value is the file name.
@@ -71,7 +72,7 @@ existing_reflections = editor.reflections_table(
     scan_pos_x,
     scan_pos_y,
 )
-if existing_reflections is not None:
+if existing_reflections is not None and not overwrite_entire_table:
     # Delete any existing reflections that match any crystal IDs
     # that we are inserting.
     for crystal_id in npz_files:
