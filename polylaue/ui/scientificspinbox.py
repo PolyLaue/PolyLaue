@@ -21,7 +21,6 @@ NAN_REGEX = re.compile(r'^(n(?:a|an)?)$')
 
 
 class FloatValidator(QValidator):
-
     @staticmethod
     def valid_float_string(string):
         match = FLOAT_REGEX.search(string)
@@ -71,7 +70,6 @@ def clean_text(func):
 
 
 class ScientificDoubleSpinBox(QDoubleSpinBox):
-
     @staticmethod
     def format_float(value):
         """Modified form of the 'g' format specifier."""

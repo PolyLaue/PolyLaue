@@ -8,7 +8,8 @@ from PySide6.QtWidgets import QFileDialog, QInputDialog, QMessageBox, QWidget
 
 import numpy as np
 
-from polylaue.model.io import identify_loader_function
+from polylaue.model.io import identify_loader_function, Bounds
+from polylaue.model.roi_manager import ROIManager
 from polylaue.model.scan import Scan
 from polylaue.model.series import Series
 from polylaue.model.state import load_project_manager, save_project_manager
@@ -19,6 +20,8 @@ from polylaue.ui.reflections_editor import ReflectionsEditor
 from polylaue.ui.point_selector import PointSelectorDialog
 from polylaue.ui.prediction_matcher import PredictionMatcherDialog
 from polylaue.ui.project_navigator.dialog import ProjectNavigatorDialog
+from polylaue.ui.region_mapping.dialog import RegionMappingDialog
+from polylaue.ui.regions_navigator.dialog import RegionsNavigatorDialog
 from polylaue.ui.series_editor import SeriesEditorDialog
 from polylaue.ui.utils.ui_loader import UiLoader
 
@@ -53,6 +56,10 @@ class MainWindow:
 
         self.reflections_editor = ReflectionsEditor(self.ui)
 
+        self.roi_manager = ROIManager()
+
+        self.region_mapping_dialogs = {}
+
         self.setup_connections()
 
     def setup_connections(self):
@@ -65,6 +72,10 @@ class MainWindow:
         )
         self.ui.action_select_indexing_points.triggered.connect(
             self.begin_select_indexing_points
+        )
+
+        self.ui.action_regions_manager.triggered.connect(
+            self.open_mapping_regions_manager
         )
 
         self.image_view.shift_scan_number.connect(self.on_shift_scan_number)
@@ -223,6 +234,7 @@ class MainWindow:
         if new_scan_idx in self.series.scan_range:
             # Just change the scan number
             self.scan_num = new_scan_idx
+            self.on_series_or_scan_changed()
             self.on_frame_changed()
             return
 
@@ -267,13 +279,31 @@ class MainWindow:
         self.image_view.on_mouse_move()
         self.image_view.update_reflection_overlays()
 
+    def on_series_or_scan_changed(self):
+        for dialog in self.region_mapping_dialogs.values():
+            dialog.set_series(self.series)
+            dialog.set_scan_number(self.scan_num)
+
     def load_current_image(self):
-        filepath = self.series.filepath(*self.scan_pos, self.scan_num)
+        filepath, img = self.open_image(
+            self.series, self.scan_num, self.scan_pos
+        )
         self.ui.setWindowTitle(filepath.name)
-        img = self.image_loader_func(filepath)
         self.image_view.setImage(
             img, autoRange=False, autoLevels=False, autoHistogramRange=False
         )
+
+    def open_image(
+        self,
+        series: Series,
+        scan_number: int,
+        scan_position: np.ndarray,
+        bounds: Bounds | None = None,
+    ):
+        filepath = series.filepath(*scan_position, scan_number)
+        img = self.image_loader_func(filepath, bounds)
+
+        return filepath, img
 
     def update_info_label(self):
         if self.series is None:
@@ -304,6 +334,22 @@ class MainWindow:
     def on_reflections_changed(self):
         new_reflections = self.reflections_editor.reflections
         self.image_view.reflections = new_reflections
+
+    def open_mapping_regions_manager(self):
+        if not hasattr(self, '_regions_navigator_dialog'):
+            d = RegionsNavigatorDialog(
+                self.image_view,
+                self.roi_manager,
+                parent=self.ui,
+            )
+
+            d.sigDisplayRoiClicked.connect(self.on_roi_display_clicked)
+            d.sigRemoveRoiClicked.connect(self.on_roi_remove_clicked)
+            d.sigRoiModified.connect(self.on_roi_modified)
+
+            self._regions_navigator_dialog = d
+
+        self._regions_navigator_dialog.show()
 
     def begin_prediction_matcher(self):
         selected_file, selected_filter = QFileDialog.getOpenFileName(
@@ -433,3 +479,33 @@ class MainWindow:
             # Tell the user where it was saved
             msg = f'File saved to:\n{path}'
             QMessageBox.information(self.ui, 'File Saved', msg)
+
+    def on_roi_remove_clicked(self, id: str):
+        if id in self.region_mapping_dialogs:
+            dialog = self.region_mapping_dialogs[id]
+            dialog.setParent(None)
+            del self.region_mapping_dialogs[id]
+
+    def on_roi_display_clicked(self, id: str):
+        if id in self.region_mapping_dialogs:
+            dialog = self.region_mapping_dialogs[id]
+        else:
+            dialog = RegionMappingDialog(id, self.roi_manager, self.ui)
+            histogram_widget = self.image_view.getHistogramWidget()
+
+            if histogram_widget:
+                dialog.link_levels_and_lookuptable(histogram_widget.item)
+
+            dialog.open_image_fn = self.open_image
+            dialog.set_series(self.series)
+            dialog.set_scan_number(self.scan_num)
+            dialog.set_stale(True)
+
+            self.region_mapping_dialogs[id] = dialog
+
+        dialog.show()
+
+    def on_roi_modified(self, id: str):
+        if id in self.region_mapping_dialogs:
+            dialog = self.region_mapping_dialogs[id]
+            dialog.set_stale(True)
