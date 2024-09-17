@@ -1,6 +1,6 @@
 # Copyright © 2024, UChicago Argonne, LLC. See "LICENSE" for full details.
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QObject, Signal
 from PySide6.QtWidgets import (
     QComboBox,
     QDialog,
@@ -15,8 +15,14 @@ import pyqtgraph as pg
 MouseButton = Qt.MouseButton
 
 
-class PointSelector:
-    def __init__(self, image_view: pg.ImageView):
+class PointSelector(QObject):
+    """Emitted when the points have been edited"""
+
+    points_modified = Signal()
+
+    def __init__(self, image_view: pg.ImageView, parent: QObject = None):
+        super().__init__(parent=parent)
+
         self.image_view = image_view
         self.scatter_artist = artist = pg.ScatterPlotItem(
             pxMode=True,
@@ -28,6 +34,7 @@ class PointSelector:
             tip=self._create_point_tooltip,
         )
 
+        # These points MUST not be reordered. Keep same ordering.
         self.points = []
 
         image_view.addItem(artist)
@@ -79,13 +86,20 @@ class PointSelector:
             return
 
         pos = self.image_view.view.mapSceneToView(event.pos())
+        # These points MUST not be reordered. Keep same ordering.
         self.points.append(np.round(pos.toTuple(), 3))
-        self.update_scatter_plot()
+        self.points_changed()
 
     def undo_point(self):
         if self.points:
+            # These points MUST not be reordered. Keep same ordering.
             self.points.pop()
-            self.update_scatter_plot()
+            self.points_changed()
+
+    def points_changed(self):
+        """This function should be called whenever the points have changed"""
+        self.update_scatter_plot()
+        self.points_modified.emit()
 
     def update_scatter_plot(self):
         if not self.points:
@@ -124,6 +138,10 @@ class PointSelectorDialog(QDialog):
         layout.addWidget(combo)
         self.save_file_combo = combo
 
+        self.num_points_label = QLabel()
+        layout.addWidget(self.num_points_label)
+        self.update_num_points_label()
+
         # Add a button box for accept/cancel
         buttons = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
         self.button_box = QDialogButtonBox(buttons, self)
@@ -141,10 +159,19 @@ class PointSelectorDialog(QDialog):
         return filenames[self.save_file_combo.currentText()]
 
     def setup_connections(self):
+        self.point_selector.points_modified.connect(self.on_points_modified)
+
         self.button_box.accepted.connect(self.accept)
         self.button_box.rejected.connect(self.reject)
 
         self.finished.connect(self.on_finished)
+
+    def on_points_modified(self):
+        self.update_num_points_label()
+
+    def update_num_points_label(self):
+        num_points = len(self.points)
+        self.num_points_label.setText(f'Number of points: {num_points}')
 
     def on_finished(self):
         self.point_selector.disconnect()
