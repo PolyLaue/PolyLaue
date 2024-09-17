@@ -80,12 +80,12 @@
         <string>Scan shape:</string>
        </property>
        <property name="buddy">
-        <cstring>scan_shape_i</cstring>
+        <cstring>scan_shape_z</cstring>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QSpinBox" name="scan_shape_i">
+      <widget class="QSpinBox" name="scan_shape_z">
        <property name="minimum">
         <number>1</number>
        </property>
@@ -95,7 +95,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QSpinBox" name="scan_shape_j">
+      <widget class="QSpinBox" name="scan_shape_y">
        <property name="minimum">
         <number>1</number>
        </property>
@@ -141,8 +141,8 @@
  <tabstops>
   <tabstop>series_dir</tabstop>
   <tabstop>select_series_dir</tabstop>
-  <tabstop>scan_shape_i</tabstop>
-  <tabstop>scan_shape_j</tabstop>
+  <tabstop>scan_shape_z</tabstop>
+  <tabstop>scan_shape_y</tabstop>
   <tabstop>scan_range_start</tabstop>
   <tabstop>scan_range_stop</tabstop>
   <tabstop>skip_frames</tabstop>

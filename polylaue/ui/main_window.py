@@ -313,7 +313,8 @@ class MainWindow:
             # Windows, they might appear as `np.int64(1)`.
             text = (
                 f'Scan {int(self.scan_num)}, '
-                f'Position {tuple(map(int, self.scan_pos + 1))}'
+                # Reverse the position to match HPCAT notation
+                f'Position {tuple(map(int, self.scan_pos[::-1] + 1))}'
             )
 
         self.ui.info_label.setText(text)

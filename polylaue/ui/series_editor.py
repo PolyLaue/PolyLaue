@@ -80,14 +80,14 @@ class SeriesEditor:
     @property
     def ui_scan_shape(self) -> tuple[int, int]:
         return (
-            self.ui.scan_shape_i.value(),
-            self.ui.scan_shape_j.value(),
+            self.ui.scan_shape_y.value(),
+            self.ui.scan_shape_z.value(),
         )
 
     @ui_scan_shape.setter
     def ui_scan_shape(self, v: tuple[int, int]):
-        self.ui.scan_shape_i.setValue(v[0])
-        self.ui.scan_shape_j.setValue(v[1])
+        self.ui.scan_shape_y.setValue(v[0])
+        self.ui.scan_shape_z.setValue(v[1])
 
     @property
     def ui_scan_range(self) -> tuple[int, int]:
