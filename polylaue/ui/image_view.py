@@ -270,7 +270,7 @@ class PolyLaueImageView(pg.ImageView):
             d_spacing = d_spacings[0]
             crystal_id = crystal_ids[0]
             return (
-                f'{delim}{hkl=}{delim}{d_spacing=}'
+                f'{delim}{hkl=}{delim}d={d_spacing}'
                 f'{delim}keV={energy}{delim}{crystal_id=}'
             )
 
@@ -279,7 +279,7 @@ class PolyLaueImageView(pg.ImageView):
         d_spacings = f'[{", ".join(map(str, d_spacings))}]'
         crystal_ids = f'[{", ".join(map(str, crystal_ids))}]'
         return (
-            f'{delim}{hkls=}{delim}{d_spacings=}'
+            f'{delim}{hkls=}{delim}d={d_spacings}'
             f'{delim}keV={energies}{delim}{crystal_ids=}'
         )
 
