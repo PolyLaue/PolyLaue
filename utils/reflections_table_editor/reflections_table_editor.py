@@ -76,6 +76,29 @@ class ReflectionsTableEditor:
             # Convert it to such for consistency.
             f[path] = table.astype(float)
 
+    def delete_reflections_table(
+        self,
+        scan_num: int,
+        scan_pos_x: int,
+        scan_pos_y: int,
+    ):
+        """Delete a reflections table and all empty parents"""
+        path = self._reflections_table_path(scan_num, scan_pos_x, scan_pos_y)
+        with h5py.File(self.filepath, 'a') as f:
+            parent = None
+            if path in f:
+                parent = f[path].parent
+                del f[path]
+
+            while (
+                parent is not None and
+                len(parent) == 0 and
+                parent.name != '/'
+            ):
+                group = parent
+                parent = group.parent
+                del f[group.name]
+
     def validate_reflections_table(self, table: np.ndarray):
         if table.ndim != 2:
             msg = 'Reflections table must have 2 dimensions'
