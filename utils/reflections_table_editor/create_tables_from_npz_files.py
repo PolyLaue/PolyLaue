@@ -21,18 +21,7 @@ npz_files = {
     # Add more, one for each crystal
 }
 
-# NOTE: if the crystals_table doesn't already exist on the HDF5 file,
-# you will need to also set it, something simlar to the following:
-
-crystals_table = np.array(
-    [
-        # Each row of the crystal table is just the 9 parameters
-        [1, 2, 3, 4, 5, 6, 7, 8, 9],
-        [1, 2, 3, 4, 5, 6, 7, 8, 9],
-    ]
-)
-
-editor.set_crystals_table(crystals_table)
+# See 'set_crystals_table.py' for how to add crystals to the table
 
 # Stack all tables together in one list
 all_tables = []
