@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 @dataclass
 class FrameTracker:
+    # FIXME: change these to `y` and `z`
     scan_pos_x: int = 1
     scan_pos_y: int = 1
     scan_num: int = 3

@@ -51,4 +51,4 @@ class ExternalReflections(BaseReflections):
     def _reflections_table_path(
         self, row: int, column: int, scan_number: int
     ) -> str:
-        return f'/predictions/{scan_number}/{row + 1}/{column + 1}'
+        return f'/predictions/{scan_number}/{column + 1}/{row + 1}'

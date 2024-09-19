@@ -9,8 +9,8 @@ editor = ReflectionsTableEditor('predictions.h5')
 
 # Pick the scan number and scan position
 scan_num = 1
-scan_pos_x = 1
 scan_pos_y = 1
+scan_pos_z = 1
 overwrite_entire_table = False
 
 # Each NPZ file is for a separate crystal ID
@@ -58,8 +58,8 @@ reflections = np.vstack(all_tables)
 # this with the new reflections.
 existing_reflections = editor.reflections_table(
     scan_num,
-    scan_pos_x,
     scan_pos_y,
+    scan_pos_z,
 )
 if existing_reflections is not None and not overwrite_entire_table:
     # Delete any existing reflections that match any crystal IDs
@@ -86,6 +86,6 @@ if existing_reflections is not None and not overwrite_entire_table:
 editor.set_reflections_table(
     reflections,
     scan_num,
-    scan_pos_x,
     scan_pos_y,
+    scan_pos_z,
 )

@@ -49,9 +49,9 @@ class ReflectionsTableEditor:
             raise InvalidCrystalsTable(msg)
 
     def reflections_table(
-        self, scan_num: int, scan_pos_x: int, scan_pos_y: int
+        self, scan_num: int, scan_pos_y: int, scan_pos_z: int
     ) -> np.ndarray | None:
-        path = self._reflections_table_path(scan_num, scan_pos_x, scan_pos_y)
+        path = self._reflections_table_path(scan_num, scan_pos_y, scan_pos_z)
         with h5py.File(self.filepath, 'r') as f:
             if path not in f:
                 return None
@@ -62,12 +62,12 @@ class ReflectionsTableEditor:
         self,
         table: np.ndarray,
         scan_num: int,
-        scan_pos_x: int,
         scan_pos_y: int,
+        scan_pos_z: int,
     ):
         table = np.asarray(table)
         self.validate_reflections_table(table)
-        path = self._reflections_table_path(scan_num, scan_pos_x, scan_pos_y)
+        path = self._reflections_table_path(scan_num, scan_pos_y, scan_pos_z)
         with h5py.File(self.filepath, 'a') as f:
             if path in f:
                 del f[path]
@@ -79,11 +79,11 @@ class ReflectionsTableEditor:
     def delete_reflections_table(
         self,
         scan_num: int,
-        scan_pos_x: int,
         scan_pos_y: int,
+        scan_pos_z: int,
     ):
         """Delete a reflections table and all empty parents"""
-        path = self._reflections_table_path(scan_num, scan_pos_x, scan_pos_y)
+        path = self._reflections_table_path(scan_num, scan_pos_y, scan_pos_z)
         with h5py.File(self.filepath, 'a') as f:
             parent = None
             if path in f:
@@ -109,9 +109,9 @@ class ReflectionsTableEditor:
             raise InvalidReflectionsTable(msg)
 
     def _reflections_table_path(
-        self, scan_num: int, scan_pos_x: int, scan_pos_y: int
+        self, scan_num: int, scan_pos_y: int, scan_pos_z: int
     ) -> str:
-        return f'/predictions/{scan_num}/{scan_pos_x}/{scan_pos_y}'
+        return f'/predictions/{scan_num}/{scan_pos_y}/{scan_pos_z}'
 
 
 class InvalidCrystalsTable(Exception):
