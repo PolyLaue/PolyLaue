@@ -195,7 +195,7 @@ class RegionMappingDialog(QDialog):
         )
         roi_size_xy = ij_to_xy(roi_size_ij, 'row-major')
         map_size_xy = ij_to_xy(img.shape, 'row-major')
-        n_x, n_y = self.series.scan_shape
+        n_y, n_x = self.series.scan_shape
         x_ticks = tuple(i * roi_size_xy[0] for i in range(n_x + 1))
         y_ticks = tuple(i * roi_size_xy[1] for i in range(n_y + 1))
         self.grid_item.set_x_ticks(x_ticks)
@@ -233,18 +233,18 @@ class RegionMappingDialog(QDialog):
         size_ij = world_to_display(size_xy)
         size_ij = np.clip(size_ij, (0, 0), (w - pos_ij[0], h - pos_ij[1]))
 
-        n_x, n_y = series.scan_shape
+        n_y, n_x = series.scan_shape
 
-        self.progress_bar.setRange(0, n_x)
+        self.progress_bar.setRange(0, n_y)
         self.progress_bar.setValue(0)
 
         map_size = (n_y * size_ij[0], n_x * size_ij[1])
 
         map_img = np.zeros(map_size)
 
-        for i in range(n_x):
+        for i in range(n_y):
             self.progress_bar.setValue(i)
-            for j in range(n_y):
+            for j in range(n_x):
                 scan_position[0] = i
                 scan_position[1] = j
 
@@ -265,6 +265,6 @@ class RegionMappingDialog(QDialog):
                     (frame_i_start, frame_i_end, frame_j_start, frame_j_end),
                 )
 
-        self.progress_bar.setValue(n_x)
+        self.progress_bar.setValue(n_y)
 
         return pos_ij, size_ij, map_img
