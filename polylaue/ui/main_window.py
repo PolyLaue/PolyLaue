@@ -269,6 +269,10 @@ class MainWindow:
             a_min=[0, 0],
             a_max=np.asarray(self.series.scan_shape) - 1,
         )
+
+        for dialog in self.region_mapping_dialogs.values():
+            dialog.set_scan_position(self.scan_pos[0], self.scan_pos[1])
+
         self.on_frame_changed()
 
     def on_frame_changed(self):

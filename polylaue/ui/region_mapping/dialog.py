@@ -137,6 +137,10 @@ class RegionMappingDialog(QDialog):
         self.scan_number = scan_number
         self.set_stale(True)
 
+    def set_scan_position(self, i: int, j: int):
+        self.grid_item.set_active_cell((j, i))
+        self.grid_item.update()
+
     def link_levels_and_lookuptable(self, histogramItem: pg.HistogramLUTItem):
         if self.linked_histogram_item:
             self.linked_histogram_item.sigLevelsChanged.disconnect(
@@ -202,6 +206,7 @@ class RegionMappingDialog(QDialog):
         self.grid_item.set_y_ticks(y_ticks)
         self.grid_item.set_x_limits((0, map_size_xy[0]))
         self.grid_item.set_y_limits((0, map_size_xy[1]))
+        self.grid_item.update()
         self.image_item.setImage(img)
         self.on_levels_changed()
         self.on_lookup_table_changed()
