@@ -12,16 +12,25 @@ class ROI(TypedDict):
     size: WorldPoint
 
 
+def unique_id_generator(initial_id: int = 0):
+    id: int = initial_id
+
+    while True:
+        yield id
+
+        id += 1
+
+
 class ROIManager:
+    unique_id = unique_id_generator(0)
+
     def __init__(self):
-        self._unique_id = 0
         self.rois: OrderedDict[str, ROI] = OrderedDict()
         self._ordered_keys: list[str] = []
         self._indices: dict[str, int] = {}
 
     def add_roi(self, position: WorldPoint, size: WorldPoint) -> str:
-        id = str(self._unique_id)
-        self._unique_id += 1
+        id = str(next(ROIManager.unique_id))
 
         roi: ROI = {'id': id, 'position': position, 'size': size}
 
@@ -42,6 +51,10 @@ class ROIManager:
             self._indices = {}
             for i, key in enumerate(self._ordered_keys):
                 self._indices[key] = i
+
+            # Make roi id starts from 0 again if we removed all existing rois
+            if len(self._ordered_keys) == 0:
+                ROIManager.unique_id = unique_id_generator(0)
 
             return True
 
