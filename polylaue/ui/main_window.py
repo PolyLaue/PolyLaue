@@ -255,6 +255,7 @@ class MainWindow:
         # Load this series without resetting the settings
         self.load_series(new_series, reset_settings=False)
         self.scan_num = new_scan_idx
+        self.on_series_or_scan_changed()
         self.on_frame_changed()
 
     def on_shift_scan_position(self, i: int, j: int):
