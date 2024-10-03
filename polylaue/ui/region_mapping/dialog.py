@@ -12,7 +12,9 @@ from PySide6.QtWidgets import (
 )
 
 from PySide6.QtCore import (
+    QPointF,
     QTimer,
+    Signal,
 )
 
 from PySide6.QtGui import (
@@ -56,7 +58,20 @@ class Debouncer:
         self.kwargs = {}
 
 
+class CustomViewBox(pg.ViewBox):
+    sigMouseClicked = Signal(QPointF)
+
+    def mouseClickEvent(self, ev):
+        pos = self.mapSceneToView(ev.scenePos())
+        self.sigMouseClicked.emit(pos)
+        return super().mouseClickEvent(ev)
+
+
 class RegionMappingDialog(QDialog):
+    """Emitted when the scan position should be changed"""
+
+    change_scan_position = Signal(int, int)
+
     def __init__(
         self,
         id: str,
@@ -72,7 +87,7 @@ class RegionMappingDialog(QDialog):
         self.setLayout(QVBoxLayout())
 
         w = pg.GraphicsView()
-        view = pg.ViewBox(invertY=True)
+        view = CustomViewBox(invertY=True)
         view.setAspectLocked(True)
         w.setCentralItem(view)
         image_item = pg.ImageItem()
@@ -80,6 +95,8 @@ class RegionMappingDialog(QDialog):
 
         grid_item = CustomGridItem()
         view.addItem(grid_item)
+
+        view.sigMouseClicked.connect(self.on_map_click)
 
         self.layout().addWidget(w)
 
@@ -112,6 +129,8 @@ class RegionMappingDialog(QDialog):
         self.scan_number = -1
         self.roi_id = id
         self.stale = True
+        self.roi_size_ij = np.array([1, 1])
+        self.map_size_ij = np.array([1, 1])
 
         self.linked_histogram_item: Optional[pg.HistogramLUTItem] = None
 
@@ -136,6 +155,10 @@ class RegionMappingDialog(QDialog):
     def set_scan_number(self, scan_number: int):
         self.scan_number = scan_number
         self.set_stale(True)
+
+    def set_scan_position(self, i: int, j: int):
+        self.grid_item.set_active_cell((j, i))
+        self.grid_item.update()
 
     def link_levels_and_lookuptable(self, histogramItem: pg.HistogramLUTItem):
         if self.linked_histogram_item:
@@ -193,6 +216,8 @@ class RegionMappingDialog(QDialog):
         _, roi_size_ij, img = self._create_map_image(
             self.roi_id, self.series, self.scan_number
         )
+        self.roi_size_ij = roi_size_ij
+        self.map_size_ij = img.shape
         roi_size_xy = ij_to_xy(roi_size_ij, 'row-major')
         map_size_xy = ij_to_xy(img.shape, 'row-major')
         n_y, n_x = self.series.scan_shape
@@ -202,10 +227,29 @@ class RegionMappingDialog(QDialog):
         self.grid_item.set_y_ticks(y_ticks)
         self.grid_item.set_x_limits((0, map_size_xy[0]))
         self.grid_item.set_y_limits((0, map_size_xy[1]))
+        self.grid_item.update()
         self.image_item.setImage(img)
         self.on_levels_changed()
         self.on_lookup_table_changed()
         self.set_stale(False)
+
+    def on_map_click(self, pos: QPointF):
+        pos_ij = world_to_display(np.array((pos.x(), pos.y())))
+
+        if (
+            pos_ij[0] < 0
+            or pos_ij[0] >= self.map_size_ij[0]
+            or pos_ij[1] < 0
+            or pos_ij[1] >= self.map_size_ij[1]
+        ):
+            return
+
+        scan_pos = (
+            int(pos_ij[0] // self.roi_size_ij[0]),
+            int(pos_ij[1] // self.roi_size_ij[1]),
+        )
+
+        self.change_scan_position.emit(scan_pos[0], scan_pos[1])
 
     def _update_window_title(self):
         if self.stale:

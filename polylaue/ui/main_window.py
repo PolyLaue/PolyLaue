@@ -264,11 +264,21 @@ class MainWindow:
             return
 
         # Clip it so we don't go out of bounds
-        self.scan_pos = np.clip(
+        scan_pos = np.clip(
             self.scan_pos + (i, j),
             a_min=[0, 0],
             a_max=np.asarray(self.series.scan_shape) - 1,
         )
+
+        self.on_change_scan_position(scan_pos[0], scan_pos[1])
+
+    def on_change_scan_position(self, i: int, j: int):
+        """Change the current scan position to `i` row and `j` column"""
+        self.scan_pos = np.array([i, j])
+
+        for dialog in self.region_mapping_dialogs.values():
+            dialog.set_scan_position(self.scan_pos[0], self.scan_pos[1])
+
         self.on_frame_changed()
 
     def on_frame_changed(self):
@@ -501,6 +511,8 @@ class MainWindow:
             dialog.set_series(self.series)
             dialog.set_scan_number(self.scan_num)
             dialog.set_stale(True)
+
+            dialog.change_scan_position.connect(self.on_change_scan_position)
 
             self.region_mapping_dialogs[id] = dialog
 
