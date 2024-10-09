@@ -59,6 +59,10 @@ class MainWindow:
         self.roi_manager = ROIManager()
 
         self.region_mapping_dialogs = {}
+        self.mapping_highlight_area = None
+        self.mapping_domain_area = None
+        self.show_mapping_highlight_area = False
+        self.show_mapping_domain_area = False
 
         self.setup_connections()
 
@@ -498,7 +502,37 @@ class MainWindow:
             dialog.setParent(None)
             del self.region_mapping_dialogs[id]
 
+        # Reset mapping highlight and domain regions if the last roi has been removed
+        if len(self.region_mapping_dialogs) == 0:
+            self.mapping_domain_area = None
+            self.mapping_highlight_area = None
+
     def on_roi_display_clicked(self, id: str):
+        # Initialize mapping highlight and domain regions the first time a mapping is shown
+        if len(self.region_mapping_dialogs) == 0:
+            # Initial mapping domain target is a 5x5 square in scan position space
+            # centered around the current scan position
+            target_size = 5
+            half_target_size = target_size // 2
+
+            pos = np.clip(
+                self.scan_pos - half_target_size,
+                a_min=[0, 0],
+                a_max=np.asarray(self.series.scan_shape) - target_size,
+            )
+
+            size = np.clip(
+                np.array((target_size, target_size)),
+                a_min=[0, 0],
+                a_max=np.asarray(self.series.scan_shape) - pos,
+            )
+
+            self.mapping_domain_area = {"position": pos, "size": size}
+            self.mapping_highlight_area = {
+                "position": self.scan_pos,
+                "size": np.array((1, 1)),
+            }
+
         if id in self.region_mapping_dialogs:
             dialog = self.region_mapping_dialogs[id]
         else:
@@ -511,9 +545,24 @@ class MainWindow:
             dialog.open_image_fn = self.open_image
             dialog.set_series(self.series)
             dialog.set_scan_number(self.scan_num)
+            dialog.set_scan_position(self.scan_pos[0], self.scan_pos[1])
+            dialog.set_domain_roi(self.mapping_domain_area)
+            dialog.set_highlight_roi(self.mapping_highlight_area)
+            dialog.set_show_domain(self.show_mapping_domain_area)
+            dialog.set_show_highlight(self.show_mapping_highlight_area)
             dialog.set_stale(True)
 
             dialog.change_scan_position.connect(self.on_change_scan_position)
+            dialog.sigMappingDomainChanged.connect(
+                self.on_mapping_domain_changed
+            )
+            dialog.sigMappingHighlightChanged.connect(
+                self.on_mapping_highlight_changed
+            )
+            dialog.sigShowDomainChanged.connect(self.on_show_domain_changed)
+            dialog.sigShowHighlightChanged.connect(
+                self.on_show_highlight_changed
+            )
 
             self.region_mapping_dialogs[id] = dialog
 
@@ -523,3 +572,33 @@ class MainWindow:
         if id in self.region_mapping_dialogs:
             dialog = self.region_mapping_dialogs[id]
             dialog.set_stale(True)
+
+    def on_mapping_domain_changed(
+        self, i: int, j: int, size_i: int, size_j: int
+    ):
+        self.mapping_domain_area = {
+            "position": np.array((i, j)),
+            "size": np.array((size_i, size_j)),
+        }
+        for dialog in self.region_mapping_dialogs.values():
+            dialog.set_domain_roi(self.mapping_domain_area)
+
+    def on_mapping_highlight_changed(
+        self, i: int, j: int, size_i: int, size_j: int
+    ):
+        self.mapping_highlight_area = {
+            "position": np.array((i, j)),
+            "size": np.array((size_i, size_j)),
+        }
+        for dialog in self.region_mapping_dialogs.values():
+            dialog.set_highlight_roi(self.mapping_highlight_area)
+
+    def on_show_domain_changed(self, show: bool):
+        self.show_mapping_domain_area = show
+        for dialog in self.region_mapping_dialogs.values():
+            dialog.set_show_domain(self.show_mapping_domain_area)
+
+    def on_show_highlight_changed(self, show: bool):
+        self.show_mapping_highlight_area = show
+        for dialog in self.region_mapping_dialogs.values():
+            dialog.set_show_highlight(self.show_mapping_highlight_area)

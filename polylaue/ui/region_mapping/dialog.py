@@ -13,6 +13,8 @@ from PySide6.QtWidgets import (
 
 from PySide6.QtCore import (
     QPointF,
+    QRectF,
+    Qt,
     QTimer,
     Signal,
 )
@@ -67,10 +69,29 @@ class CustomViewBox(pg.ViewBox):
         return super().mouseClickEvent(ev)
 
 
+DEFAULT_ROI_ITEM_ARGS = {
+    'scaleSnap': True,
+    'translateSnap': True,
+    'rotatable': False,
+    'resizable': True,
+    'movable': True,
+    'removable': True,
+}
+
+SHOW_HIGHLIGHT_MSG = 'Show Highlight Region'
+HIDE_HIGHLIGHT_MSG = 'Hide Highlight Region'
+SHOW_DOMAIN_MSG = 'Show Mapping Domain'
+HIDE_DOMAIN_MSG = 'Hide Mapping Domain'
+
+
 class RegionMappingDialog(QDialog):
     """Emitted when the scan position should be changed"""
 
     change_scan_position = Signal(int, int)
+    sigShowHighlightChanged = Signal(bool)
+    sigShowDomainChanged = Signal(bool)
+    sigMappingHighlightChanged = Signal(int, int, int, int)
+    sigMappingDomainChanged = Signal(int, int, int, int)
 
     def __init__(
         self,
@@ -82,7 +103,7 @@ class RegionMappingDialog(QDialog):
 
         self.auto_refresh = True
         self.visible = False
-        self.debounced_refresh = Debouncer(self.on_refresh_clicked, 250)
+        self.debounced_refresh = Debouncer(self.on_refresh_clicked, 500)
 
         self.setLayout(QVBoxLayout())
 
@@ -110,6 +131,14 @@ class RegionMappingDialog(QDialog):
         self.refresh_button = QPushButton('Refresh Map', self)
         self.refresh_button.clicked.connect(self.on_refresh_clicked)
 
+        self.show_highlight_button = QPushButton(SHOW_HIGHLIGHT_MSG, self)
+        self.show_highlight_button.clicked.connect(self.on_highlight_clicked)
+
+        self.show_domain_button = QPushButton(SHOW_DOMAIN_MSG, self)
+        self.show_domain_button.clicked.connect(self.on_domain_clicked)
+
+        buttons_layout.addWidget(self.show_highlight_button)
+        buttons_layout.addWidget(self.show_domain_button)
         buttons_layout.addWidget(self.refresh_button)
 
         self.progress_bar = QProgressBar()
@@ -136,7 +165,45 @@ class RegionMappingDialog(QDialog):
 
         self.finished.connect(self.on_close)
 
+        self._view = view
+        self._show_highlight = False
+        self._show_domain = False
+
+        self._domain_roi = {
+            "position": np.array((0, 0)),
+            "size": np.array((1, 1)),
+        }
+        self._domain_roi_item = pg.RectROI(
+            (0, 0), (1, 1), **DEFAULT_ROI_ITEM_ARGS
+        )
+        self._domain_roi_item.pen.setColor(Qt.red)
+        self._domain_roi_item.pen.setWidth(2)
+        self._domain_roi_item.sigRegionChanged.connect(
+            self._on_update_domain_region
+        )
+        self._domain_roi_item.sigRegionChangeFinished.connect(
+            self._on_update_domain_region_finished
+        )
+
+        self._highlight_roi = {
+            "position": np.array((0, 0)),
+            "size": np.array((1, 1)),
+        }
+        self._highlight_roi_item = pg.RectROI(
+            (0, 0), (1, 1), **DEFAULT_ROI_ITEM_ARGS
+        )
+        self._highlight_roi_item.pen.setColor(Qt.green)
+        self._highlight_roi_item.pen.setWidth(2)
+        self._highlight_roi_item.sigRegionChanged.connect(
+            self._on_update_highlight_region
+        )
+        self._highlight_roi_item.sigRegionChangeFinished.connect(
+            self._on_update_highlight_region_finished
+        )
+
         self._update_window_title()
+        self._update_highlight_btn()
+        self._update_domain_btn()
 
     def showEvent(self, event: QShowEvent) -> None:
         self.visible = True
@@ -217,9 +284,9 @@ class RegionMappingDialog(QDialog):
             self.roi_id, self.series, self.scan_number
         )
         self.roi_size_ij = roi_size_ij
-        self.map_size_ij = img.shape
+        self.map_size_ij = np.array(img.shape)
         roi_size_xy = ij_to_xy(roi_size_ij, 'row-major')
-        map_size_xy = ij_to_xy(img.shape, 'row-major')
+        map_size_xy = ij_to_xy(self.map_size_ij, 'row-major')
         n_y, n_x = self.series.scan_shape
         x_ticks = tuple(i * roi_size_xy[0] for i in range(n_x + 1))
         y_ticks = tuple(i * roi_size_xy[1] for i in range(n_y + 1))
@@ -231,7 +298,193 @@ class RegionMappingDialog(QDialog):
         self.image_item.setImage(img)
         self.on_levels_changed()
         self.on_lookup_table_changed()
+        self._update_highlight_roi_item()
+        self._update_domain_roi_item()
         self.set_stale(False)
+
+    def set_show_highlight(self, show: bool):
+        if self._show_highlight == show:
+            return
+
+        self._show_highlight = show
+
+        if show:
+            self._view.addItem(self._highlight_roi_item)
+        else:
+            self._view.removeItem(self._highlight_roi_item)
+
+        self._update_highlight_btn()
+
+    def set_show_domain(self, show: bool):
+        if self._show_domain == show:
+            return
+
+        self._show_domain = show
+
+        if show:
+            self._view.addItem(self._domain_roi_item)
+        else:
+            self._view.removeItem(self._domain_roi_item)
+
+        self._update_domain_btn()
+
+    def on_highlight_clicked(self):
+        self.set_show_highlight(not self._show_highlight)
+        self.sigShowHighlightChanged.emit(self._show_highlight)
+
+    def on_domain_clicked(self):
+        self.set_show_domain(not self._show_domain)
+        self.sigShowDomainChanged.emit(self._show_domain)
+
+    def _update_highlight_roi_item(self):
+        pos = self.roi_size_ij * self._highlight_roi["position"]
+        size = self.roi_size_ij * self._highlight_roi["size"]
+        pos_xy = ij_to_xy(pos)
+        size_xy = ij_to_xy(size)
+
+        self._highlight_roi_item.maxBounds = QRectF(
+            0, 0, self.map_size_ij[1], self.map_size_ij[0]
+        )
+        self._highlight_roi_item.setPos(pos_xy, update=False)
+        self._highlight_roi_item.setSize(size_xy, update=False)
+        self._highlight_roi_item.getHandles()[0].setPos(size_xy[0], size_xy[1])
+        self._highlight_roi_item.update()
+
+    def _update_domain_roi_item(self):
+        pos = self.roi_size_ij * self._domain_roi["position"]
+        size = self.roi_size_ij * self._domain_roi["size"]
+        pos_xy = ij_to_xy(pos)
+        size_xy = ij_to_xy(size)
+
+        self._domain_roi_item.maxBounds = QRectF(
+            0, 0, self.map_size_ij[1], self.map_size_ij[0]
+        )
+        self._domain_roi_item.setPos(pos_xy, update=False)
+        self._domain_roi_item.setSize(size_xy, update=False)
+        self._domain_roi_item.getHandles()[0].setPos(size_xy[0], size_xy[1])
+        self._domain_roi_item.update()
+
+    def _update_highlight_btn(self):
+        if self._show_highlight:
+            msg = HIDE_HIGHLIGHT_MSG
+        else:
+            msg = SHOW_HIGHLIGHT_MSG
+
+        self.show_highlight_button.setText(msg)
+        self.show_highlight_button.update()
+
+    def _update_domain_btn(self):
+        if self._show_domain:
+            msg = HIDE_DOMAIN_MSG
+        else:
+            msg = SHOW_DOMAIN_MSG
+
+        self.show_domain_button.setText(msg)
+        self.show_domain_button.update()
+
+    def _on_update_highlight_region(self):
+        pos_xy = np.array(self._highlight_roi_item.pos())
+        size_xy = np.array(self._highlight_roi_item.size())
+
+        pos = world_to_display(pos_xy)
+        size = world_to_display(size_xy)
+
+        # We can't use pyqtgraph internal snapping because it can't have different snapping
+        # values for x and y.
+        # So we must snap and override the posizion/size of the widget at each interaction
+        snapped_pos, snapped_size, new_roi_position, new_roi_size = (
+            self._snap_to_grid(pos, size, self.roi_size_ij)
+        )
+
+        snapped_pos_xy = ij_to_xy(snapped_pos)
+        snapped_size_xy = ij_to_xy(snapped_size)
+
+        self._highlight_roi_item.setPos(snapped_pos_xy, update=False)
+        self._highlight_roi_item.setSize(snapped_size_xy, update=False)
+        self._highlight_roi_item.update()
+
+        new_roi = {"position": new_roi_position, "size": new_roi_size}
+
+        if not self._rois_are_same(new_roi, self._highlight_roi):
+            self.set_highlight_roi(new_roi)
+            self.sigMappingHighlightChanged.emit(
+                new_roi["position"][0],
+                new_roi["position"][1],
+                new_roi["size"][0],
+                new_roi["size"][1],
+            )
+
+    def _on_update_highlight_region_finished(self):
+        # Make the handles snap to the grid once we finish interacting with the widget
+        item_size = self._highlight_roi_item.size()
+        self._highlight_roi_item.getHandles()[0].setPos(
+            item_size[0], item_size[1]
+        )
+
+    def _on_update_domain_region(self):
+        pos_xy = np.array(self._domain_roi_item.pos())
+        size_xy = np.array(self._domain_roi_item.size())
+
+        pos = world_to_display(pos_xy)
+        size = world_to_display(size_xy)
+
+        # We can't use pyqtgraph internal snapping because it can't have different snapping
+        # values for x and y.
+        # So we must snap and override the posizion/size of the widget at each interaction
+        snapped_pos, snapped_size, new_roi_position, new_roi_size = (
+            self._snap_to_grid(pos, size, self.roi_size_ij)
+        )
+
+        snapped_pos_xy = ij_to_xy(snapped_pos)
+        snapped_size_xy = ij_to_xy(snapped_size)
+
+        self._domain_roi_item.setPos(snapped_pos_xy, update=False)
+        self._domain_roi_item.setSize(snapped_size_xy, update=False)
+        self._domain_roi_item.update()
+
+        new_roi = {"position": new_roi_position, "size": new_roi_size}
+
+        if not self._rois_are_same(new_roi, self._domain_roi):
+            self.set_domain_roi(new_roi)
+            self.sigMappingDomainChanged.emit(
+                new_roi["position"][0],
+                new_roi["position"][1],
+                new_roi["size"][0],
+                new_roi["size"][1],
+            )
+
+    def _on_update_domain_region_finished(self):
+        # Make the handles snap to the grid once we finish interacting with the widget
+        item_size = self._domain_roi_item.size()
+        self._domain_roi_item.getHandles()[0].setPos(
+            item_size[0], item_size[1]
+        )
+
+    @staticmethod
+    def _snap_to_grid(pos: np.ndarray, size: np.ndarray, grid: np.ndarray):
+        grid_pos = np.round(pos / grid).astype(np.int32)
+        grid_size = np.round(size / grid).astype(np.int32)
+
+        snapped_pos = grid_pos * grid
+        snapped_size = grid_size * grid
+
+        return snapped_pos, snapped_size, grid_pos, grid_size
+
+    @staticmethod
+    def _rois_are_same(roi0, roi1) -> bool:
+        return np.array_equal(
+            roi0["position"], roi1["position"]
+        ) and np.array_equal(roi0["size"], roi1["size"])
+
+    def set_highlight_roi(self, roi):
+        if not self._rois_are_same(roi, self._highlight_roi):
+            self._highlight_roi = roi
+            self._update_highlight_roi_item()
+
+    def set_domain_roi(self, roi):
+        if not self._rois_are_same(roi, self._domain_roi):
+            self._domain_roi = roi
+            self.set_stale(True)
 
     def on_map_click(self, pos: QPointF):
         pos_ij = world_to_display(np.array((pos.x(), pos.y())))
@@ -279,16 +532,22 @@ class RegionMappingDialog(QDialog):
 
         n_y, n_x = series.scan_shape
 
-        self.progress_bar.setRange(0, n_y)
-        self.progress_bar.setValue(0)
-
         map_size = (n_y * size_ij[0], n_x * size_ij[1])
 
         map_img = np.zeros(map_size)
 
-        for i in range(n_y):
+        i0 = self._domain_roi["position"][0]
+        i1 = i0 + self._domain_roi["size"][0]
+
+        j0 = self._domain_roi["position"][1]
+        j1 = j0 + self._domain_roi["size"][1]
+
+        self.progress_bar.setRange(i0, i1)
+        self.progress_bar.setValue(i0)
+
+        for i in range(i0, i1):
             self.progress_bar.setValue(i)
-            for j in range(n_x):
+            for j in range(j0, j1):
                 scan_position[0] = i
                 scan_position[1] = j
 
@@ -309,6 +568,6 @@ class RegionMappingDialog(QDialog):
                     (frame_i_start, frame_i_end, frame_j_start, frame_j_end),
                 )
 
-        self.progress_bar.setValue(n_y)
+        self.progress_bar.setValue(i1)
 
         return pos_ij, size_ij, map_img
