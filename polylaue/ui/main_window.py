@@ -1,5 +1,6 @@
 # Copyright © 2024, UChicago Argonne, LLC. See "LICENSE" for full details.
 
+from functools import lru_cache
 import logging
 from pathlib import Path
 
@@ -8,7 +9,7 @@ from PySide6.QtWidgets import QFileDialog, QInputDialog, QMessageBox, QWidget
 
 import numpy as np
 
-from polylaue.model.io import identify_loader_function, Bounds
+from polylaue.model.io import load_image_file, identify_loader_function, Bounds
 from polylaue.model.roi_manager import ROIManager
 from polylaue.model.scan import Scan
 from polylaue.model.series import Series
@@ -318,6 +319,19 @@ class MainWindow:
         filepath = series.filepath(*scan_position, scan_number)
         img = self.image_loader_func(filepath, bounds)
 
+        if series.background_image_path_str is not None:
+            # This function will cache the background
+            background = _load_background_image(
+                series.background_image_path_str)
+
+            if bounds is not None:
+                background = background[
+                    bounds[0]:bounds[1],
+                    bounds[2]:bounds[3],
+                ]
+
+            img -= background
+
         return filepath, img
 
     def update_info_label(self):
@@ -602,3 +616,10 @@ class MainWindow:
         self.show_mapping_highlight_area = show
         for dialog in self.region_mapping_dialogs.values():
             dialog.set_show_highlight(self.show_mapping_highlight_area)
+
+
+# We probably only need to cache one background image, but since they are
+# small, just cache 2...
+@lru_cache(maxsize=2)
+def _load_background_image(path: str):
+    return load_image_file(path)
