@@ -54,8 +54,9 @@ class PolyLaueImageView(pg.ImageView):
         self.addItem(artist)
         self.reflection_status_message = ''
 
-        # Add an action to reverse the cmap
-        self.add_cmap_reverse_menu_action()
+        # Add additional context menu actions
+        self.add_additional_cmap_menu_actions()
+        self.add_additional_histogram_menu_actions()
 
         self.setup_connections()
 
@@ -324,7 +325,7 @@ class PolyLaueImageView(pg.ImageView):
 
         return super().keyPressEvent(event)
 
-    def add_cmap_reverse_menu_action(self):
+    def add_additional_cmap_menu_actions(self):
         """Add a 'reverse' action to the pyqtgraph colormap menu
 
         This assumes pyqtgraph won't change its internal attribute structure.
@@ -353,3 +354,32 @@ class PolyLaueImageView(pg.ImageView):
         menu.addSeparator()
         action = menu.addAction('reverse')
         action.triggered.connect(reverse)
+
+    def add_additional_histogram_menu_actions(self):
+        """Add a 'auto level' action to the pyqtgraph histogram menu
+
+        This assumes pyqtgraph won't change its internal attribute structure.
+        If it does change, then this function just won't work...
+        """
+        w = self.getHistogramWidget()
+        if not w:
+            # There should be a histogram widget. Not sure why it's missing...
+            return
+
+        try:
+            vb = w.item.vb
+            menu = vb.menu
+        except AttributeError:
+            # pyqtgraph must have changed its attribute structure
+            return
+
+        if not menu:
+            return
+
+        def auto_level():
+            self.auto_level_colors()
+            self.auto_level_histogram_range()
+
+        menu.addSeparator()
+        action = menu.addAction('auto level')
+        action.triggered.connect(auto_level)
