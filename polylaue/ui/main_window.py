@@ -575,25 +575,26 @@ class MainWindow:
     def on_roi_display_clicked(self, id: str):
         # Initialize mapping highlight and domain regions the first time a mapping is shown
         if len(self.region_mapping_dialogs) == 0:
-            # Initial mapping domain target is a 5x5 square in scan position space
-            # centered around the current scan position
-            target_size = 5
-            half_target_size = target_size // 2
+            # # Initial mapping domain target is a 5x5 square in scan position
+            # # space centered around the current scan position
+            # target_size = 5
+            # half_target_size = target_size // 2
 
-            pos = np.clip(
-                self.scan_pos - half_target_size,
-                a_min=[0, 0],
-                a_max=np.asarray(self.series.scan_shape) - target_size,
-            )
+            # pos = np.clip(
+            #     self.scan_pos - half_target_size,
+            #     a_min=[0, 0],
+            #     a_max=np.asarray(self.series.scan_shape) - target_size,
+            # )
 
-            size = np.clip(
-                np.array((target_size, target_size)),
-                a_min=[0, 0],
-                a_max=np.asarray(self.series.scan_shape) - pos,
-            )
+            # size = np.clip(
+            #     np.array((target_size, target_size)),
+            #     a_min=[0, 0],
+            #     a_max=np.asarray(self.series.scan_shape) - pos,
+            # )
 
             # To set the default size to be the scan shape, do this:
-            # size = np.array(self.series.scan_shape)
+            pos = np.array((0, 0))
+            size = np.array(self.series.scan_shape)
 
             self.mapping_domain_area = {"position": pos, "size": size}
             self.mapping_highlight_area = {
