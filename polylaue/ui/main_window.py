@@ -82,12 +82,19 @@ class MainWindow:
         self.ui.action_regions_manager.triggered.connect(
             self.open_mapping_regions_manager
         )
+        self.ui.action_apply_background_subtraction.toggled.connect(
+            self.on_action_apply_background_subtraction_toggled
+        )
 
         self.image_view.shift_scan_number.connect(self.on_shift_scan_number)
         self.image_view.shift_scan_position.connect(
             self.on_shift_scan_position
         )
         self.image_view.mouse_move_message.connect(self.on_mouse_move_message)
+        self.image_view.set_image_to_series_background.connect(
+            self.set_current_image_to_series_background)
+        self.image_view.set_image_to_section_background.connect(
+            self.set_current_image_to_section_background)
 
         self.reflections_editor.reflections_changed.connect(
             self.on_reflections_changed
@@ -98,6 +105,14 @@ class MainWindow:
         self.reflections_editor.reflections_style_changed.connect(
             self.on_reflections_style_changed
         )
+
+    @property
+    def apply_background_subtraction(self) -> bool:
+        return self.ui.action_apply_background_subtraction.isChecked()
+
+    @apply_background_subtraction.setter
+    def apply_background_subtraction(self, b: bool):
+        return self.ui.action_apply_background_subtraction.setChecked(b)
 
     @property
     def scan_pos(self) -> np.ndarray:
@@ -300,6 +315,10 @@ class MainWindow:
             dialog.set_series(self.series)
             dialog.set_scan_number(self.scan_num)
 
+    def set_mapping_dialogs_stale(self):
+        for dialog in self.region_mapping_dialogs.values():
+            dialog.set_stale(True)
+
     def load_current_image(self):
         filepath, img = self.open_image(
             self.series, self.scan_num, self.scan_pos
@@ -319,7 +338,10 @@ class MainWindow:
         filepath = series.filepath(*scan_position, scan_number)
         img = self.image_loader_func(filepath, bounds)
 
-        if series.background_image_path_str is not None:
+        if (
+            self.apply_background_subtraction and
+            series.background_image_path_str is not None
+        ):
             # This function will cache the background
             background = _load_background_image(
                 series.background_image_path_str)
@@ -358,12 +380,41 @@ class MainWindow:
     def on_mouse_move_message(self, message: str):
         self.ui.status_bar.showMessage(message)
 
+    def set_current_image_to_series_background(self):
+        filepath = self.series.filepath(*self.scan_pos, self.scan_num)
+        self.series.background_image_path = filepath
+
+        if self.apply_background_subtraction:
+            # Same logic now as toggling background subtraction on/off
+            self.on_action_apply_background_subtraction_toggled()
+
+    def set_current_image_to_section_background(self):
+        filepath = self.series.filepath(*self.scan_pos, self.scan_num)
+        section = self.series.parent
+        if section is None:
+            # Can't do anything
+            return
+
+        for series in section.series:
+            series.background_image_path = filepath
+
+        if self.apply_background_subtraction:
+            # Same logic now as toggling background subtraction on/off
+            self.on_action_apply_background_subtraction_toggled()
+
     def open_reflections_editor(self):
         self.reflections_editor.ui.show()
 
     def on_reflections_changed(self):
         new_reflections = self.reflections_editor.reflections
         self.image_view.reflections = new_reflections
+
+    def on_action_apply_background_subtraction_toggled(self):
+        self.load_current_image()
+        # Should we reset levels? Verify this.
+        self.reset_image_view_settings()
+        self.image_view.on_mouse_move()
+        self.set_mapping_dialogs_stale()
 
     def open_mapping_regions_manager(self):
         if not hasattr(self, '_regions_navigator_dialog'):
@@ -540,6 +591,9 @@ class MainWindow:
                 a_min=[0, 0],
                 a_max=np.asarray(self.series.scan_shape) - pos,
             )
+
+            # To set the default size to be the scan shape, do this:
+            # size = np.array(self.series.scan_shape)
 
             self.mapping_domain_area = {"position": pos, "size": size}
             self.mapping_highlight_area = {
