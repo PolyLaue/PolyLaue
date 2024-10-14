@@ -75,11 +75,18 @@
     </property>
     <addaction name="action_select_indexing_points"/>
    </widget>
+   <widget class="QMenu" name="menu_settings">
+    <property name="title">
+     <string>Settings</string>
+    </property>
+    <addaction name="action_apply_background_subtraction"/>
+   </widget>
    <addaction name="menu_file"/>
    <addaction name="menu_projects"/>
    <addaction name="menu_overlays"/>
    <addaction name="menu_mapping"/>
    <addaction name="menu_indexing"/>
+   <addaction name="menu_settings"/>
   </widget>
   <widget class="QStatusBar" name="status_bar"/>
   <action name="action_open_series">
@@ -115,6 +122,17 @@
   <action name="action_select_indexing_points">
    <property name="text">
     <string>Select Points</string>
+   </property>
+  </action>
+  <action name="action_apply_background_subtraction">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Apply Background Subtraction</string>
    </property>
   </action>
  </widget>

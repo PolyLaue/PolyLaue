@@ -80,8 +80,8 @@ DEFAULT_ROI_ITEM_ARGS = {
 
 SHOW_HIGHLIGHT_MSG = 'Show Highlight Region'
 HIDE_HIGHLIGHT_MSG = 'Hide Highlight Region'
-SHOW_DOMAIN_MSG = 'Show Mapping Domain'
-HIDE_DOMAIN_MSG = 'Hide Mapping Domain'
+SHOW_DOMAIN_MSG = 'Show Map Shape'
+HIDE_DOMAIN_MSG = 'Hide Map Shape'
 
 
 class RegionMappingDialog(QDialog):
