@@ -12,6 +12,7 @@ class ReflectionsTableEditor:
     This does not hold open a file handle to the file because
     we don't want to prevent read access by PolyLaue on Windows.
     """
+
     def __init__(self, filepath: str):
         self.filepath = Path(filepath)
 
@@ -91,9 +92,7 @@ class ReflectionsTableEditor:
                 del f[path]
 
             while (
-                parent is not None and
-                len(parent) == 0 and
-                parent.name != '/'
+                parent is not None and len(parent) == 0 and parent.name != '/'
             ):
                 group = parent
                 parent = group.parent

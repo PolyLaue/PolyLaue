@@ -92,9 +92,11 @@ class MainWindow:
         )
         self.image_view.mouse_move_message.connect(self.on_mouse_move_message)
         self.image_view.set_image_to_series_background.connect(
-            self.set_current_image_to_series_background)
+            self.set_current_image_to_series_background
+        )
         self.image_view.set_image_to_section_background.connect(
-            self.set_current_image_to_section_background)
+            self.set_current_image_to_section_background
+        )
 
         self.reflections_editor.reflections_changed.connect(
             self.on_reflections_changed
@@ -339,17 +341,18 @@ class MainWindow:
         img = self.image_loader_func(filepath, bounds)
 
         if (
-            self.apply_background_subtraction and
-            series.background_image_path_str is not None
+            self.apply_background_subtraction
+            and series.background_image_path_str is not None
         ):
             # This function will cache the background
             background = _load_background_image(
-                series.background_image_path_str)
+                series.background_image_path_str
+            )
 
             if bounds is not None:
                 background = background[
-                    bounds[0]:bounds[1],
-                    bounds[2]:bounds[3],
+                    bounds[0] : bounds[1],
+                    bounds[2] : bounds[3],
                 ]
 
             img -= background

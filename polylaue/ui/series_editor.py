@@ -30,7 +30,8 @@ class SeriesEditor:
     def setup_connections(self):
         self.ui.select_series_dir.clicked.connect(self.select_series_dir)
         self.ui.select_background_image.clicked.connect(
-            self.select_background_image_path)
+            self.select_background_image_path
+        )
 
     def serialize_series_ui(self) -> dict:
         # Serialize UI settings into a dict

@@ -92,4 +92,6 @@ table_from_file = editor.reflections_table(
     scan_pos_y,
 )
 
-print('After modifying, reflections table from file is now:\n', table_from_file)
+print(
+    'After modifying, reflections table from file is now:\n', table_from_file
+)
