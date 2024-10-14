@@ -222,6 +222,7 @@ class MainWindow:
             # Set the scan number
             self.scan_num = prev_scan_number
             self.on_frame_changed()
+            self.set_mapping_dialogs_stale()
 
     def on_project_navigator_open_scan(self, scan: Scan):
         series = scan.parent
@@ -237,6 +238,7 @@ class MainWindow:
         # Set the scan number
         self.scan_num = scan.number
         self.on_frame_changed()
+        self.set_mapping_dialogs_stale()
 
     def save_project_manager(self):
         save_project_manager(self.project_manager)
@@ -387,6 +389,9 @@ class MainWindow:
         filepath = self.series.filepath(*self.scan_pos, self.scan_num)
         self.series.background_image_path = filepath
 
+        # Save the project manager so this change will persist
+        self.save_project_manager()
+
         if self.apply_background_subtraction:
             # Same logic now as toggling background subtraction on/off
             self.on_action_apply_background_subtraction_toggled()
@@ -400,6 +405,9 @@ class MainWindow:
 
         for series in section.series:
             series.background_image_path = filepath
+
+        # Save the project manager so this change will persist
+        self.save_project_manager()
 
         if self.apply_background_subtraction:
             # Same logic now as toggling background subtraction on/off
