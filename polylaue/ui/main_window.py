@@ -621,6 +621,8 @@ class MainWindow:
             dialog.set_stale(True)
 
             dialog.change_scan_position.connect(self.on_change_scan_position)
+            dialog.shift_scan_number.connect(self.on_shift_scan_number)
+            dialog.shift_scan_position.connect(self.on_shift_scan_position)
             dialog.sigMappingDomainChanged.connect(
                 self.on_mapping_domain_changed
             )

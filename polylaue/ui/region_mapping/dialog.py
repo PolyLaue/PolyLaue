@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
 )
 
 from PySide6.QtCore import (
+    QEvent,
     QPointF,
     QRectF,
     Qt,
@@ -32,6 +33,8 @@ from polylaue.model.series import Series
 from polylaue.model.roi_manager import ROIManager
 from polylaue.ui.region_mapping.grid_item import CustomGridItem
 from polylaue.utils.coordinates import world_to_display, ij_to_xy
+
+Key = Qt.Key
 
 
 class Debouncer:
@@ -88,6 +91,8 @@ class RegionMappingDialog(QDialog):
     """Emitted when the scan position should be changed"""
 
     change_scan_position = Signal(int, int)
+    shift_scan_number = Signal(int)
+    shift_scan_position = Signal(int, int)
     sigShowHighlightChanged = Signal(bool)
     sigShowDomainChanged = Signal(bool)
     sigMappingHighlightChanged = Signal(int, int, int, int)
@@ -210,6 +215,39 @@ class RegionMappingDialog(QDialog):
         self.debounced_refresh()
 
         return super().showEvent(event)
+
+    def keyPressEvent(self, event: QEvent):
+        """Override the key press event to navigate between scan numbers"""
+
+        def shift_position(i, j):
+            self.shift_scan_position.emit(i, j)
+            event.accept()
+
+        def shift_scan_number(i):
+            self.shift_scan_number.emit(i)
+            event.accept()
+
+        match event.key():
+            case Key.Key_Right:
+                # Move right one column
+                return shift_position(0, 1)
+            case Key.Key_Left:
+                # Move left one column
+                return shift_position(0, -1)
+            case Key.Key_Down:
+                # Move down one row
+                return shift_position(1, 0)
+            case Key.Key_Up:
+                # Move up one row
+                return shift_position(-1, 0)
+            case Key.Key_PageUp:
+                # Move up one scan
+                return shift_scan_number(1)
+            case Key.Key_PageDown:
+                # Move down one scan
+                return shift_scan_number(-1)
+
+        return super().keyPressEvent(event)
 
     def on_close(self, *_args):
         self.visible = False
