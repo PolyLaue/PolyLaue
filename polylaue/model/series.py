@@ -40,6 +40,7 @@ class Series(Serializable):
         scan_start_number: int = 1,
         scan_shape: tuple[int, int] = (21, 21),
         skip_frames: int = 10,
+        background_image_path: PathLike | None = None,
         file_prefix: str | None = None,
         parent: Serializable | None = None,
     ):
@@ -54,6 +55,7 @@ class Series(Serializable):
         self.scan_start_number = scan_start_number
         self.scan_shape = scan_shape
         self.skip_frames = skip_frames
+        self.background_image_path = background_image_path
         self.has_final_dark_file = False
         self.file_prefix = file_prefix
         self.file_list = []
@@ -235,6 +237,16 @@ class Series(Serializable):
         """Generate the file list if missing, and ensure that the files in the
         directory match the scan info
         """
+        if not self.dirpath.exists():
+            msg = f'Series path not found: {self.dirpath}'
+            raise ValidationError(msg)
+
+        if self.background_image_path is not None:
+            background_path = self.background_image_path
+            if not background_path.exists():
+                msg = f'Background file does not exist: {background_path}'
+                raise ValidationError(msg)
+
         if not self.file_list:
             # Generate the file list if there is none
             self.generate_file_list()
@@ -265,20 +277,40 @@ class Series(Serializable):
         logger.debug(f'Validation for "{self.dirpath}" passed')
 
     @property
-    def dirpath(self):
+    def dirpath(self) -> Path:
         return self._dirpath
 
     @dirpath.setter
-    def dirpath(self, v):
+    def dirpath(self, v: PathLike):
         self._dirpath = Path(v).resolve()
 
     @property
-    def dirpath_str(self):
+    def dirpath_str(self) -> str:
         return str(self.dirpath)
 
     @dirpath_str.setter
-    def dirpath_str(self, v):
+    def dirpath_str(self, v: str):
         self.dirpath = v
+
+    @property
+    def background_image_path(self) -> Path | None:
+        return self._background_image_path
+
+    @background_image_path.setter
+    def background_image_path(self, v: PathLike | None):
+        if v is not None:
+            v = Path(v).resolve()
+
+        self._background_image_path = v
+
+    @property
+    def background_image_path_str(self) -> str | None:
+        p = self.background_image_path
+        return str(p) if p is not None else None
+
+    @background_image_path_str.setter
+    def background_image_path_str(self, v: str | None):
+        self.background_image_path = v
 
     # Serialization code
     _attrs_to_serialize = [
@@ -290,6 +322,7 @@ class Series(Serializable):
         'scans_serialized',
         'skip_frames',
         'file_prefix',
+        'background_image_path_str',
     ]
 
     @property

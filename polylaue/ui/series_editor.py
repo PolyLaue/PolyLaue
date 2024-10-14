@@ -29,6 +29,8 @@ class SeriesEditor:
 
     def setup_connections(self):
         self.ui.select_series_dir.clicked.connect(self.select_series_dir)
+        self.ui.select_background_image.clicked.connect(
+            self.select_background_image_path)
 
     def serialize_series_ui(self) -> dict:
         # Serialize UI settings into a dict
@@ -38,6 +40,7 @@ class SeriesEditor:
             'scan_shape': self.ui_scan_shape,
             'skip_frames': self.ui.skip_frames.value(),
             'scan_range_tuple': self.ui_scan_range,
+            'background_image_path_str': self.ui_background_image,
         }
 
     def update_ui(self):
@@ -51,6 +54,9 @@ class SeriesEditor:
             'scan_shape': lambda v: setattr(self, 'ui_scan_shape', v),
             'skip_frames': self.ui.skip_frames.setValue,
             'scan_range_tuple': lambda v: setattr(self, 'ui_scan_range', v),
+            'background_image_path_str': lambda v: (
+                setattr(self, 'ui_background_image', v),
+            ),
         }
         for k, v in d.items():
             if k in setters:
@@ -76,6 +82,19 @@ class SeriesEditor:
 
         self.ui.series_dir.setText(selected_directory)
 
+    def select_background_image_path(self):
+        selected_file, selected_filter = QFileDialog.getOpenFileName(
+            self.ui,
+            'Select Background Image',
+            self.ui.background_image.text(),
+        )
+
+        if not selected_file:
+            # User canceled
+            return
+
+        self.ui.background_image.setText(selected_file)
+
     # UI properties that match config properties
     @property
     def ui_scan_shape(self) -> tuple[int, int]:
@@ -100,6 +119,16 @@ class SeriesEditor:
     def ui_scan_range(self, v: tuple[int, int]):
         self.ui.scan_range_start.setValue(v[0])
         self.ui.scan_range_stop.setValue(v[1])
+
+    @property
+    def ui_background_image(self) -> str | None:
+        t = self.ui.background_image.text()
+        return t if t else None
+
+    @ui_background_image.setter
+    def ui_background_image(self, v: str | None):
+        t = v if v else ''
+        self.ui.background_image.setText(t)
 
 
 class SeriesEditorDialog(QDialog):
