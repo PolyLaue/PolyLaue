@@ -418,7 +418,6 @@ class PolyLaueImageView(pg.ImageView):
         def auto_level():
             self.auto_level_colors()
             self.auto_level_histogram_range()
-            self.autoRange()
 
         menu.addSeparator()
         action = menu.addAction('auto level')
