@@ -357,7 +357,13 @@ class MainWindow:
                     bounds[2] : bounds[3],
                 ]
 
-            img -= background
+            # Need to cast up, because sometimes the background can
+            # have higher values than the image, which results in
+            # negative numbers, and most of the data we work with
+            # is unsigned, which results in an underflow.
+            # Maybe we should convert to a larger signed integer than
+            # a float? I'm not sure. We can revisit in the future.
+            img = img - background.astype(np.float64)
 
         return filepath, img
 
