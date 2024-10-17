@@ -357,7 +357,13 @@ class MainWindow:
                     bounds[2] : bounds[3],
                 ]
 
-            img -= background
+            # Need to cast up, because sometimes the background can
+            # have higher values than the image, which results in
+            # negative numbers, and most of the data we work with
+            # is unsigned, which results in an underflow.
+            # Maybe we should convert to a larger signed integer than
+            # a float? I'm not sure. We can revisit in the future.
+            img = img - background.astype(np.float64)
 
         return filepath, img
 
@@ -422,8 +428,10 @@ class MainWindow:
 
     def on_action_apply_background_subtraction_toggled(self):
         self.load_current_image()
-        # Should we reset levels? Verify this.
-        self.reset_image_view_settings()
+        # We don't want to call self.image_view.autoRange(),
+        # so don't call self.reset_image_view_settings() for this.
+        self.image_view.auto_level_colors()
+        self.image_view.auto_level_histogram_range()
         self.image_view.on_mouse_move()
         self.set_mapping_dialogs_stale()
 
