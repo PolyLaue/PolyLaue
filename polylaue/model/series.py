@@ -266,7 +266,7 @@ class Series(Serializable):
             )
         elif num_files != expected_num_files:
             msg = (
-                f'For series at "{self.dirpath}", number of files '
+                f'For series at "{self.dirpath}", number of unskipped files '
                 f'"{num_files}" does not match the '
                 f'expected number of files "{expected_num_files}", '
                 'which was computed based upon the number of scans '
