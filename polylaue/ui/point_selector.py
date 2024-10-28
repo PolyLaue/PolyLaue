@@ -40,8 +40,8 @@ class PointSelector(QObject):
         image_view.addItem(artist)
 
         # Disable the context menu while this is active
-        self._prev_menu_enabled = image_view.view.menuEnabled()
-        image_view.view.setMenuEnabled(False)
+        self._prev_menu_enabled = image_view.context_menu_enabled
+        image_view.context_menu_enabled = False
 
         self.setup_connections()
 
@@ -57,7 +57,7 @@ class PointSelector(QObject):
             self.scatter_artist = None
 
         if self.image_view:
-            self.image_view.view.setMenuEnabled(self._prev_menu_enabled)
+            self.image_view.context_menu_enabled = self._prev_menu_enabled
             self.image_view.scene.sigMouseClicked.disconnect(
                 self._mouse_click_connection
             )
