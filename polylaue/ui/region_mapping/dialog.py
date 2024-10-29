@@ -206,6 +206,20 @@ class RegionMappingDialog(QDialog):
             self._on_update_highlight_region_finished
         )
 
+        # By default pyqtgraph ROIs have clicking disable to prevent them from stealing
+        # the event from the items below them,
+        # however the click event still doesn't make it through for whatever reason.
+        # Workaround: explicitly enable clicking on the ROI item and then pass the event
+        # to the callback we intended originally
+        self._domain_roi_item.setAcceptedMouseButtons(
+            Qt.MouseButton.LeftButton
+        )
+        self._domain_roi_item.sigClicked.connect(self.on_roi_click)
+        self._highlight_roi_item.setAcceptedMouseButtons(
+            Qt.MouseButton.LeftButton
+        )
+        self._highlight_roi_item.sigClicked.connect(self.on_roi_click)
+
         self._update_window_title()
         self._update_highlight_btn()
         self._update_domain_btn()
@@ -523,6 +537,10 @@ class RegionMappingDialog(QDialog):
         if not self._rois_are_same(roi, self._domain_roi):
             self._domain_roi = roi
             self.set_stale(True)
+
+    def on_roi_click(self, target, ev, *args):
+        pos = self._view.mapSceneToView(ev.scenePos())
+        self.on_map_click(pos)
 
     def on_map_click(self, pos: QPointF):
         pos_ij = world_to_display(np.array((pos.x(), pos.y())))
