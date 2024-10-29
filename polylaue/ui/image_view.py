@@ -331,6 +331,22 @@ class PolyLaueImageView(pg.ImageView):
 
         return super().keyPressEvent(event)
 
+    @property
+    def context_menu_enabled(self) -> bool:
+        return self.view.menuEnabled()
+
+    @context_menu_enabled.setter
+    def context_menu_enabled(self, b: bool):
+        prev = self.view.menuEnabled()
+        if b == prev:
+            # Nothing to do
+            return
+
+        self.view.setMenuEnabled(b)
+        if b and not prev:
+            # The menu got re-created. Re-create our custom menu items.
+            self.add_additional_image_view_menu_actions()
+
     def add_additional_context_menu_actions(self):
         self.add_additional_image_view_menu_actions()
         self.add_additional_cmap_menu_actions()
