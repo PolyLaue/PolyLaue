@@ -55,7 +55,7 @@ class MainWindow:
         )
         self.ui.image_view_layout.addWidget(self.image_view)
 
-        self.reflections_editor = ReflectionsEditor(self.ui)
+        self.reflections_editor = ReflectionsEditor(self.frame_tracker, self.ui)
 
         self.roi_manager = ROIManager()
 
