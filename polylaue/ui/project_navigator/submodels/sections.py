@@ -15,7 +15,7 @@ class SectionsSubmodel(BaseSubmodel):
     def entry_list(self) -> list[Section]:
         return self.project.sections
 
-    def create(self) -> Section:
+    def create(self, row: int) -> Section:
         return Section(parent=self.project)
 
     @property

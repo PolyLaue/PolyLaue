@@ -4,7 +4,8 @@ from abc import ABC, abstractmethod
 
 from PySide6.QtCore import QModelIndex, Qt
 
-from polylaue.model.serializable import Serializable
+from polylaue.model.editable import Editable
+from polylaue.ui.editor import EditorDialog
 
 
 # Enum shortcuts
@@ -23,7 +24,7 @@ class BaseSubmodel(ABC):
         pass
 
     @abstractmethod
-    def create(self) -> Serializable:
+    def create(self, row: int) -> Editable:
         # Create a new instance of the managed type
         pass
 
@@ -99,15 +100,31 @@ class BaseSubmodel(ABC):
         keys = list(self.columns)
         return keys[column]
 
-    def insert_entries(self, row: int, count: int = 1):
+    def create_entries(self, row: int, count: int = 1) -> list[Editable]:
+        new_entries = []
+
         while count > 0:
             # Create a new instance with default values
-            instance = self.create()
+            instance = self.create(row)
+            editor_dialog = EditorDialog(instance)
 
-            # Add this instance to the entry list
-            self.entry_list.insert(row, instance)
-            row += 1
+            if editor_dialog.exec():
+                new_entries.append(instance)
+                row += 1
+
             count -= 1
+
+        return new_entries
+
+    def insert_entries(self, row: int, entries: list[Editable]):
+        for i, instance in enumerate(entries):
+            self.entry_list.insert(row + i, instance)
+
+    def edit_entry(self, row: int) -> int:
+        entry = self.entry_list[row]
+        editor_dialog = EditorDialog(entry)
+
+        return editor_dialog.exec()
 
     def delete_entries(self, row: int, count: int = 1):
         while count > 0:

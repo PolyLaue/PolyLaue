@@ -2,9 +2,10 @@
 
 from polylaue.model.serializable import Serializable
 from polylaue.model.series import Series
+from polylaue.model.editable import Editable, ParameterDescription
 
 
-class Section(Serializable):
+class Section(Editable):
     """A section contains a set of series"""
 
     def __init__(
@@ -14,6 +15,8 @@ class Section(Serializable):
         description: str = 'Description',
         parent: Serializable | None = None,
     ):
+        super().__init__()
+
         if series is None:
             series = []
 
@@ -50,3 +53,19 @@ class Section(Serializable):
     @series_serialized.setter
     def series_serialized(self, v: list[dict]):
         self.series = [Series.from_serialized(x, parent=self) for x in v]
+
+    # Editable fields
+    @classmethod
+    def get_parameters_description(cls) -> dict[str, ParameterDescription]:
+        return {
+            "name": {
+                "type": "string",
+                "label": "Name",
+                "min": 1,
+            },
+            "description": {
+                "type": "string",
+                "label": "Description",
+                "required": False,
+            },
+        }

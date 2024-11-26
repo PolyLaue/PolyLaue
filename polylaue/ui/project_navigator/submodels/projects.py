@@ -15,7 +15,7 @@ class ProjectsSubmodel(BaseSubmodel):
     def entry_list(self) -> list[Project]:
         return self.project_manager.projects
 
-    def create(self) -> Project:
+    def create(self, row: int) -> Project:
         return Project(parent=self.project_manager)
 
     @property

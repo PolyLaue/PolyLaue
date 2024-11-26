@@ -20,7 +20,6 @@ from PySide6.QtWidgets import (
 from polylaue.model.scan import Scan
 from polylaue.model.series import Series
 from polylaue.ui.project_navigator.navigation_bar import NavigationBar
-from polylaue.ui.series_editor import SeriesEditorDialog
 
 
 # A few shortcuts to enums
@@ -153,19 +152,23 @@ class ProjectNavigatorView(QTableView):
             # Default behavior is to just use the regular editor
             self.edit(index)
 
-        def edit_series():
-            self.edit_series(row_clicked)
+        def edit_entry():
+            self.edit_entry(row_clicked)
 
         def edit_scan_shifts():
             self.descend_into_row(row_clicked)
 
         if ItemFlag.ItemIsEditable in index.flags():
-            add_actions({'Edit': edit_item})
+            add_actions(
+                {
+                    'Edit': edit_entry,
+                    'Edit Field': edit_item,
+                }
+            )
 
         if is_series:
             add_actions(
                 {
-                    'Series Settings': edit_series,
                     'Scan Shifts': edit_scan_shifts,
                 }
             )
@@ -257,34 +260,30 @@ class ProjectNavigatorView(QTableView):
         self.model.set_path(self.model.path[:i])
         self.on_path_modified()
 
-    def edit_series(self, row: int):
-        series = self.submodel.entry_list[row]
-        if SeriesEditorDialog(series, self).exec():
+    def edit_entry(self, row: int):
+        if self.submodel.edit_entry(row):
             # Indicate that the data was modified.
             self.model.data_modified.emit()
 
-            # Trigger the series to be re-opened
-            self.series_modified.emit(series)
+            # If it is a series, trigger the series to be re-opened
+            entry = self.submodel.entry_list[row]
+            if isinstance(entry, Series):
+                self.series_modified.emit(entry)
 
     def insert_row(self, row: int):
         # A row of -1 indicates it should be added to the end
         row = row if row != -1 else len(self.submodel.entry_list)
-
         self.model.insertRows(row, 1)
-        if self.is_submodel_series:
-            # Bring up the series editor dialog
-            series_list = self.submodel.entry_list
-            if len(series_list) > 1:
-                # Set the directory to be the parent of a neighboring series,
-                # since the user will probably need to navigate there anyways.
-                neighbor_row = row - 1 if row > 0 else len(series_list) - 1
-                neighbor_series = series_list[neighbor_row]
-                series_list[row].dirpath = neighbor_series.dirpath.parent
 
-            self.edit_series(row)
+    def edit_selected_rows(self):
+        self.edit_rows(self.selected_rows)
 
     def remove_selected_rows(self):
         self.delete_rows(self.selected_rows)
+
+    def edit_rows(self, rows: list[int]):
+        for row in rows:
+            self.edit_entry(row)
 
     def delete_rows(self, rows: list[int], confirm_with_user: bool = True):
         if confirm_with_user:
