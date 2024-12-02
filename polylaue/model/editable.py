@@ -36,11 +36,14 @@ class ParameterDescription(TypedDict):
 
 
 ParameterValidator = Callable[
-    [Any, ParameterDescription, dict[str, ParameterValue], "Editable"], None
+    [str, Any, ParameterDescription, dict[str, ParameterValue], "Editable"],
+    None,
 ]
 
 
-def default_string_validator(value, description: ParameterDescription, *args):
+def default_string_validator(
+    name: str, value, description: ParameterDescription, *args
+):
     valid = isinstance(value, str)
 
     if not valid:
@@ -63,7 +66,9 @@ def default_string_validator(value, description: ParameterDescription, *args):
         )
 
 
-def default_number_validator(value, description: ParameterDescription, *args):
+def default_number_validator(
+    name: str, value, description: ParameterDescription, *args
+):
     valid = isinstance(value, (int, float))
 
     if not valid:
@@ -84,7 +89,9 @@ def default_number_validator(value, description: ParameterDescription, *args):
         )
 
 
-def default_path_validator(value, description: ParameterDescription, *args):
+def default_path_validator(
+    name: str, value, description: ParameterDescription, *args
+):
     required = description.get('required', True)
 
     if not required and (
@@ -99,13 +106,15 @@ def default_path_validator(value, description: ParameterDescription, *args):
 
     path = Path(value).resolve()
 
-    if not path.exists():
+    exists_fn = path.is_file if description['type'] == 'file' else path.is_dir
+
+    if not exists_fn():
         raise ValidationError(
             f"{description['label']}:\n{description['type'].capitalize()}  does not exist: {path}"
         )
 
 
-def noop_validator(value, description: ParameterDescription, *args):
+def noop_validator(name: str, value, description: ParameterDescription, *args):
     pass
 
 
@@ -118,7 +127,9 @@ DEFAULT_SCALAR_VALIDATORS: dict[ParameterType, ParameterValidator] = {
 }
 
 
-def default_tuple_validator(value, description: ParameterDescription, *args):
+def default_tuple_validator(
+    name: str, value, description: ParameterDescription, *args
+):
     valid = isinstance(value, tuple)
     valid = valid and len(value) == description.get('length', 2)
 
@@ -132,7 +143,7 @@ def default_tuple_validator(value, description: ParameterDescription, *args):
     )
 
     for x in value:
-        element_validator(x, description, *args)
+        element_validator(name, x, description, *args)
 
 
 DEFAULT_VALIDATORS: dict[ParameterType, ParameterValidator] = {
@@ -181,4 +192,4 @@ class Editable(Serializable):
                     description['type'], noop_validator
                 )
 
-            validator(value, description, params, self)
+            validator(k, value, description, params, self)
