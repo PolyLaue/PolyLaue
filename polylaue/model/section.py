@@ -1,5 +1,7 @@
 # Copyright © 2024, UChicago Argonne, LLC. See "LICENSE" for full details.
 
+from pathlib import Path
+
 from polylaue.model.serializable import Serializable
 from polylaue.model.series import Series
 from polylaue.model.editable import Editable, ParameterDescription
@@ -10,9 +12,9 @@ class Section(Editable):
 
     def __init__(
         self,
-        name: str = 'Section',
+        name: str = '',
         series: list[Series] | None = None,
-        description: str = 'Description',
+        description: str = '',
         parent: Serializable | None = None,
     ):
         super().__init__()
@@ -20,7 +22,7 @@ class Section(Editable):
         if series is None:
             series = []
 
-        self.name = name
+        self._name = name
         self.series = series
         self.description = description
         self.parent = parent
@@ -45,6 +47,50 @@ class Section(Editable):
         'description',
         'series_serialized',
     ]
+
+    @property
+    def directory(self) -> Path | None:
+        dir = Section._directory(self.parent, self.name)
+        if dir is not None and dir.is_dir():
+            return dir
+        else:
+            return None
+
+    @staticmethod
+    def _directory(parent, name) -> Path | None:
+        if parent is None:
+            return None
+
+        if name == "":
+            return None
+
+        root_dir = Path(parent.directory).resolve()
+
+        return root_dir / Path(f"section_{name.lower()}")
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @name.setter
+    def name(self, value):
+        prev_value = self._name
+
+        if value == prev_value:
+            return
+
+        self._name = value
+
+        current_dir = Section._directory(self.parent, prev_value)
+        destination_dir = Section._directory(self.parent, value)
+
+        if destination_dir is None:
+            return
+
+        if current_dir is not None and current_dir.is_dir():
+            Path.rename(current_dir, destination_dir)
+        elif not destination_dir.exists():
+            Path.mkdir(destination_dir)
 
     @property
     def series_serialized(self) -> list[dict]:

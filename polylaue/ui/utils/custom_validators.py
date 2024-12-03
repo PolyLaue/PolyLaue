@@ -1,3 +1,7 @@
+# Copyright © 2024, UChicago Argonne, LLC. See "LICENSE" for full details.
+
+from typing import Any, Callable
+
 from pathlib import Path
 
 from PySide6.QtWidgets import (
@@ -6,8 +10,10 @@ from PySide6.QtWidgets import (
 
 from polylaue.model.editable import (
     default_path_validator,
+    default_string_validator,
     Editable,
     ParameterDescription,
+    ParameterValidator,
     ParameterValue,
     ValidationError,
 )
@@ -47,5 +53,28 @@ def empty_folder_validator(
             raise ValidationError(
                 f"The directory wasn't used because it isn't empty."
             )
+
+    return
+
+
+def unique_value_validator(
+    is_unique_fn: Callable[[Any], bool],
+    name: str,
+    value: str,
+    description: ParameterDescription,
+    params: dict[str, ParameterValue],
+    editable: Editable,
+):
+    default_string_validator(name, value, description, params, editable)
+
+    current_params = editable.get_parameters()
+
+    if value == current_params.get(name):
+        return
+
+    if not is_unique_fn(value):
+        raise ValidationError(
+            f"The value is not unique, please pick a different value."
+        )
 
     return
