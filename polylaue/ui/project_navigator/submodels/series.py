@@ -15,8 +15,16 @@ class SeriesSubmodel(BaseSubmodel):
     def entry_list(self) -> list[Series]:
         return self.section.series
 
-    def create(self) -> Series:
-        return Series(parent=self.section)
+    def create(self, row: int) -> Series:
+        series = Series(parent=self.section)
+        if len(self.entry_list) > 0:
+            # Set the directory to be the parent of a neighboring series,
+            # since the user will probably need to navigate there anyways.
+            neighbor_row = row - 1 if row > 0 else len(self.entry_list) - 1
+            neighbor_series = self.entry_list[neighbor_row]
+            series.dirpath = neighbor_series.dirpath.parent
+
+        return series
 
     @property
     def columns(self) -> dict[str, str]:

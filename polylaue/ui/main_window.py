@@ -15,6 +15,7 @@ from polylaue.model.scan import Scan
 from polylaue.model.series import Series
 from polylaue.model.state import load_project_manager, save_project_manager
 from polylaue.typing import PathLike
+from polylaue.ui.editor import EditorDialog
 from polylaue.ui.frame_tracker import FrameTracker
 from polylaue.ui.image_view import PolyLaueImageView
 from polylaue.ui.reflections_editor import ReflectionsEditor
@@ -23,7 +24,6 @@ from polylaue.ui.prediction_matcher import PredictionMatcherDialog
 from polylaue.ui.project_navigator.dialog import ProjectNavigatorDialog
 from polylaue.ui.region_mapping.dialog import RegionMappingDialog
 from polylaue.ui.regions_navigator.dialog import RegionsNavigatorDialog
-from polylaue.ui.series_editor import SeriesEditorDialog
 from polylaue.ui.utils.ui_loader import UiLoader
 
 
@@ -153,8 +153,8 @@ class MainWindow:
         self.create_and_load_series(selected_directory)
 
     def create_and_load_series(self, selected_directory: PathLike):
-        series = Series(selected_directory)
-        editor = SeriesEditorDialog(series, self.ui)
+        series = Series(dirpath=selected_directory)
+        editor = EditorDialog(series, self.ui)
         if not editor.exec():
             # User canceled.
             return
@@ -191,7 +191,7 @@ class MainWindow:
 
         if not self.series.file_list:
             # Might need to validate...
-            self.series.validate()
+            self.series.self_validate()
 
         # Assume that all files in the series use the same image loader.
         # Use that loader for all files, rather than identifying the loader

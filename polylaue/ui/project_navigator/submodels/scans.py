@@ -15,7 +15,7 @@ class ScansSubmodel(BaseSubmodel):
     def entry_list(self) -> list[Scan]:
         return self.series.scans
 
-    def create(self) -> Scan:
+    def create(self, row: int) -> Scan:
         return Scan(parent=self.series)
 
     @property

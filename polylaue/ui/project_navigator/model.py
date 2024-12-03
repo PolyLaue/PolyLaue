@@ -131,8 +131,9 @@ class ProjectNavigatorModel(QAbstractTableModel):
     def insertRows(
         self, row: int, count: int, parent: QModelIndex = QModelIndex()
     ) -> bool:
-        self.beginInsertRows(parent, row, row + count - 1)
-        self.submodel.insert_entries(row, count)
+        entries = self.submodel.create_entries(count)
+        self.beginInsertRows(parent, row, row + len(entries) - 1)
+        self.submodel.insert_entries(row, entries)
         self.endInsertRows()
         self.data_modified.emit()
         return True
