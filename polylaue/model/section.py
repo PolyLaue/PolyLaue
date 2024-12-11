@@ -66,7 +66,7 @@ class Section(Editable):
 
         root_dir = Path(parent.directory).resolve()
 
-        return root_dir / Path(f"section_{name.lower()}")
+        return root_dir / f"Sections/{name}"
 
     @property
     def name(self) -> str:
@@ -90,7 +90,7 @@ class Section(Editable):
         if current_dir is not None and current_dir.is_dir():
             Path.rename(current_dir, destination_dir)
         elif not destination_dir.exists():
-            Path.mkdir(destination_dir)
+            Path.mkdir(destination_dir, parents=True)
 
     @property
     def series_serialized(self) -> list[dict]:
