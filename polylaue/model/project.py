@@ -1,8 +1,11 @@
 # Copyright © 2024, UChicago Argonne, LLC. See "LICENSE" for full details.
 
+from pathlib import Path
+
 from polylaue.model.section import Section
 from polylaue.model.serializable import Serializable
 from polylaue.model.editable import Editable, ParameterDescription
+from polylaue.typing import PathLike
 
 
 class Project(Editable):
@@ -12,11 +15,12 @@ class Project(Editable):
         self,
         name: str = 'Project',
         sections: list[Section] | None = None,
-        directory: str = '',
+        directory: PathLike = '',
         description: str = '',
         energy_range: tuple[float, float] = (5, 70),
         frame_shape: tuple[int, int] = (2048, 2048),
         white_beam_shift: float = 0.01,
+        geometry_path: PathLike | None = None,
         parent: Serializable | None = None,
     ):
         super().__init__()
@@ -32,20 +36,82 @@ class Project(Editable):
         self.frame_shape = frame_shape
         self.white_beam_shift = white_beam_shift
         self.parent = parent
+        self.geometry_path = geometry_path
 
     @property
     def num_sections(self):
         return len(self.sections)
 
+    @property
+    def directory(self) -> Path:
+        return self._directory
+
+    @directory.setter
+    def directory(self, v: PathLike):
+        self._directory = Path(v).resolve()
+
+    @property
+    def directory_str(self) -> str:
+        return str(self.directory)
+
+    @directory_str.setter
+    def directory_str(self, v: str):
+        self.directory = v
+
+    @property
+    def geometry_path(self) -> Path | None:
+        return getattr(self, '_geometry_path', None)
+
+    @geometry_path.setter
+    def geometry_path(self, v: PathLike | None):
+        if v is not None:
+            v = Path(v).resolve()
+
+        if v == self.geometry_path:
+            return
+
+        # Delete the current geometry file in the project directory
+        if (
+            self.geometry_path is not None
+            and self.directory in self.geometry_path.parents
+        ):
+            self.geometry_path.unlink(missing_ok=True)
+
+        if v is None:
+            self._geometry_path = v
+            return
+
+        # If the file is not in the project directory,
+        # copy it over and set the new path
+        if self.directory not in v.parents:
+            v_copy = self.directory / v.name
+            v_copy.write_bytes(v.read_bytes())
+            self._geometry_path = v_copy
+        else:
+            self._geometry_path = v
+
+    @property
+    def geometry_path_str(self) -> str | None:
+        p = self.geometry_path
+        return str(p) if p is not None else None
+
+    @geometry_path_str.setter
+    def geometry_path_str(self, v: str | None):
+        if v is not None and v.strip() == '':
+            v = None
+
+        self.geometry_path = v
+
     # Serialization code
     _attrs_to_serialize = [
         'name',
-        'directory',
+        'directory_str',
         'description',
         'sections_serialized',
         'frame_shape',
         'energy_range',
         'white_beam_shift',
+        'geometry_path_str',
     ]
 
     @property
@@ -55,6 +121,16 @@ class Project(Editable):
     @sections_serialized.setter
     def sections_serialized(self, v: list[dict]):
         self.sections = [Section.from_serialized(x, parent=self) for x in v]
+
+    def deserialize(self, d: dict):
+        # For backward-compatibility, rename `directory` to `directory_str`,
+        # if present. We can remove this in a couple of releases, after
+        # we have verified that PolyLaue has been ran on all relevant
+        # computers that had the old setup.
+        if 'directory' in d:
+            d['directory_str'] = d.pop('directory')
+
+        return super().deserialize(d)
 
     # Editable fields
     @classmethod
@@ -70,7 +146,7 @@ class Project(Editable):
                 "label": "Description",
                 "required": False,
             },
-            "directory": {
+            "directory_str": {
                 "type": "folder",
                 "label": "Directory",
             },
@@ -93,5 +169,11 @@ class Project(Editable):
             "white_beam_shift": {
                 "type": "float",
                 "label": "Beam Shift",
+            },
+            "geometry_path_str": {
+                "type": "file",
+                "label": "Geometry",
+                "extensions": ["npz"],
+                "required": False,
             },
         }

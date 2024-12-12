@@ -148,10 +148,15 @@ class FileField(Field):
         self._line_edit.setText(v)
 
     def on_select_click(self):
+        filter = " ".join(
+            map(lambda ext: f"*.{ext}", self.description.get('extensions', []))
+        )
+
         selected_file, _filter = QFileDialog.getOpenFileName(
             self.widget,
             f"Select {self.description['label']}",
             self.value,
+            filter=filter,
         )
 
         if not selected_file:
