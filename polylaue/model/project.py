@@ -122,6 +122,16 @@ class Project(Editable):
     def sections_serialized(self, v: list[dict]):
         self.sections = [Section.from_serialized(x, parent=self) for x in v]
 
+    def deserialize(self, d: dict):
+        # For backward-compatibility, rename `directory` to `directory_str`,
+        # if present. We can remove this in a couple of releases, after
+        # we have verified that PolyLaue has been ran on all relevant
+        # computers that had the old setup.
+        if 'directory' in d:
+            d['directory_str'] = d.pop('directory')
+
+        return super().deserialize(d)
+
     # Editable fields
     @classmethod
     def get_parameters_description(cls) -> dict[str, ParameterDescription]:
