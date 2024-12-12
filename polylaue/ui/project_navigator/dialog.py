@@ -38,8 +38,10 @@ class ProjectNavigatorDialog(QDialog):
         self.layout.addWidget(add_remove_buttons_widget)
 
         self.add_button = QPushButton('Add', self)
+        self.edit_button = QPushButton('Edit', self)
         self.remove_button = QPushButton('Remove', self)
         add_remove_layout.addWidget(self.add_button)
+        add_remove_layout.addWidget(self.edit_button)
         add_remove_layout.addWidget(self.remove_button)
 
         # This seems like a reasonable default.
@@ -52,6 +54,7 @@ class ProjectNavigatorDialog(QDialog):
 
     def setup_connections(self):
         self.add_button.clicked.connect(self.on_add_clicked)
+        self.edit_button.clicked.connect(self.on_edit_clicked)
         self.remove_button.clicked.connect(self.on_remove_clicked)
         self.view.selectionModel().selectionChanged.connect(
             self.update_enable_states
@@ -61,6 +64,9 @@ class ProjectNavigatorDialog(QDialog):
     def on_add_clicked(self):
         self.view.insert_row(-1)
 
+    def on_edit_clicked(self):
+        self.view.edit_selected_rows()
+
     def on_remove_clicked(self):
         self.view.remove_selected_rows()
 
@@ -69,6 +75,7 @@ class ProjectNavigatorDialog(QDialog):
         is_scans = self.view.is_submodel_scans
 
         self.add_button.setEnabled(not is_scans)
+        self.edit_button.setEnabled(not is_scans and num_rows_selected > 0)
         self.remove_button.setEnabled(not is_scans and num_rows_selected > 0)
 
     @property

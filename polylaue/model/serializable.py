@@ -37,3 +37,7 @@ class Serializable:
         obj = cls(parent=parent)
         obj.deserialize(d)
         return obj
+
+
+class ValidationError(Exception):
+    pass

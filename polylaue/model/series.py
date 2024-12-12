@@ -6,8 +6,9 @@ import re
 
 import numpy as np
 
+from polylaue.model.editable import Editable, ParameterDescription
 from polylaue.model.scan import Scan
-from polylaue.model.serializable import Serializable
+from polylaue.model.serializable import Serializable, ValidationError
 from polylaue.typing import PathLike
 
 logger = logging.getLogger(__name__)
@@ -17,7 +18,7 @@ logger = logging.getLogger(__name__)
 IMAGE_FILE_SUFFIX_REGEX = r'_(\d+)\.(tiff?|cbf)$'
 
 
-class Series(Serializable):
+class Series(Editable):
     """The Series class is used to keep track of files within a series
 
     Several arguments are provided, including the directory path,
@@ -44,6 +45,8 @@ class Series(Serializable):
         file_prefix: str | None = None,
         parent: Serializable | None = None,
     ):
+        super().__init__()
+
         if scans is None:
             # Default to 3 scans
             scans = [Scan(parent=self) for _ in range(3)]
@@ -130,7 +133,8 @@ class Series(Serializable):
     def num_scans(self):
         return len(self.scans)
 
-    def identify_file_prefix(self):
+    @staticmethod
+    def identify_file_prefix(dirpath: Path):
         """Inspect the tif files and identify the file template"""
 
         regex = re.compile(IMAGE_FILE_SUFFIX_REGEX, re.IGNORECASE)
@@ -139,7 +143,7 @@ class Series(Serializable):
         # We will choose the prefix with the most files.
         # The key is the prefix, the value is the number of files that match.
         prefix_counts = {}
-        for path in self.dirpath.iterdir():
+        for path in dirpath.iterdir():
             if not path.is_file():
                 continue
 
@@ -151,7 +155,7 @@ class Series(Serializable):
 
         if not prefix_counts:
             msg = (
-                f'In series dirpath "{self.dirpath}", failed to find image '
+                f'In series dirpath "{dirpath}", failed to find image '
                 f'file matching regular expression: "{regex}"'
             )
             raise ValidationError(msg)
@@ -162,33 +166,31 @@ class Series(Serializable):
         selected_prefix = prefixes[np.argmax(counts)]
 
         logger.debug(
-            f'For series with dirpath "{self.dirpath}", file prefix was '
+            f'For series with dirpath "{dirpath}", file prefix was '
             f'identified to be {selected_prefix}'
         )
-        self.file_prefix = selected_prefix
+        return selected_prefix
 
-    def generate_file_list(self):
+    @staticmethod
+    def generate_file_list(dirpath: Path, skip_frames: int):
         """Generate a list of files ordered by their index
 
         We will index into this file list to obtain the file
         name for that index.
         """
-        if self.file_prefix is None:
-            # Identify the file prefix automatically, if one was not
-            # provided.
-            self.identify_file_prefix()
+        file_prefix = Series.identify_file_prefix(dirpath)
 
         file_dict = {}
 
         # Identify all files that match the full regex
         full_regex = re.compile(
-            self.file_prefix + IMAGE_FILE_SUFFIX_REGEX, re.IGNORECASE
+            file_prefix + IMAGE_FILE_SUFFIX_REGEX, re.IGNORECASE
         )
 
         # Start after the number of frames to skip
-        start_idx = self.skip_frames + 1
+        start_idx = skip_frames + 1
 
-        for path in self.dirpath.iterdir():
+        for path in dirpath.iterdir():
             if not path.is_file():
                 continue
 
@@ -210,7 +212,7 @@ class Series(Serializable):
             missing = set(verify_indices) - set(indices)
             extra = set(indices) - set(verify_indices)
             msg = (
-                f'Files with prefix "{self.file_prefix}" are not continuous '
+                f'Files with prefix "{file_prefix}" are not continuous '
                 f'from "{start_idx}" to "{indices[-1]}"'
             )
             if missing:
@@ -221,60 +223,90 @@ class Series(Serializable):
 
             raise ValidationError(msg)
 
-        self.file_list = [file_dict[i] for i in indices]
+        file_list = [file_dict[i] for i in indices]
 
         logger.debug(
-            f'For series with dirpath "{self.dirpath}", found '
-            f'{len(self.file_list)} files'
+            f'For series with dirpath "{dirpath}", found '
+            f'{len(file_list)} files'
         )
+
+        return file_prefix, file_list
 
     def invalidate(self):
         self.file_prefix = None
         self.file_list.clear()
         self.has_final_dark_file = False
 
-    def validate(self):
-        """Generate the file list if missing, and ensure that the files in the
-        directory match the scan info
-        """
-        if not self.dirpath.exists():
-            msg = f'Series path not found: {self.dirpath}'
-            raise ValidationError(msg)
+    def validate_files(
+        self, dirpath_str, skip_frames, scan_shape, scan_range_tuple, dry=False
+    ):
+        dirpath = Path(dirpath_str)
+        file_prefix, file_list = self.generate_file_list(dirpath, skip_frames)
+        num_files = len(file_list)
 
-        if self.background_image_path is not None:
-            background_path = self.background_image_path
-            if not background_path.exists():
-                msg = f'Background file does not exist: {background_path}'
-                raise ValidationError(msg)
+        num_scans = scan_range_tuple[1] - scan_range_tuple[0] + 1
+        num_frames = num_scans * np.prod(scan_shape)
 
-        if not self.file_list:
-            # Generate the file list if there is none
-            self.generate_file_list()
-
-        num_files = len(self.file_list)
-
-        num_frames = self.num_scans * np.prod(self.scan_shape)
         expected_num_files = num_frames
+
+        has_final_dark_file = False
 
         # The number of files should be equal to
         if num_files == expected_num_files + 1:
             # Assume the extra file is the final dark file
-            self.has_final_dark_file = True
+            has_final_dark_file = True
             logger.debug(
-                f'For series at "{self.dirpath}", assuming final file is a '
+                f'For series at "{dirpath}", assuming final file is a '
                 'dark file'
             )
         elif num_files != expected_num_files:
             msg = (
-                f'For series at "{self.dirpath}", number of unskipped files '
+                f'For series at "{dirpath}", number of unskipped files '
                 f'"{num_files}" does not match the '
                 f'expected number of files "{expected_num_files}", '
                 'which was computed based upon the number of scans '
-                f'({self.num_scans}) and the scan shape ({self.scan_shape}).'
+                f'({num_scans}) and the scan shape ({scan_shape}).'
             )
             raise ValidationError(msg)
 
-        logger.debug(f'Validation for "{self.dirpath}" passed')
+        if not dry:
+            self.file_prefix = file_prefix
+            self.file_list = file_list
+            self.has_final_dark_file = has_final_dark_file
+
+    def self_validate(self):
+        self.validate_files(
+            self.dirpath_str,
+            self.skip_frames,
+            self.scan_shape,
+            self.scan_range_tuple,
+            dry=False,  # Apply internal attributes
+        )
+
+    def validate_parameters(self, params):
+        # Superficial validation of the parameters (they exists, they are tuples, etc)
+        super().validate_parameters(params)
+
+        # Make sure the parameters are self-consistent
+        self.validate_files(
+            params['dirpath_str'],
+            params['skip_frames'],
+            params['scan_shape'],
+            params['scan_range_tuple'],
+            dry=True,  # Don't change any attributes on self
+        )
+
+    def set_parameters(self, params: dict, validate: bool = True):
+        super().set_parameters(params, validate)
+
+        if self.name == 'Series':
+            # If the series name is the default of 'Series', update the name to
+            # the name of the directory.
+            self.name = self.dirpath.name
+
+        # Parameters have been already validated and assigned as attribute to self
+        # Assign derived attributes
+        self.self_validate()
 
     @property
     def dirpath(self) -> Path:
@@ -310,6 +342,9 @@ class Series(Serializable):
 
     @background_image_path_str.setter
     def background_image_path_str(self, v: str | None):
+        if v is not None and v.strip() == '':
+            v = None
+
         self.background_image_path = v
 
     # Serialization code
@@ -337,6 +372,41 @@ class Series(Serializable):
         self.invalidate()
         super().deserialize(d)
 
-
-class ValidationError(Exception):
-    pass
+    # Editable fields
+    @classmethod
+    def get_parameters_description(cls) -> dict[str, ParameterDescription]:
+        return {
+            "name": {
+                "type": "string",
+                "label": "Name",
+                "min": 1,
+            },
+            "description": {
+                "type": "string",
+                "label": "Description",
+                "required": False,
+            },
+            "dirpath_str": {
+                "type": "folder",
+                "label": "Directory",
+            },
+            "scan_shape": {
+                "type": "tuple",
+                "subtype": "integer",
+                "label": "Scan shape",
+            },
+            "scan_range_tuple": {
+                "type": "tuple",
+                "subtype": "integer",
+                "label": "Scan range",
+            },
+            "skip_frames": {
+                "type": "integer",
+                "label": "Skip frames",
+            },
+            "background_image_path_str": {
+                "type": "file",
+                "label": "Background image",
+                "required": False,
+            },
+        }

@@ -3,6 +3,7 @@
 from polylaue.model.project_manager import ProjectManager
 from polylaue.model.project import Project
 from polylaue.ui.project_navigator.submodels.base import BaseSubmodel
+from polylaue.ui.utils.custom_validators import empty_folder_validator
 
 
 class ProjectsSubmodel(BaseSubmodel):
@@ -10,13 +11,17 @@ class ProjectsSubmodel(BaseSubmodel):
 
     def __init__(self, project_manager: ProjectManager):
         self.project_manager = project_manager
+        for project in self.project_manager.projects:
+            project.custom_validators['directory'] = empty_folder_validator
 
     @property
     def entry_list(self) -> list[Project]:
         return self.project_manager.projects
 
-    def create(self) -> Project:
-        return Project(parent=self.project_manager)
+    def create(self, row: int) -> Project:
+        project = Project(parent=self.project_manager)
+        project.custom_validators['directory'] = empty_folder_validator
+        return project
 
     @property
     def columns(self) -> dict[str, str]:
