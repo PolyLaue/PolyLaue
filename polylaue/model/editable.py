@@ -33,6 +33,7 @@ class ParameterDescription(TypedDict):
     options: NotRequired[ParameterOptions]
     min: NotRequired[Number]
     max: NotRequired[Number]
+    extensions: NotRequired[list[str]]
 
 
 ParameterValidator = Callable[
