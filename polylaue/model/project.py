@@ -1,11 +1,15 @@
 # Copyright © 2024, UChicago Argonne, LLC. See "LICENSE" for full details.
 
+from __future__ import annotations
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from polylaue.model.section import Section
-from polylaue.model.serializable import Serializable
 from polylaue.model.editable import Editable, ParameterDescription
 from polylaue.typing import PathLike
+
+if TYPE_CHECKING:
+    from polylaue.model.project_manager import ProjectManager
 
 
 class Project(Editable):
@@ -13,6 +17,7 @@ class Project(Editable):
 
     def __init__(
         self,
+        parent: ProjectManager,
         name: str = 'Project',
         sections: list[Section] | None = None,
         directory: PathLike = '',
@@ -20,13 +25,13 @@ class Project(Editable):
         energy_range: tuple[float, float] = (5, 70),
         frame_shape: tuple[int, int] = (2048, 2048),
         white_beam_shift: float = 0.01,
-        parent: Serializable | None = None,
     ):
         super().__init__()
 
         if sections is None:
             sections = []
 
+        self.parent = parent
         self.name = name
         self.sections = sections
         self.directory = directory
@@ -34,7 +39,6 @@ class Project(Editable):
         self.energy_range = energy_range
         self.frame_shape = frame_shape
         self.white_beam_shift = white_beam_shift
-        self.parent = parent
 
     @property
     def num_sections(self):

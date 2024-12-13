@@ -68,7 +68,6 @@ class MainWindow:
         self.setup_connections()
 
     def setup_connections(self):
-        self.ui.action_open_series.triggered.connect(self.on_open_series)
         self.ui.action_open_project_navigator.triggered.connect(
             self.open_project_navigator
         )
@@ -141,26 +140,6 @@ class MainWindow:
         else:
             self.scan_num = 1
 
-    def on_open_series(self):
-        selected_directory = QFileDialog.getExistingDirectory(
-            self.ui, 'Open Series Directory', self.working_dir
-        )
-
-        if not selected_directory:
-            # User canceled
-            return
-
-        self.create_and_load_series(selected_directory)
-
-    def create_and_load_series(self, selected_directory: PathLike):
-        series = Series(dirpath=selected_directory)
-        editor = EditorDialog(series, self.ui)
-        if not editor.exec():
-            # User canceled.
-            return
-
-        self.load_series(series)
-
     def load_series(self, series: Series, reset_settings: bool = True):
         """Load the series located in the directory.
 
@@ -226,8 +205,6 @@ class MainWindow:
 
     def on_project_navigator_open_scan(self, scan: Scan):
         series = scan.parent
-        if series is None:
-            raise Exception('Scan does not have a parent')
 
         # Load the series
         self.load_series(series)
@@ -262,12 +239,8 @@ class MainWindow:
             self.on_frame_changed()
             return
 
-        # See if we have a parent section, and switch to a different
-        # series if we can.
+        # Switch to a different series if we can.
         section = self.series.parent
-        if section is None:
-            # Just return - can't do anything
-            return
 
         new_series = section.series_with_scan_index(new_scan_idx)
         if new_series is None:
@@ -405,9 +378,6 @@ class MainWindow:
     def set_current_image_to_section_background(self):
         filepath = self.series.filepath(*self.scan_pos, self.scan_num)
         section = self.series.parent
-        if section is None:
-            # Can't do anything
-            return
 
         for series in section.series:
             series.background_image_path = filepath

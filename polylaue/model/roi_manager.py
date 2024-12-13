@@ -1,6 +1,6 @@
 # Copyright © 2024, UChicago Argonne, LLC. See "LICENSE" for full details.
 
-from typing import TypedDict, Tuple
+from typing import TypedDict
 from collections import OrderedDict
 
 from polylaue.typing import WorldPoint

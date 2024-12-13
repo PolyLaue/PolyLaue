@@ -1,15 +1,21 @@
 # Copyright © 2024, UChicago Argonne, LLC. See "LICENSE" for full details.
 
+from __future__ import annotations
 import logging
 from pathlib import Path
 import re
+from typing import TYPE_CHECKING
 
 import numpy as np
 
 from polylaue.model.editable import Editable, ParameterDescription
 from polylaue.model.scan import Scan
-from polylaue.model.serializable import Serializable, ValidationError
+from polylaue.model.serializable import ValidationError
 from polylaue.typing import PathLike
+
+if TYPE_CHECKING:
+    from polylaue.model.section import Section
+
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +40,7 @@ class Series(Editable):
 
     def __init__(
         self,
+        parent: Section,
         name='Series',
         description='Description',
         dirpath: PathLike = '.',
@@ -43,13 +50,12 @@ class Series(Editable):
         skip_frames: int = 10,
         background_image_path: PathLike | None = None,
         file_prefix: str | None = None,
-        parent: Serializable | None = None,
     ):
         super().__init__()
 
         if scans is None:
             # Default to 3 scans
-            scans = [Scan(parent=self) for _ in range(3)]
+            scans = [Scan(self) for _ in range(3)]
 
         self.name = name
         self.description = description
@@ -120,7 +126,7 @@ class Series(Editable):
         num_scans = v[1] - v[0] + 1
 
         while self.num_scans < num_scans:
-            self.scans.append(Scan())
+            self.scans.append(Scan(self))
 
         while self.num_scans > num_scans:
             self.scans.pop()
@@ -284,7 +290,8 @@ class Series(Editable):
         )
 
     def validate_parameters(self, params):
-        # Superficial validation of the parameters (they exists, they are tuples, etc)
+        # Superficial validation of the parameters
+        # (they exists, they are tuples, etc)
         super().validate_parameters(params)
 
         # Make sure the parameters are self-consistent
@@ -304,8 +311,8 @@ class Series(Editable):
             # the name of the directory.
             self.name = self.dirpath.name
 
-        # Parameters have been already validated and assigned as attribute to self
-        # Assign derived attributes
+        # Parameters have been already validated and assigned as attribute to
+        # self. Assign derived attributes
         self.self_validate()
 
     @property

@@ -36,7 +36,7 @@ class SectionsSubmodel(BaseSubmodel):
         return self.project.sections
 
     def create(self, row: int) -> Section:
-        section = Section(name="", description="", parent=self.project)
+        section = Section(self.project)
         section.custom_validators['name'] = partial(
             unique_value_validator, partial(is_unique, self.project)
         )

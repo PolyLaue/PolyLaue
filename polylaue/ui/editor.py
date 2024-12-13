@@ -36,7 +36,7 @@ class Field:
         self._widget = self.create_widget()
 
     def create_widget(self) -> QWidget:
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @property
     def description(self) -> ParameterDescription:
@@ -48,11 +48,11 @@ class Field:
 
     @property
     def value(self):
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @value.setter
     def value(self, v):
-        raise NotImplementedError()
+        raise NotImplementedError
 
 
 class IntegerField(Field):

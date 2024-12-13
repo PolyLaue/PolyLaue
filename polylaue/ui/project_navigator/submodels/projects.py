@@ -19,7 +19,7 @@ class ProjectsSubmodel(BaseSubmodel):
         return self.project_manager.projects
 
     def create(self, row: int) -> Project:
-        project = Project(parent=self.project_manager)
+        project = Project(self.project_manager)
         project.custom_validators['directory_str'] = empty_folder_validator
         return project
 
