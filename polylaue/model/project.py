@@ -20,7 +20,6 @@ class Project(Editable):
         energy_range: tuple[float, float] = (5, 70),
         frame_shape: tuple[int, int] = (2048, 2048),
         white_beam_shift: float = 0.01,
-        geometry_path: PathLike | None = None,
         parent: Serializable | None = None,
     ):
         super().__init__()
@@ -36,7 +35,6 @@ class Project(Editable):
         self.frame_shape = frame_shape
         self.white_beam_shift = white_beam_shift
         self.parent = parent
-        self.geometry_path = geometry_path
 
     @property
     def num_sections(self):
@@ -59,36 +57,31 @@ class Project(Editable):
         self.directory = v
 
     @property
+    def expected_geometry_file_path(self) -> Path:
+        return self.directory / 'geometry.npz'
+
+    @property
     def geometry_path(self) -> Path | None:
-        return getattr(self, '_geometry_path', None)
+        # This simply returns `self.expected_geometry_file_path`
+        # if the file exists. Otherwise, it returns `None`.
+        path = self.expected_geometry_file_path
+        return path if path.is_file() else None
 
     @geometry_path.setter
     def geometry_path(self, v: PathLike | None):
         if v is not None:
             v = Path(v).resolve()
 
-        if v == self.geometry_path:
+        write_path = self.expected_geometry_file_path
+        if v == write_path:
             return
-
-        # Delete the current geometry file in the project directory
-        if (
-            self.geometry_path is not None
-            and self.directory in self.geometry_path.parents
-        ):
-            self.geometry_path.unlink(missing_ok=True)
 
         if v is None:
-            self._geometry_path = v
+            # Delete the current geometry file in the project directory
+            write_path.unlink(missing_ok=True)
             return
 
-        # If the file is not in the project directory,
-        # copy it over and set the new path
-        if self.directory not in v.parents:
-            v_copy = self.directory / v.name
-            v_copy.write_bytes(v.read_bytes())
-            self._geometry_path = v_copy
-        else:
-            self._geometry_path = v
+        write_path.write_bytes(v.read_bytes())
 
     @property
     def geometry_path_str(self) -> str | None:
@@ -111,7 +104,6 @@ class Project(Editable):
         'frame_shape',
         'energy_range',
         'white_beam_shift',
-        'geometry_path_str',
     ]
 
     @property
