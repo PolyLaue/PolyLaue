@@ -61,12 +61,12 @@ class Section(Editable):
         if parent is None:
             return None
 
-        if name == "":
+        if name == '':
             return None
 
         root_dir = Path(parent.directory).resolve()
 
-        return root_dir / f"Sections/{name}"
+        return root_dir / f'Sections/{name}'
 
     @property
     def name(self) -> str:
@@ -104,14 +104,14 @@ class Section(Editable):
     @classmethod
     def get_parameters_description(cls) -> dict[str, ParameterDescription]:
         return {
-            "name": {
-                "type": "string",
-                "label": "Name",
-                "min": 1,
+            'name': {
+                'type': 'string',
+                'label': 'Name',
+                'min': 1,
             },
-            "description": {
-                "type": "string",
-                "label": "Description",
-                "required": False,
+            'description': {
+                'type': 'string',
+                'label': 'Description',
+                'required': False,
             },
         }

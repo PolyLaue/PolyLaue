@@ -128,44 +128,44 @@ class Project(Editable):
     @classmethod
     def get_parameters_description(cls) -> dict[str, ParameterDescription]:
         return {
-            "name": {
-                "type": "string",
-                "label": "Name",
-                "min": 1,
+            'name': {
+                'type': 'string',
+                'label': 'Name',
+                'min': 1,
             },
-            "description": {
-                "type": "string",
-                "label": "Description",
-                "required": False,
+            'description': {
+                'type': 'string',
+                'label': 'Description',
+                'required': False,
             },
-            "directory_str": {
-                "type": "folder",
-                "label": "Directory",
+            'directory_str': {
+                'type': 'folder',
+                'label': 'Directory',
             },
-            "frame_shape": {
-                "type": "tuple",
-                "label": "Frame Shape",
-                "subtype": "integer",
-                "length": 2,
-                "min": 1,
-                "max": 4096,
+            'frame_shape': {
+                'type': 'tuple',
+                'label': 'Frame Shape',
+                'subtype': 'integer',
+                'length': 2,
+                'min': 1,
+                'max': 4096,
             },
-            "energy_range": {
-                "type": "tuple",
-                "label": "Energy Range",
-                "subtype": "float",
-                "length": 2,
-                "min": 1e-8,
-                "max": float("inf"),
+            'energy_range': {
+                'type': 'tuple',
+                'label': 'Energy Range',
+                'subtype': 'float',
+                'length': 2,
+                'min': 1e-8,
+                'max': float('inf'),
             },
-            "white_beam_shift": {
-                "type": "float",
-                "label": "Beam Shift",
+            'white_beam_shift': {
+                'type': 'float',
+                'label': 'Beam Shift',
             },
-            "geometry_path_str": {
-                "type": "file",
-                "label": "Geometry",
-                "extensions": ["npz"],
-                "required": False,
+            'geometry_path_str': {
+                'type': 'file',
+                'label': 'Geometry',
+                'extensions': ['npz'],
+                'required': False,
             },
         }

@@ -376,37 +376,37 @@ class Series(Editable):
     @classmethod
     def get_parameters_description(cls) -> dict[str, ParameterDescription]:
         return {
-            "name": {
-                "type": "string",
-                "label": "Name",
-                "min": 1,
+            'name': {
+                'type': 'string',
+                'label': 'Name',
+                'min': 1,
             },
-            "description": {
-                "type": "string",
-                "label": "Description",
-                "required": False,
+            'description': {
+                'type': 'string',
+                'label': 'Description',
+                'required': False,
             },
-            "dirpath_str": {
-                "type": "folder",
-                "label": "Directory",
+            'dirpath_str': {
+                'type': 'folder',
+                'label': 'Directory',
             },
-            "scan_shape": {
-                "type": "tuple",
-                "subtype": "integer",
-                "label": "Scan shape",
+            'scan_shape': {
+                'type': 'tuple',
+                'subtype': 'integer',
+                'label': 'Scan shape',
             },
-            "scan_range_tuple": {
-                "type": "tuple",
-                "subtype": "integer",
-                "label": "Scan range",
+            'scan_range_tuple': {
+                'type': 'tuple',
+                'subtype': 'integer',
+                'label': 'Scan range',
             },
-            "skip_frames": {
-                "type": "integer",
-                "label": "Skip frames",
+            'skip_frames': {
+                'type': 'integer',
+                'label': 'Skip frames',
             },
-            "background_image_path_str": {
-                "type": "file",
-                "label": "Background image",
-                "required": False,
+            'background_image_path_str': {
+                'type': 'file',
+                'label': 'Background image',
+                'required': False,
             },
         }

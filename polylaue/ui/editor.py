@@ -58,8 +58,8 @@ class Field:
 class IntegerField(Field):
     def create_widget(self) -> QWidget:
         sb = QSpinBox()
-        minimum = self._description.get("min")
-        maximum = self._description.get("max")
+        minimum = self._description.get('min')
+        maximum = self._description.get('max')
         if minimum is not None:
             sb.setMinimum(int(minimum))
         if maximum is not None:
@@ -81,8 +81,8 @@ class IntegerField(Field):
 class FloatField(Field):
     def create_widget(self) -> QWidget:
         sb = ScientificDoubleSpinBox()
-        minimum = self._description.get("min")
-        maximum = self._description.get("max")
+        minimum = self._description.get('min')
+        maximum = self._description.get('max')
         if minimum is not None:
             sb.setMinimum(minimum)
         if maximum is not None:
@@ -148,8 +148,8 @@ class FileField(Field):
         self._line_edit.setText(v)
 
     def on_select_click(self):
-        filter = " ".join(
-            map(lambda ext: f"*.{ext}", self.description.get('extensions', []))
+        filter = ' '.join(
+            map(lambda ext: f'*.{ext}', self.description.get('extensions', []))
         )
 
         selected_file, _filter = QFileDialog.getOpenFileName(
@@ -292,7 +292,7 @@ class Editor:
             required = field.description.get('required', True)
             label = QLabel()
             label.setText(
-                field.description['label'] + ("*" if required else "")
+                field.description['label'] + ('*' if required else '')
             )
             layout.addWidget(label, row, 0)
             layout.addWidget(field.widget, row, 1)
