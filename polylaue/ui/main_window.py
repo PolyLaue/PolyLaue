@@ -12,6 +12,7 @@ import numpy as np
 from polylaue.model.io import load_image_file, identify_loader_function, Bounds
 from polylaue.model.roi_manager import ROIManager
 from polylaue.model.scan import Scan
+from polylaue.model.section import Section
 from polylaue.model.series import Series
 from polylaue.model.state import load_project_manager, save_project_manager
 from polylaue.typing import PathLike
@@ -131,6 +132,10 @@ class MainWindow:
     def scan_num(self, v: int):
         self.frame_tracker.scan_num = v
 
+    @property
+    def section(self) -> Section | None:
+        return self.series.parent if self.series is not None else None
+
     def reset_scan_position(self):
         self.scan_pos = np.array([0, 0])
 
@@ -145,6 +150,7 @@ class MainWindow:
 
         This will also reset the current image settings and scan position.
         """
+        prev_section = self.section
 
         self.series = series
 
@@ -162,6 +168,10 @@ class MainWindow:
         # After the data has been loaded, set the window title to be
         # the name of this series
         self.ui.setWindowTitle(f'PolyLaue - {series.name}')
+
+        if self.section is not prev_section:
+            # Trigger functions for when the section changes
+            self.on_section_changed()
 
     def identify_image_loader(self):
         self.image_loader_func = None
@@ -239,10 +249,7 @@ class MainWindow:
             self.on_frame_changed()
             return
 
-        # Switch to a different series if we can.
-        section = self.series.parent
-
-        new_series = section.series_with_scan_index(new_scan_idx)
+        new_series = self.section.series_with_scan_index(new_scan_idx)
         if new_series is None:
             # Just return - can't do anything
             return
@@ -286,6 +293,10 @@ class MainWindow:
         # Update the mouse hover info with the new frame
         self.image_view.on_mouse_move()
         self.image_view.update_reflection_overlays()
+
+    def on_section_changed(self):
+        # Update the section on the reflections editor
+        self.reflections_editor.section = self.section
 
     def on_series_or_scan_changed(self):
         for dialog in self.region_mapping_dialogs.values():
@@ -377,9 +388,8 @@ class MainWindow:
 
     def set_current_image_to_section_background(self):
         filepath = self.series.filepath(*self.scan_pos, self.scan_num)
-        section = self.series.parent
 
-        for series in section.series:
+        for series in self.section.series:
             series.background_image_path = filepath
 
         # Save the project manager so this change will persist
@@ -393,8 +403,13 @@ class MainWindow:
         self.reflections_editor.ui.show()
 
     def on_reflections_changed(self):
-        new_reflections = self.reflections_editor.reflections
-        self.image_view.reflections = new_reflections
+        editor = self.reflections_editor
+        if editor.show_reflections:
+            reflections = editor.reflections
+        else:
+            reflections = None
+
+        self.image_view.reflections = reflections
 
     def on_action_apply_background_subtraction_toggled(self):
         self.load_current_image()

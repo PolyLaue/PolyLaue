@@ -45,13 +45,6 @@ class Section(Editable):
         # Did not find it. Returning None...
         return None
 
-    # Serialization code
-    _attrs_to_serialize = [
-        'name',
-        'description',
-        'series_serialized',
-    ]
-
     @property
     def directory(self) -> Path:
         return self.parent.directory.resolve() / f'Sections/{self.name}'
@@ -79,6 +72,52 @@ class Section(Editable):
             Path.mkdir(destination_dir, parents=True)
 
     @property
+    def expected_reflections_file_path(self) -> Path:
+        return self.directory / 'reflections.h5'
+
+    @property
+    def reflections_file_path(self) -> Path | None:
+        # This simply returns `self.expected_reflections_file_path`
+        # if the file exists. Otherwise, it returns `None`.
+        path = self.expected_reflections_file_path
+        return path if path.is_file() else None
+
+    @reflections_file_path.setter
+    def reflections_file_path(self, v: PathLike | None):
+        if v is not None:
+            v = Path(v).resolve()
+
+        write_path = self.expected_reflections_file_path
+        if v == write_path:
+            return
+
+        if v is None:
+            # Delete the current reflections file in the project directory
+            write_path.unlink(missing_ok=True)
+            return
+
+        write_path.write_bytes(v.read_bytes())
+
+    @property
+    def reflections_file_path_str(self) -> str | None:
+        p = self.reflections_file_path
+        return str(p) if p is not None else None
+
+    @reflections_file_path_str.setter
+    def reflections_file_path_str(self, v: str | None):
+        if v is not None and v.strip() == '':
+            v = None
+
+        self.reflections_file_path = v
+
+    # Serialization code
+    _attrs_to_serialize = [
+        'name',
+        'description',
+        'series_serialized',
+    ]
+
+    @property
     def series_serialized(self) -> list[dict]:
         return [x.serialize() for x in self.series]
 
@@ -98,6 +137,12 @@ class Section(Editable):
             'description': {
                 'type': 'string',
                 'label': 'Description',
+                'required': False,
+            },
+            'reflections_file_path_str': {
+                'type': 'file',
+                'label': 'Reflections File',
+                'extensions': ['h5', 'hdf5'],
                 'required': False,
             },
         }

@@ -7,25 +7,19 @@
     <x>0</x>
     <y>0</y>
     <width>358</width>
-    <height>230</height>
+    <height>227</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Reflections Editor</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="5" column="0" colspan="2">
-    <spacer name="vertical_spacer">
-     <property name="orientation">
-      <enum>Qt::Vertical</enum>
+   <item row="1" column="0">
+    <widget class="QLabel" name="file_label">
+     <property name="text">
+      <string>File:</string>
      </property>
-     <property name="sizeHint" stdset="0">
-      <size>
-       <width>20</width>
-       <height>40</height>
-      </size>
-     </property>
-    </spacer>
+    </widget>
    </item>
    <item row="2" column="1">
     <widget class="QSpinBox" name="number_of_crystals">
@@ -37,23 +31,6 @@
      </property>
      <property name="maximum">
       <number>1000000</number>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="1">
-    <widget class="QLineEdit" name="file">
-     <property name="text">
-      <string>None</string>
-     </property>
-     <property name="readOnly">
-      <bool>true</bool>
-     </property>
-    </widget>
-   </item>
-   <item row="2" column="0">
-    <widget class="QLabel" name="number_of_crystals_label">
-     <property name="text">
-      <string>Number of Crystals:</string>
      </property>
     </widget>
    </item>
@@ -69,22 +46,25 @@
      </layout>
     </widget>
    </item>
-   <item row="0" column="0" colspan="2">
-    <widget class="QPushButton" name="open_external_reflections">
-     <property name="focusPolicy">
-      <enum>Qt::NoFocus</enum>
-     </property>
+   <item row="2" column="0">
+    <widget class="QLabel" name="number_of_crystals_label">
      <property name="text">
-      <string>Open External Reflections</string>
+      <string>Number of Crystals:</string>
      </property>
     </widget>
    </item>
-   <item row="1" column="0">
-    <widget class="QLabel" name="file_label">
-     <property name="text">
-      <string>File:</string>
+   <item row="5" column="0" colspan="2">
+    <spacer name="vertical_spacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
      </property>
-    </widget>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
    </item>
    <item row="3" column="0" colspan="2">
     <widget class="QPushButton" name="prediction_matcher">
@@ -99,10 +79,27 @@
      </property>
     </widget>
    </item>
+   <item row="1" column="1">
+    <widget class="QLineEdit" name="file">
+     <property name="text">
+      <string>None</string>
+     </property>
+     <property name="readOnly">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="0" colspan="2">
+    <widget class="QCheckBox" name="show_reflections">
+     <property name="text">
+      <string>Show reflections?</string>
+     </property>
+    </widget>
+   </item>
   </layout>
  </widget>
  <tabstops>
-  <tabstop>open_external_reflections</tabstop>
+  <tabstop>show_reflections</tabstop>
   <tabstop>file</tabstop>
   <tabstop>number_of_crystals</tabstop>
  </tabstops>
