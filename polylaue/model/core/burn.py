@@ -1,26 +1,29 @@
 import numpy as np
 
 
-def burn(res_lim=0, nscan=-1):
-    import math
+VALID_STRUCTURE_TYPES = [
+    '',
+    'hcp',
+    'Diamond',
+]
 
-    global EnergyHighest, EnergyLowest, StructureType, ImageSizeX, ImageSizeY
-    with np.load('geosetup.npz') as geo_arr:
-        det_org = geo_arr['iitt1']
-        beam_dir = geo_arr['iitt2']
-        pix_dist = geo_arr['iitt3']
+
+def burn(energy_highest: float, energy_lowest: float,
+         structure_type: str, image_size_x: int, image_size_y: int,
+         abc: np.ndarray, det_org: np.ndarray, beam_dir: np.ndarray,
+         pix_dist: np.ndarray, res_lim: float = 0, nscan: int = -1,
+         ang_shifts: np.ndarray | None = None):
+
     if nscan > 1:
-        a = np.loadtxt('abc', dtype=np.float64)
-        np.save('abc_matrix.npy', a)
-        sh_tab = np.load('ang_shifts.npy')
-        if sh_tab[(nscan - 2), 9] > np.float64(50):
-            print('...No angular shift available')
-            return
-        ten = np.reshape(sh_tab[(nscan - 2), 0:9], (3, -1))
-    elif nscan == 1:
-        a = np.loadtxt('abc', dtype=np.float64)
-        np.save('abc_matrix.npy', a)
-    abc = np.load('abc_matrix.npy')
+        if ang_shifts[(nscan - 2), 9] > 50:
+            raise RuntimeError('No angular shift available')
+
+        ten = np.reshape(ang_shifts[(nscan - 2), 0:9], (3, -1))
+
+    if structue_type not in VALID_STRUCTURE_TYPES:
+        msg = f'Unhandled structure type: {structure_type}'
+        raise NotImplementedError(msg)
+
     abc_dir = np.reshape(abc, (3, -1))
     if nscan > 1:
         abc_dir = abc_dir @ ten
@@ -48,7 +51,7 @@ def burn(res_lim=0, nscan=-1):
     d_min = (
         0.4246
         * 29.2
-        / (2.0 * float(EnergyHighest) * math.sin(float(pix_dist[2])))
+        / (2.0 * float(energy_highest) * np.sin(float(pix_dist[2])))
     )
     print(' ')
     print(
@@ -152,12 +155,12 @@ def burn(res_lim=0, nscan=-1):
     hkl = hkl[vec_sel[0], :]
     print(
         'Reciprocal vectors with theta <',
-        round((float(pix_dist[2]) * 180.0 / math.pi), 2),
+        round((float(pix_dist[2]) * 180.0 / np.pi), 2),
         'degrees:',
         np.shape(hkl)[0],
     )
     hkl_enr = 0.4246 * 29.2 / (np.float64(2) * np.fabs(hkl_tet) * hkl_dis)
-    vec_sel = np.nonzero(hkl_enr < np.float64(EnergyHighest))
+    vec_sel = np.nonzero(hkl_enr < np.float64(energy_highest))
     hkl_vec = hkl_vec[vec_sel[0], :]
     hkl_dis = hkl_dis[vec_sel[0]]
     hkl_tet = hkl_tet[vec_sel[0]]
@@ -165,7 +168,7 @@ def burn(res_lim=0, nscan=-1):
     hkl = hkl[vec_sel[0], :]
     print(
         'Reciprocal vectors with energies <',
-        round(float(EnergyHighest), 2),
+        round(float(energy_highest), 2),
         'keV:',
         np.shape(hkl)[0],
     )
@@ -191,7 +194,7 @@ def burn(res_lim=0, nscan=-1):
     hkl_tet = hkl_tet[vec_sel[0]]
     hkl_enr = hkl_enr[vec_sel[0]]
     hkl = hkl[vec_sel[0], :]
-    vec_sel = np.nonzero(hkl_pos[:, 0] < np.float64(ImageSizeX))
+    vec_sel = np.nonzero(hkl_pos[:, 0] < np.float64(image_size_x))
     hkl_vec = hkl_vec[vec_sel[0], :]
     hkl_dif = hkl_dif[vec_sel[0], :]
     hkl_pos = hkl_pos[vec_sel[0], :]
@@ -207,7 +210,7 @@ def burn(res_lim=0, nscan=-1):
     hkl_tet = hkl_tet[vec_sel[0]]
     hkl_enr = hkl_enr[vec_sel[0]]
     hkl = hkl[vec_sel[0], :]
-    vec_sel = np.nonzero(hkl_pos[:, 1] < np.float64(ImageSizeY))
+    vec_sel = np.nonzero(hkl_pos[:, 1] < np.float64(image_size_y))
     hkl_vec = hkl_vec[vec_sel[0], :]
     hkl_dif = hkl_dif[vec_sel[0], :]
     hkl_pos = hkl_pos[vec_sel[0], :]
@@ -240,8 +243,8 @@ def burn(res_lim=0, nscan=-1):
         ddd = aaa[1]
         nnn = 1
         chch = 1
-        while eee < float(EnergyHighest):
-            if eee > float(EnergyLowest):
+        while eee < float(energy_highest):
+            if eee > float(energy_lowest):
                 if ddd > d_min:
                     if chch == 1:
                         nnn1 = nnn
@@ -283,12 +286,12 @@ def burn(res_lim=0, nscan=-1):
         print(
             (i + 1), round((float(sta_mul[i]) * 100.0 / sta_pre_tot), 2), '%'
         )
-    if StructureType != '':
-        if StructureType == 'hcp':
+    if structure_type != '':
+        if structure_type == 'hcp':
             ref_cond1 = range(0, (max_l + 1), 2)
             ref_cond2 = range(1, (max_h + max_k + 1), 3)
             ref_cond3 = range(2, (max_h + max_k + 1), 3)
-        if StructureType == 'Diamond':
+        if structure_type == 'Diamond':
             ref_cond1 = range(0, (max_h + max_k + 1), 2)
             ref_cond2 = range(0, (max_h + max_k + 1), 4)
             ref_cond3 = range(1, (max_h + 1), 2)
@@ -305,7 +308,7 @@ def burn(res_lim=0, nscan=-1):
                 h = int(aaa[0]) * i
                 k = int(aaa[1]) * i
                 l = int(aaa[2]) * i  # noqa
-                if StructureType == 'hcp':
+                if structure_type == 'hcp':
                     ch_ch = -1
                     if abs(l) in ref_cond1:
                         ch_ch = ch_ch + 1
@@ -318,7 +321,7 @@ def burn(res_lim=0, nscan=-1):
                             ch_ch_ch = 0
                             nnn1 = i
                         nnn2 = i
-                if StructureType == 'Diamond':
+                if structure_type == 'Diamond':
                     ch_ch = -3
                     if abs(h + k) in ref_cond1:
                         ch_ch = ch_ch + 1
@@ -383,7 +386,7 @@ def burn(res_lim=0, nscan=-1):
         print('')
         print(
             '... Satisfying reflection conditions for',
-            StructureType,
+            structure_type,
             ':',
             np.shape(hkl)[0],
         )
@@ -399,6 +402,4 @@ def burn(res_lim=0, nscan=-1):
             np.expand_dims(hkl_dis, axis=1),
         )
     )
-    np.savez(
-        'predicted_list.npz', ipred_list1=pred_list1, ipred_list2=pred_list2
-    )
+    return pred_list1, pred_list2
