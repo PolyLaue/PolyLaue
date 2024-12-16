@@ -1,15 +1,20 @@
 import numpy as np
 
 
-def geo_from_Dioptas():
-    import math
-
-    global ImageSizeX, ImageSizeY, WhiteBeamShift
-    imsiy = float(ImageSizeY)
-    wmbs = float(WhiteBeamShift)
-    with open('poly.poni') as f:
-        poly_poni = f.read()
+def geo_from_dioptas(
+    poly_poni_path: str,
+    output_path: str,
+    image_size_x: int,
+    image_size_y: int,
+    white_beam_shift: float,
+):
+    imsiy = float(image_size_y)
+    wmbs = float(white_beam_shift)
     dt = [1, 1, 1, 1, 1, 1]
+
+    with open(poly_poni_path, 'r') as rf:
+        poly_poni = rf.read()
+
     for w in poly_poni.splitlines():
         ww = w.split()
         if 'PixelSize1:' in ww:
@@ -46,9 +51,9 @@ def geo_from_Dioptas():
     PoniY = imsiy - PoniY * 1000.0 / pix + wmbs / pix
     print('PoniX, pix:', PoniX)
     print('PoniY, pix:', PoniY)
-    beam_x = math.cos(rot2) * math.cos(math.pi / 2.0 + rot1)
-    beam_y = math.cos(math.pi / 2.0 + rot2)
-    beam_z = math.cos(rot2) * math.cos(rot1)
+    beam_x = np.cos(rot2) * np.cos(np.pi / 2.0 + rot1)
+    beam_y = np.cos(np.pi / 2.0 + rot2)
+    beam_z = np.cos(rot2) * np.cos(rot1)
     dt = []
     dt.append(PoniX)
     dt.append(PoniY)
@@ -64,16 +69,16 @@ def geo_from_Dioptas():
     dtl.append(0)
     dt.append(dtl)
     dtl = []
-    dtl.append(ImageSizeX)
+    dtl.append(image_size_x)
     dtl.append(0)
     dt.append(dtl)
     dtl = []
-    dtl.append(ImageSizeX)
-    dtl.append(ImageSizeY)
+    dtl.append(image_size_x)
+    dtl.append(image_size_y)
     dt.append(dtl)
     dtl = []
     dtl.append(0)
-    dtl.append(ImageSizeY)
+    dtl.append(image_size_y)
     dt.append(dtl)
     im_corn = np.array(dt, dtype=np.float64)
     dt = []
@@ -88,8 +93,8 @@ def geo_from_Dioptas():
     ang_vec2 = ang_vec1 / np.expand_dims(
         np.sqrt(np.sum(np.square(ang_vec1), axis=1)), axis=1
     )
-    ang_tet = math.acos(float(np.min(ang_vec2 @ beam_dir))) / 2.0
-    print('Largest teta, deg.:', round((ang_tet * 180.0 / math.pi), 2))
+    ang_tet = np.acos(float(np.min(ang_vec2 @ beam_dir))) / 2.0
+    print('Largest teta, deg.:', round((ang_tet * 180.0 / np.pi), 2))
     ang_sol = float(np.min(ang_vec2[:, 2]))
     dt = []
     dt.append(pix)
@@ -97,4 +102,5 @@ def geo_from_Dioptas():
     dt.append(ang_tet)
     dt.append(ang_sol)
     pix_dist = np.array(dt, dtype=np.float64)
-    np.savez('geosetup.npz', iitt1=det_org, iitt2=beam_dir, iitt3=pix_dist)
+    return det_org, beam_dir, pix_dist
+    np.savez(output_path, iitt1=det_org, iitt2=beam_dir, iitt3=pix_dist)
