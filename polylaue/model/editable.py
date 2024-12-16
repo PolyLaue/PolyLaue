@@ -34,6 +34,7 @@ class ParameterDescription(TypedDict):
     min: NotRequired[Number]
     max: NotRequired[Number]
     extensions: NotRequired[list[str]]
+    tooltip: NotRequired[str]
 
 
 ParameterValidator = Callable[

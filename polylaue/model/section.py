@@ -133,16 +133,24 @@ class Section(Editable):
                 'type': 'string',
                 'label': 'Name',
                 'min': 1,
+                'tooltip': 'The name of the section (must be unique)',
             },
             'description': {
                 'type': 'string',
                 'label': 'Description',
                 'required': False,
+                'tooltip': 'A description for personal records',
             },
             'reflections_file_path_str': {
                 'type': 'file',
                 'label': 'Reflections File',
                 'extensions': ['h5', 'hdf5'],
                 'required': False,
+                'tooltip': (
+                    'Path to PolyLaue reflections file (HDF5).\n\n'
+                    'The file will be copied into the section directory as '
+                    '"reflections.h5". If one is not provided, this file will '
+                    'be generated automatically when predicting reflections.'
+                ),
             },
         }

@@ -34,6 +34,7 @@ class Field:
     def __init__(self, description: ParameterDescription):
         self._description = description
         self._widget = self.create_widget()
+        self._widget.setToolTip(description.get('tooltip', ''))
 
     def create_widget(self) -> QWidget:
         raise NotImplementedError
@@ -294,6 +295,7 @@ class Editor:
             label.setText(
                 field.description['label'] + ('*' if required else '')
             )
+            label.setToolTip(field.description.get('tooltip', ''))
             layout.addWidget(label, row, 0)
             layout.addWidget(field.widget, row, 1)
 

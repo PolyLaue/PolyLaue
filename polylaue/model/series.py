@@ -387,33 +387,53 @@ class Series(Editable):
                 'type': 'string',
                 'label': 'Name',
                 'min': 1,
+                'tooltip': 'The name of the series (must be unique)'
             },
             'description': {
                 'type': 'string',
                 'label': 'Description',
                 'required': False,
+                'tooltip': 'A description for personal records',
             },
             'dirpath_str': {
                 'type': 'folder',
                 'label': 'Directory',
+                'tooltip': (
+                    'Directory containing the images within this series.\n\n'
+                    'The contents of the directory will be validated, '
+                    'including verifying the expected number of images,\n'
+                    'which is computed via the other settings in this dialog.'
+                ),
             },
             'scan_shape': {
                 'type': 'tuple',
                 'subtype': 'integer',
                 'label': 'Scan shape',
+                'tooltip': 'Shape of the scans within this series',
             },
             'scan_range_tuple': {
                 'type': 'tuple',
                 'subtype': 'integer',
                 'label': 'Scan range',
+                'tooltip': 'Range of scan numbers in this series (inclusive)',
             },
             'skip_frames': {
                 'type': 'integer',
                 'label': 'Skip frames',
+                'tooltip': (
+                    'How many frames to skip from the beginning of the '
+                    'series (usually invalid or background frames).'
+                ),
             },
             'background_image_path_str': {
                 'type': 'file',
                 'label': 'Background image',
                 'required': False,
+                'tooltip': (
+                    'Image file for performing background subtraction.\n\n'
+                    'This may be selected automatically by right-clicking '
+                    'an image in the application and selecting '
+                    '"set as background".'
+                ),
             },
         }

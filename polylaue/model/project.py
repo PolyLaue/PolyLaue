@@ -136,15 +136,22 @@ class Project(Editable):
                 'type': 'string',
                 'label': 'Name',
                 'min': 1,
+                'tooltip': 'The name of the project (must be unique)',
             },
             'description': {
                 'type': 'string',
                 'label': 'Description',
                 'required': False,
+                'tooltip': 'A description for personal records',
             },
             'directory_str': {
                 'type': 'folder',
                 'label': 'Directory',
+                'tooltip': (
+                    'The project directory is a location where PolyLaue will '
+                    'automatically create and store files, such as '
+                    'predicted reflections and coordinate selections. '
+                ),
             },
             'frame_shape': {
                 'type': 'tuple',
@@ -153,6 +160,7 @@ class Project(Editable):
                 'length': 2,
                 'min': 1,
                 'max': 4096,
+                'tooltip': 'The shape of the data frames (in pixels)',
             },
             'energy_range': {
                 'type': 'tuple',
@@ -161,6 +169,7 @@ class Project(Editable):
                 'length': 2,
                 'min': 1e-8,
                 'max': float('inf'),
+                'tooltip': 'The energy range of the x-ray beam in keV'
             },
             'white_beam_shift': {
                 'type': 'float',
@@ -171,5 +180,11 @@ class Project(Editable):
                 'label': 'Geometry',
                 'extensions': ['npz'],
                 'required': False,
+                'tooltip': (
+                    'Path to PolyLaue geometry file (NPZ format). This file '
+                    'is necessary for predicting reflections.\n\n'
+                    'The file will be copied into the project directory as '
+                    '"geometry.npz".'
+                ),
             },
         }
