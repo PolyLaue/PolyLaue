@@ -102,5 +102,18 @@ def geo_from_dioptas(
     dt.append(ang_tet)
     dt.append(ang_sol)
     pix_dist = np.array(dt, dtype=np.float64)
-    return det_org, beam_dir, pix_dist
     np.savez(output_path, iitt1=det_org, iitt2=beam_dir, iitt3=pix_dist)
+
+
+if __name__ == '__main__':
+    import sys
+
+    if len(sys.argv) < 3:
+        sys.exit('Usage: <script> <input.poni> <output.npz>')
+
+    image_size_x = 2048
+    image_size_y = 2048
+    white_beam_shift = 0.01
+
+    geo_from_dioptas(sys.argv[1], sys.argv[2], image_size_x, image_size_y,
+                     white_beam_shift)
