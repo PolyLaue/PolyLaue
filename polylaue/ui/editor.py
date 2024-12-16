@@ -3,6 +3,7 @@
 import logging
 
 from PySide6.QtWidgets import (
+    QComboBox,
     QDialog,
     QDialogButtonBox,
     QFileDialog,
@@ -211,12 +212,32 @@ class FolderField(Field):
         self.value = selected_directory
 
 
+class EnumField(Field):
+    def create_widget(self) -> QWidget:
+        cb = QComboBox()
+        options = self._description.get('options')
+        cb.addItems(options)
+
+        self._combo_box = cb
+
+        return cb
+
+    @property
+    def value(self) -> str:
+        return self._combo_box.currentText()
+
+    @value.setter
+    def value(self, v: str):
+        self._combo_box.setCurrentText(v)
+
+
 SCALAR_PARAM_TYPE_TO_FIELD: dict[ParameterType, type[Field]] = {
     'integer': IntegerField,
     'float': FloatField,
     'string': StringField,
     'file': FileField,
     'folder': FolderField,
+    'enum': EnumField,
 }
 
 

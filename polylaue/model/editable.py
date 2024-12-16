@@ -16,7 +16,7 @@ from polylaue.model.serializable import Serializable, ValidationError
 
 Number = Union[int, float]
 ParameterType = Literal[
-    'string', 'integer', 'float', 'boolean', 'file', 'folder', 'tuple'
+    'string', 'integer', 'float', 'boolean', 'file', 'folder', 'enum', 'tuple'
 ]
 ParameterValue = Union[str, Number]
 ParameterOptions = Sequence[ParameterValue]
@@ -126,6 +126,7 @@ DEFAULT_SCALAR_VALIDATORS: dict[ParameterType, ParameterValidator] = {
     'float': default_number_validator,
     'folder': default_path_validator,
     'file': default_path_validator,
+    'enum': noop_validator,
 }
 
 
