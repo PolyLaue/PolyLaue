@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from polylaue.model.core import VALID_STRUCTURE_TYPES
 from polylaue.model.editable import Editable, ParameterDescription
 from polylaue.model.section import Section
 from polylaue.typing import PathLike
@@ -29,7 +28,6 @@ class Project(Editable):
         energy_range: tuple[float, float] = (5, 70),
         frame_shape: tuple[int, int] = (2048, 2048),
         white_beam_shift: float = 0.01,
-        structure_type: str = '',
     ):
         super().__init__()
 
@@ -44,7 +42,6 @@ class Project(Editable):
         self.energy_range = energy_range
         self.frame_shape = frame_shape
         self.white_beam_shift = white_beam_shift
-        self.structure_type = structure_type
 
     @property
     def num_sections(self):
@@ -116,17 +113,6 @@ class Project(Editable):
 
         return load_geometry_file(path)
 
-    @property
-    def structure_type(self) -> str:
-        return self._structure_type
-
-    @structure_type.setter
-    def structure_type(self, v: str):
-        if v not in VALID_STRUCTURE_TYPES:
-            raise NotImplementedError(v)
-
-        self._structure_type = v
-
     # Serialization code
     _attrs_to_serialize = [
         'name',
@@ -136,7 +122,6 @@ class Project(Editable):
         'frame_shape',
         'energy_range',
         'white_beam_shift',
-        'structure_type',
     ]
 
     @property
@@ -214,15 +199,6 @@ class Project(Editable):
                     'is necessary for predicting reflections.\n\n'
                     'The file will be copied into the project directory as '
                     '"geometry.npz".'
-                ),
-            },
-            'structure_type': {
-                'type': 'enum',
-                'label': 'Structure Type',
-                'options': VALID_STRUCTURE_TYPES,
-                'required': False,
-                'tooltip': (
-                    'Structure type to use when predicting reflections.'
                 ),
             },
         }

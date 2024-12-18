@@ -7,7 +7,11 @@ from pathlib import Path
 from PySide6.QtCore import QCoreApplication, QEvent, QObject, QSettings
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
-    QFileDialog, QInputDialog, QMainWindow, QMessageBox, QWidget
+    QFileDialog,
+    QInputDialog,
+    QMainWindow,
+    QMessageBox,
+    QWidget,
 )
 
 import numpy as np
@@ -142,8 +146,9 @@ class MainWindow(QObject):
         last_loaded_frame = settings.value('last_loaded_frame', {})
         self._deserialize_last_loaded_frame(last_loaded_frame)
 
-        self.apply_background_subtraction = settings.value(
-            'apply_background_subtraction', 'true') == 'true'
+        self.apply_background_subtraction = (
+            settings.value('apply_background_subtraction', 'true') == 'true'
+        )
 
     def _serialize_last_loaded_frame(self) -> dict:
         if self.series is None:

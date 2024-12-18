@@ -2,20 +2,26 @@
 
 from PySide6.QtCore import QObject, Signal
 
+from polylaue.model.core import VALID_STRUCTURE_TYPES
 from polylaue.ui.utils.block_signals import block_signals
 from polylaue.ui.utils.ui_loader import UiLoader
 
 
 class BurnDialog(QObject):
 
-    dmin_changed = Signal()
+    settings_changed = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
 
         self.ui = UiLoader().load_file('burn_dialog.ui', parent)
 
+        self.add_structure_options()
+
         self.setup_connections()
+
+    def add_structure_options(self):
+        self.ui.structure_type.addItems(VALID_STRUCTURE_TYPES)
 
     def setup_connections(self):
         self.ui.max_dmin.valueChanged.connect(self.on_max_dmin_changed)
@@ -23,6 +29,18 @@ class BurnDialog(QObject):
         self.ui.dmin_slider.valueChanged.connect(self.on_dmin_slider_changed)
 
         self.ui.dmin_value.valueChanged.connect(self.on_dmin_value_changed)
+
+        self.ui.structure_type.currentIndexChanged.connect(
+            self.on_structure_type_changed
+        )
+
+    @property
+    def structure_type(self) -> str:
+        return self.ui.structure_type.currentText()
+
+    @property
+    def crystal_id(self) -> int:
+        return self.ui.crystal_id.value()
 
     @property
     def max_dmin(self) -> float:
@@ -81,4 +99,7 @@ class BurnDialog(QObject):
         if self.dmin > self.max_dmin:
             self.max_dmin = self.dmin
 
-        self.dmin_changed.emit()
+        self.settings_changed.emit()
+
+    def on_structure_type_changed(self):
+        self.settings_changed.emit()

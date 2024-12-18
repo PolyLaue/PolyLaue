@@ -1,7 +1,9 @@
 # Copyright © 2024, UChicago Argonne, LLC. See "LICENSE" for full details.
 
+from pathlib import Path
+
 from PySide6.QtCore import QObject, Signal
-from PySide6.QtWidgets import QFileDialog, QMessageBox, QWidget
+from PySide6.QtWidgets import QMessageBox, QWidget
 
 import numpy as np
 
@@ -31,7 +33,6 @@ class BurnWorkflow(QObject):
         self.parent = parent
 
         self.abc_matrix = None
-        self.crystal_id = -1
         self.burn_dialog = None
 
     def start(self):
@@ -41,7 +42,8 @@ class BurnWorkflow(QObject):
             QMessageBox.critical(None, 'Validation Failed', str(e))
             return
 
-        self.select_crystal()
+        self.abc_matrix = np.load(self.abc_matrix_path)
+        self.show_burn_dialog()
 
     def validate(self):
         if self.project.geometry_path is None:
@@ -51,61 +53,61 @@ class BurnWorkflow(QObject):
             )
             raise ValidationError(msg)
 
+        if not self.abc_matrix_path.exists():
+            msg = (
+                'ABC Matrix file must be present in the root project '
+                f'directory ({self.abc_matrix_path})'
+            )
+            raise ValidationError(msg)
+
     def clear(self):
         self.abc_matrix = None
         if self.burn_dialog is not None:
             self.burn_dialog.ui.hide()
             self.burn_dialog = None
 
-    def select_crystal(self):
-        selected_file, _filter = QFileDialog.getOpenFileName(
-            None,
-            'Open ABC Matrix',
-            None,
-            filter='ABC Matrix Files (*.npy)',
-        )
+    @property
+    def abc_matrix_path(self) -> Path:
+        return self.project.directory / 'abc_matrix.npy'
 
-        if not selected_file:
-            # Abort
-            return
-
-        self.abc_matrix = np.load(selected_file)
-        self.set_crystal_id()
-        self.show_burn_dialog()
-
-    def set_crystal_id(self):
+    def validate_crystal_id(self):
         # Check if the ABC matrix is already present within the predictions
         # file. If it is, set the crystal ID to match. If it is not, add it
         # and set the crystal id.
         crystals_table = self.reflections.crystals_table
-        for i in range(len(crystals_table)):
-            if np.allclose(self.abc_matrix, crystals_table[i]):
-                self.crystal_id = i
-                return
 
-        if crystals_table.size != 0:
-            # Stack our abc matrix as a new entry
+        if self.crystal_id < len(crystals_table):
+            # It's a valid ID. Just return.
+            return
+
+        # It's not valid. We will create a new entry for it.
+        if crystals_table.size == 0:
+            crystals_table = np.zeros((0, 9), dtype=float)
+
+        while len(crystals_table) < self.crystal_id:
+            crystals_table = np.vstack((crystals_table, np.zeros((9,))))
+
+        if len(crystals_table) == self.crystal_id:
+            # Set the current abc matrix as a new crystal id
             crystals_table = np.vstack((crystals_table, self.abc_matrix))
-        else:
-            crystals_table = np.atleast_2d(self.abc_matrix)
 
         self.reflections.crystals_table = crystals_table
-        self.crystal_id = len(crystals_table) - 1
 
     def show_burn_dialog(self):
         if self.burn_dialog:
             self.burn_dialog.ui.hide()
 
         self.burn_dialog = BurnDialog(self.parent)
-        self.burn_dialog.dmin_changed.connect(self.run_burn)
+        self.burn_dialog.settings_changed.connect(self.run_burn)
         self.burn_dialog.ui.show()
-
-        # Also run burn() one time
-        self.run_burn()
 
     @property
     def project(self):
         return self.section.parent
+
+    @property
+    def crystal_id(self):
+        return self.burn_dialog.crystal_id
 
     @property
     def burn_kwargs(self) -> dict:
@@ -115,7 +117,7 @@ class BurnWorkflow(QObject):
         return {
             'energy_highest': project.energy_range[1],
             'energy_lowest': project.energy_range[0],
-            'structure_type': project.structure_type,
+            'structure_type': self.burn_dialog.structure_type,
             'image_size_x': project.frame_shape[0],
             'image_size_y': project.frame_shape[1],
             'abc': self.abc_matrix,
@@ -126,6 +128,7 @@ class BurnWorkflow(QObject):
         }
 
     def run_burn(self):
+        self.validate_crystal_id()
         pred_list1, pred_list2 = burn(**self.burn_kwargs)
 
         table = np.hstack(
