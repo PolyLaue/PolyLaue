@@ -4,8 +4,11 @@ from functools import lru_cache
 import logging
 from pathlib import Path
 
+from PySide6.QtCore import QCoreApplication, QEvent, QObject, QSettings
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QFileDialog, QInputDialog, QMessageBox, QWidget
+from PySide6.QtWidgets import (
+    QFileDialog, QInputDialog, QMainWindow, QMessageBox, QWidget
+)
 
 import numpy as np
 
@@ -29,8 +32,9 @@ from polylaue.ui.utils.ui_loader import UiLoader
 logger = logging.getLogger(__name__)
 
 
-class MainWindow:
+class MainWindow(QObject):
     def __init__(self, parent: QWidget | None = None):
+        super().__init__(parent)
         self.ui = UiLoader().load_file('main_window.ui', parent)
 
         # Keep track of the working directory
@@ -69,7 +73,12 @@ class MainWindow:
 
         self.setup_connections()
 
+        if '--ignore-settings' not in QCoreApplication.arguments():
+            self.load_settings()
+
     def setup_connections(self):
+        self.ui.installEventFilter(self)
+
         self.ui.action_open_project_navigator.triggered.connect(
             self.open_project_navigator
         )
@@ -108,6 +117,89 @@ class MainWindow:
         self.reflections_editor.reflections_style_changed.connect(
             self.on_reflections_style_changed
         )
+
+    def eventFilter(self, target: QObject, event: QEvent):
+        if type(target) == QMainWindow and event.type() == QEvent.Close:
+            # If the main window is closing, save the config settings
+            self.save_settings()
+
+        return False
+
+    def save_settings(self):
+        settings = QSettings()
+        settings.setValue(
+            'last_loaded_frame',
+            self._serialize_last_loaded_frame(),
+        )
+        settings.setValue(
+            'apply_background_subtraction',
+            self.apply_background_subtraction,
+        )
+
+    def load_settings(self):
+        settings = QSettings()
+
+        last_loaded_frame = settings.value('last_loaded_frame', {})
+        self._deserialize_last_loaded_frame(last_loaded_frame)
+
+        self.apply_background_subtraction = settings.value(
+            'apply_background_subtraction', 'true') == 'true'
+
+    def _serialize_last_loaded_frame(self) -> dict:
+        if self.series is None:
+            return {}
+
+        # Save the path to the currently viewed series
+        series = self.series
+        section = series.parent
+        project = section.parent
+        project_manager = project.parent
+
+        series_idx = section.series.index(series)
+        section_idx = project.sections.index(section)
+        project_idx = project_manager.projects.index(project)
+
+        return {
+            'series_path': [project_idx, section_idx, series_idx],
+            'scan_num': self.scan_num,
+            'scan_pos': self.scan_pos.tolist(),
+        }
+
+    def _deserialize_last_loaded_frame(self, d: dict):
+        if not d:
+            return
+
+        series_path = d['series_path']
+        scan_num = d['scan_num']
+        scan_pos = d['scan_pos']
+
+        project_manager = self.project_manager
+        if len(project_manager.projects) <= series_path[0]:
+            # This must be invalid
+            return
+
+        project = project_manager.projects[series_path[0]]
+        if len(project.sections) <= series_path[1]:
+            # This must be invalid
+            return
+
+        section = project.sections[series_path[1]]
+        if len(section.series) <= series_path[2]:
+            # This must be invalid
+            return
+
+        series = section.series[series_path[2]]
+
+        # Load the series
+        self.load_series(series)
+
+        # Set the scan number and scan position
+        self.scan_num = scan_num
+        self.scan_pos = scan_pos
+
+        self.on_frame_changed()
+        self.set_mapping_dialogs_stale()
+        self.on_reflections_changed()
 
     @property
     def apply_background_subtraction(self) -> bool:
