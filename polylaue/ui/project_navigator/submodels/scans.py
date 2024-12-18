@@ -16,7 +16,7 @@ class ScansSubmodel(BaseSubmodel):
         return self.series.scans
 
     def create(self, row: int) -> Scan:
-        return Scan(parent=self.series)
+        return Scan(self.series)
 
     @property
     def columns(self) -> dict[str, str]:

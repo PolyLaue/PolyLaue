@@ -1,11 +1,18 @@
 # Copyright © 2024, UChicago Argonne, LLC. See "LICENSE" for full details.
 
+from __future__ import annotations
+from functools import lru_cache
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from polylaue.model.section import Section
-from polylaue.model.serializable import Serializable
+import numpy as np
+
 from polylaue.model.editable import Editable, ParameterDescription
+from polylaue.model.section import Section
 from polylaue.typing import PathLike
+
+if TYPE_CHECKING:
+    from polylaue.model.project_manager import ProjectManager
 
 
 class Project(Editable):
@@ -13,6 +20,7 @@ class Project(Editable):
 
     def __init__(
         self,
+        parent: ProjectManager,
         name: str = 'Project',
         sections: list[Section] | None = None,
         directory: PathLike = '',
@@ -20,14 +28,13 @@ class Project(Editable):
         energy_range: tuple[float, float] = (5, 70),
         frame_shape: tuple[int, int] = (2048, 2048),
         white_beam_shift: float = 0.01,
-        geometry_path: PathLike | None = None,
-        parent: Serializable | None = None,
     ):
         super().__init__()
 
         if sections is None:
             sections = []
 
+        self.parent = parent
         self.name = name
         self.sections = sections
         self.directory = directory
@@ -35,8 +42,6 @@ class Project(Editable):
         self.energy_range = energy_range
         self.frame_shape = frame_shape
         self.white_beam_shift = white_beam_shift
-        self.parent = parent
-        self.geometry_path = geometry_path
 
     @property
     def num_sections(self):
@@ -59,36 +64,31 @@ class Project(Editable):
         self.directory = v
 
     @property
+    def expected_geometry_file_path(self) -> Path:
+        return self.directory / 'geometry.npz'
+
+    @property
     def geometry_path(self) -> Path | None:
-        return getattr(self, '_geometry_path', None)
+        # This simply returns `self.expected_geometry_file_path`
+        # if the file exists. Otherwise, it returns `None`.
+        path = self.expected_geometry_file_path
+        return path if path.is_file() else None
 
     @geometry_path.setter
     def geometry_path(self, v: PathLike | None):
         if v is not None:
             v = Path(v).resolve()
 
-        if v == self.geometry_path:
+        write_path = self.expected_geometry_file_path
+        if v == write_path:
             return
-
-        # Delete the current geometry file in the project directory
-        if (
-            self.geometry_path is not None
-            and self.directory in self.geometry_path.parents
-        ):
-            self.geometry_path.unlink(missing_ok=True)
 
         if v is None:
-            self._geometry_path = v
+            # Delete the current geometry file in the project directory
+            write_path.unlink(missing_ok=True)
             return
 
-        # If the file is not in the project directory,
-        # copy it over and set the new path
-        if self.directory not in v.parents:
-            v_copy = self.directory / v.name
-            v_copy.write_bytes(v.read_bytes())
-            self._geometry_path = v_copy
-        else:
-            self._geometry_path = v
+        write_path.write_bytes(v.read_bytes())
 
     @property
     def geometry_path_str(self) -> str | None:
@@ -102,6 +102,17 @@ class Project(Editable):
 
         self.geometry_path = v
 
+    @property
+    def geometry_data(self) -> dict:
+        path = self.geometry_path
+        if path is None:
+            raise RuntimeError(
+                'Geometry file does not exist: '
+                f'{self.expected_geometry_file_path}'
+            )
+
+        return load_geometry_file(path)
+
     # Serialization code
     _attrs_to_serialize = [
         'name',
@@ -111,7 +122,6 @@ class Project(Editable):
         'frame_shape',
         'energy_range',
         'white_beam_shift',
-        'geometry_path_str',
     ]
 
     @property
@@ -136,44 +146,75 @@ class Project(Editable):
     @classmethod
     def get_parameters_description(cls) -> dict[str, ParameterDescription]:
         return {
-            "name": {
-                "type": "string",
-                "label": "Name",
-                "min": 1,
+            'name': {
+                'type': 'string',
+                'label': 'Name',
+                'min': 1,
+                'tooltip': 'The name of the project (must be unique)',
             },
-            "description": {
-                "type": "string",
-                "label": "Description",
-                "required": False,
+            'description': {
+                'type': 'string',
+                'label': 'Description',
+                'required': False,
+                'tooltip': 'A description for personal records',
             },
-            "directory_str": {
-                "type": "folder",
-                "label": "Directory",
+            'directory_str': {
+                'type': 'folder',
+                'label': 'Directory',
+                'tooltip': (
+                    'The project directory is a location where PolyLaue will '
+                    'automatically create and store files, such as '
+                    'predicted reflections and coordinate selections. '
+                ),
             },
-            "frame_shape": {
-                "type": "tuple",
-                "label": "Frame Shape",
-                "subtype": "integer",
-                "length": 2,
-                "min": 1,
-                "max": 4096,
+            'frame_shape': {
+                'type': 'tuple',
+                'label': 'Frame Shape',
+                'subtype': 'integer',
+                'length': 2,
+                'min': 1,
+                'max': 4096,
+                'tooltip': 'The shape of the data frames (in pixels)',
             },
-            "energy_range": {
-                "type": "tuple",
-                "label": "Energy Range",
-                "subtype": "float",
-                "length": 2,
-                "min": 1e-8,
-                "max": float("inf"),
+            'energy_range': {
+                'type': 'tuple',
+                'label': 'Energy Range',
+                'subtype': 'float',
+                'length': 2,
+                'min': 1e-8,
+                'max': float('inf'),
+                'tooltip': 'The energy range of the x-ray beam in keV',
             },
-            "white_beam_shift": {
-                "type": "float",
-                "label": "Beam Shift",
+            'white_beam_shift': {
+                'type': 'float',
+                'label': 'Beam Shift',
             },
-            "geometry_path_str": {
-                "type": "file",
-                "label": "Geometry",
-                "extensions": ["npz"],
-                "required": False,
+            'geometry_path_str': {
+                'type': 'file',
+                'label': 'Geometry',
+                'extensions': ['npz'],
+                'required': False,
+                'tooltip': (
+                    'Path to PolyLaue geometry file (NPZ format). This file '
+                    'is necessary for predicting reflections.\n\n'
+                    'The file will be copied into the project directory as '
+                    '"geometry.npz".'
+                ),
             },
         }
+
+
+# We probably only need to cache one geometry file, but since they are
+# small, just cache 2...
+@lru_cache(maxsize=2)
+def load_geometry_file(path: str) -> dict:
+    return _load_geometry_file(path)
+
+
+def _load_geometry_file(path: str) -> dict:
+    npz_file = np.load(path)
+    return {
+        'det_org': npz_file['iitt1'],
+        'beam_dir': npz_file['iitt2'],
+        'pix_dist': npz_file['iitt3'],
+    }

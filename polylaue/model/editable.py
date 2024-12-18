@@ -16,7 +16,7 @@ from polylaue.model.serializable import Serializable, ValidationError
 
 Number = Union[int, float]
 ParameterType = Literal[
-    "string", "integer", "float", "boolean", "file", "folder", "tuple"
+    'string', 'integer', 'float', 'boolean', 'file', 'folder', 'enum', 'tuple'
 ]
 ParameterValue = Union[str, Number]
 ParameterOptions = Sequence[ParameterValue]
@@ -34,10 +34,11 @@ class ParameterDescription(TypedDict):
     min: NotRequired[Number]
     max: NotRequired[Number]
     extensions: NotRequired[list[str]]
+    tooltip: NotRequired[str]
 
 
 ParameterValidator = Callable[
-    [str, Any, ParameterDescription, dict[str, ParameterValue], "Editable"],
+    [str, Any, ParameterDescription, dict[str, ParameterValue], 'Editable'],
     None,
 ]
 
@@ -54,13 +55,13 @@ def default_string_validator(
 
     stripped_value = value.strip()
 
-    minimum = description.get("min")
+    minimum = description.get('min')
     if minimum is not None and len(stripped_value) < minimum:
         raise ValidationError(
             f"{description['label']}:\nThe provided string is shorter than the min allowed ({minimum})."
         )
 
-    maximum = description.get("max")
+    maximum = description.get('max')
     if maximum is not None and len(stripped_value) > maximum:
         raise ValidationError(
             f"{description['label']}:\nThe provided string is longer than the max allowed ({maximum})."
@@ -77,13 +78,13 @@ def default_number_validator(
             f"{description['label']}:\nThe provided value is not a number."
         )
 
-    minimum = description.get("min")
+    minimum = description.get('min')
     if minimum is not None and value < minimum:
         raise ValidationError(
             f"{description['label']}:\nThe provided value is below the min allowed."
         )
 
-    maximum = description.get("max")
+    maximum = description.get('max')
     if maximum is not None and value > maximum:
         raise ValidationError(
             f"{description['label']}:\nThe provided value is above the max allowed."
@@ -120,11 +121,12 @@ def noop_validator(name: str, value, description: ParameterDescription, *args):
 
 
 DEFAULT_SCALAR_VALIDATORS: dict[ParameterType, ParameterValidator] = {
-    "string": default_string_validator,
-    "integer": default_number_validator,
-    "float": default_number_validator,
-    "folder": default_path_validator,
-    "file": default_path_validator,
+    'string': default_string_validator,
+    'integer': default_number_validator,
+    'float': default_number_validator,
+    'folder': default_path_validator,
+    'file': default_path_validator,
+    'enum': noop_validator,
 }
 
 
@@ -149,7 +151,7 @@ def default_tuple_validator(
 
 DEFAULT_VALIDATORS: dict[ParameterType, ParameterValidator] = {
     **DEFAULT_SCALAR_VALIDATORS,
-    "tuple": default_tuple_validator,
+    'tuple': default_tuple_validator,
 }
 
 
@@ -181,7 +183,7 @@ class Editable(Serializable):
         for k, description in parameters_description.items():
             if k not in params:
                 raise ValidationError(
-                    f"Parameter {k} is missing from the provided parameters dict."
+                    f'Parameter {k} is missing from the provided parameters dict.'
                 )
 
             value = params[k]

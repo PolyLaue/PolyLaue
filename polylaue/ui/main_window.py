@@ -4,18 +4,24 @@ from functools import lru_cache
 import logging
 from pathlib import Path
 
+from PySide6.QtCore import QCoreApplication, QEvent, QObject, QSettings
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QFileDialog, QInputDialog, QMessageBox, QWidget
+from PySide6.QtWidgets import (
+    QFileDialog,
+    QInputDialog,
+    QMainWindow,
+    QMessageBox,
+    QWidget,
+)
 
 import numpy as np
 
 from polylaue.model.io import load_image_file, identify_loader_function, Bounds
 from polylaue.model.roi_manager import ROIManager
 from polylaue.model.scan import Scan
+from polylaue.model.section import Section
 from polylaue.model.series import Series
 from polylaue.model.state import load_project_manager, save_project_manager
-from polylaue.typing import PathLike
-from polylaue.ui.editor import EditorDialog
 from polylaue.ui.frame_tracker import FrameTracker
 from polylaue.ui.image_view import PolyLaueImageView
 from polylaue.ui.reflections_editor import ReflectionsEditor
@@ -30,8 +36,9 @@ from polylaue.ui.utils.ui_loader import UiLoader
 logger = logging.getLogger(__name__)
 
 
-class MainWindow:
+class MainWindow(QObject):
     def __init__(self, parent: QWidget | None = None):
+        super().__init__(parent)
         self.ui = UiLoader().load_file('main_window.ui', parent)
 
         # Keep track of the working directory
@@ -55,7 +62,10 @@ class MainWindow:
         )
         self.ui.image_view_layout.addWidget(self.image_view)
 
-        self.reflections_editor = ReflectionsEditor(self.ui)
+        self.reflections_editor = ReflectionsEditor(
+            self.frame_tracker,
+            self.ui,
+        )
 
         self.roi_manager = ROIManager()
 
@@ -67,8 +77,12 @@ class MainWindow:
 
         self.setup_connections()
 
+        if '--ignore-settings' not in QCoreApplication.arguments():
+            self.load_settings()
+
     def setup_connections(self):
-        self.ui.action_open_series.triggered.connect(self.on_open_series)
+        self.ui.installEventFilter(self)
+
         self.ui.action_open_project_navigator.triggered.connect(
             self.open_project_navigator
         )
@@ -108,6 +122,90 @@ class MainWindow:
             self.on_reflections_style_changed
         )
 
+    def eventFilter(self, target: QObject, event: QEvent):
+        if type(target) == QMainWindow and event.type() == QEvent.Close:
+            # If the main window is closing, save the config settings
+            self.save_settings()
+
+        return False
+
+    def save_settings(self):
+        settings = QSettings()
+        settings.setValue(
+            'last_loaded_frame',
+            self._serialize_last_loaded_frame(),
+        )
+        settings.setValue(
+            'apply_background_subtraction',
+            self.apply_background_subtraction,
+        )
+
+    def load_settings(self):
+        settings = QSettings()
+
+        last_loaded_frame = settings.value('last_loaded_frame', {})
+        self._deserialize_last_loaded_frame(last_loaded_frame)
+
+        self.apply_background_subtraction = (
+            settings.value('apply_background_subtraction', 'true') == 'true'
+        )
+
+    def _serialize_last_loaded_frame(self) -> dict:
+        if self.series is None:
+            return {}
+
+        # Save the path to the currently viewed series
+        series = self.series
+        section = series.parent
+        project = section.parent
+        project_manager = project.parent
+
+        series_idx = section.series.index(series)
+        section_idx = project.sections.index(section)
+        project_idx = project_manager.projects.index(project)
+
+        return {
+            'series_path': [project_idx, section_idx, series_idx],
+            'scan_num': self.scan_num,
+            'scan_pos': self.scan_pos.tolist(),
+        }
+
+    def _deserialize_last_loaded_frame(self, d: dict):
+        if not d:
+            return
+
+        series_path = d['series_path']
+        scan_num = d['scan_num']
+        scan_pos = d['scan_pos']
+
+        project_manager = self.project_manager
+        if len(project_manager.projects) <= series_path[0]:
+            # This must be invalid
+            return
+
+        project = project_manager.projects[series_path[0]]
+        if len(project.sections) <= series_path[1]:
+            # This must be invalid
+            return
+
+        section = project.sections[series_path[1]]
+        if len(section.series) <= series_path[2]:
+            # This must be invalid
+            return
+
+        series = section.series[series_path[2]]
+
+        # Load the series
+        self.load_series(series)
+
+        # Set the scan number and scan position
+        self.scan_num = scan_num
+        self.scan_pos = scan_pos
+
+        self.on_frame_changed()
+        self.set_mapping_dialogs_stale()
+        self.on_reflections_changed()
+
     @property
     def apply_background_subtraction(self) -> bool:
         return self.ui.action_apply_background_subtraction.isChecked()
@@ -132,6 +230,10 @@ class MainWindow:
     def scan_num(self, v: int):
         self.frame_tracker.scan_num = v
 
+    @property
+    def section(self) -> Section | None:
+        return self.series.parent if self.series is not None else None
+
     def reset_scan_position(self):
         self.scan_pos = np.array([0, 0])
 
@@ -141,31 +243,12 @@ class MainWindow:
         else:
             self.scan_num = 1
 
-    def on_open_series(self):
-        selected_directory = QFileDialog.getExistingDirectory(
-            self.ui, 'Open Series Directory', self.working_dir
-        )
-
-        if not selected_directory:
-            # User canceled
-            return
-
-        self.create_and_load_series(selected_directory)
-
-    def create_and_load_series(self, selected_directory: PathLike):
-        series = Series(dirpath=selected_directory)
-        editor = EditorDialog(series, self.ui)
-        if not editor.exec():
-            # User canceled.
-            return
-
-        self.load_series(series)
-
     def load_series(self, series: Series, reset_settings: bool = True):
         """Load the series located in the directory.
 
         This will also reset the current image settings and scan position.
         """
+        prev_section = self.section
 
         self.series = series
 
@@ -183,6 +266,10 @@ class MainWindow:
         # After the data has been loaded, set the window title to be
         # the name of this series
         self.ui.setWindowTitle(f'PolyLaue - {series.name}')
+
+        if self.section is not prev_section:
+            # Trigger functions for when the section changes
+            self.on_section_changed()
 
     def identify_image_loader(self):
         self.image_loader_func = None
@@ -226,8 +313,6 @@ class MainWindow:
 
     def on_project_navigator_open_scan(self, scan: Scan):
         series = scan.parent
-        if series is None:
-            raise Exception('Scan does not have a parent')
 
         # Load the series
         self.load_series(series)
@@ -262,14 +347,7 @@ class MainWindow:
             self.on_frame_changed()
             return
 
-        # See if we have a parent section, and switch to a different
-        # series if we can.
-        section = self.series.parent
-        if section is None:
-            # Just return - can't do anything
-            return
-
-        new_series = section.series_with_scan_index(new_scan_idx)
+        new_series = self.section.series_with_scan_index(new_scan_idx)
         if new_series is None:
             # Just return - can't do anything
             return
@@ -313,6 +391,10 @@ class MainWindow:
         # Update the mouse hover info with the new frame
         self.image_view.on_mouse_move()
         self.image_view.update_reflection_overlays()
+
+    def on_section_changed(self):
+        # Update the section on the reflections editor
+        self.reflections_editor.section = self.section
 
     def on_series_or_scan_changed(self):
         for dialog in self.region_mapping_dialogs.values():
@@ -404,12 +486,8 @@ class MainWindow:
 
     def set_current_image_to_section_background(self):
         filepath = self.series.filepath(*self.scan_pos, self.scan_num)
-        section = self.series.parent
-        if section is None:
-            # Can't do anything
-            return
 
-        for series in section.series:
+        for series in self.section.series:
             series.background_image_path = filepath
 
         # Save the project manager so this change will persist
@@ -423,8 +501,13 @@ class MainWindow:
         self.reflections_editor.ui.show()
 
     def on_reflections_changed(self):
-        new_reflections = self.reflections_editor.reflections
-        self.image_view.reflections = new_reflections
+        editor = self.reflections_editor
+        if editor.show_reflections:
+            reflections = editor.reflections
+        else:
+            reflections = None
+
+        self.image_view.reflections = reflections
 
     def on_action_apply_background_subtraction_toggled(self):
         self.load_current_image()

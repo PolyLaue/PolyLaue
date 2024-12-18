@@ -37,11 +37,11 @@ def empty_folder_validator(
 
     if any(path.iterdir()):
         confirm_dialog = QMessageBox()
-        confirm_dialog.setWindowTitle("Confirm directory choice")
+        confirm_dialog.setWindowTitle('Confirm directory choice')
         confirm_dialog.setText(
-            "The chosen directory is not empty and data could be overwritten:"
-            f"\n\n{path}\n\n"
-            "Use this directory anyway?"
+            'The chosen directory is not empty and data could be overwritten:'
+            f'\n\n{path}\n\n'
+            'Use this directory anyway?'
         )
         confirm_dialog.setStandardButtons(
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
@@ -51,7 +51,7 @@ def empty_folder_validator(
             return
         else:
             raise ValidationError(
-                f"The directory wasn't used because it isn't empty."
+                "The directory wasn't used because it isn't empty."
             )
 
     return
@@ -74,7 +74,7 @@ def unique_value_validator(
 
     if not is_unique_fn(value):
         raise ValidationError(
-            f"The value is not unique, please pick a different value."
+            'The value is not unique, please pick a different value.'
         )
 
     return

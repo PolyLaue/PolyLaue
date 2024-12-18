@@ -16,7 +16,7 @@ class SeriesSubmodel(BaseSubmodel):
         return self.section.series
 
     def create(self, row: int) -> Series:
-        series = Series(parent=self.section)
+        series = Series(self.section)
         if len(self.entry_list) > 0:
             # Set the directory to be the parent of a neighboring series,
             # since the user will probably need to navigate there anyways.

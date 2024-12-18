@@ -1,10 +1,15 @@
 # Copyright © 2024, UChicago Argonne, LLC. See "LICENSE" for full details.
 
+from __future__ import annotations
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from polylaue.model.serializable import Serializable
 from polylaue.model.series import Series
 from polylaue.model.editable import Editable, ParameterDescription
+from polylaue.typing import PathLike
+
+if TYPE_CHECKING:
+    from polylaue.model.project import Project
 
 
 class Section(Editable):
@@ -12,20 +17,20 @@ class Section(Editable):
 
     def __init__(
         self,
+        parent: Project,
         name: str = '',
         series: list[Series] | None = None,
         description: str = '',
-        parent: Serializable | None = None,
     ):
         super().__init__()
 
         if series is None:
             series = []
 
+        self.parent = parent
         self._name = name
         self.series = series
         self.description = description
-        self.parent = parent
 
     @property
     def num_series(self):
@@ -41,32 +46,9 @@ class Section(Editable):
         # Did not find it. Returning None...
         return None
 
-    # Serialization code
-    _attrs_to_serialize = [
-        'name',
-        'description',
-        'series_serialized',
-    ]
-
     @property
-    def directory(self) -> Path | None:
-        dir = Section._directory(self.parent, self.name)
-        if dir is not None and dir.is_dir():
-            return dir
-        else:
-            return None
-
-    @staticmethod
-    def _directory(parent, name) -> Path | None:
-        if parent is None:
-            return None
-
-        if name == "":
-            return None
-
-        root_dir = Path(parent.directory).resolve()
-
-        return root_dir / f"Sections/{name}"
+    def directory(self) -> Path:
+        return self.parent.directory.resolve() / f'Sections/{self.name}'
 
     @property
     def name(self) -> str:
@@ -79,18 +61,62 @@ class Section(Editable):
         if value == prev_value:
             return
 
+        current_dir = self.directory
+
         self._name = value
 
-        current_dir = Section._directory(self.parent, prev_value)
-        destination_dir = Section._directory(self.parent, value)
+        destination_dir = self.directory
 
-        if destination_dir is None:
-            return
-
-        if current_dir is not None and current_dir.is_dir():
+        if prev_value != '' and current_dir.is_dir():
             Path.rename(current_dir, destination_dir)
         elif not destination_dir.exists():
             Path.mkdir(destination_dir, parents=True)
+
+    @property
+    def expected_reflections_file_path(self) -> Path:
+        return self.directory / 'reflections.h5'
+
+    @property
+    def reflections_file_path(self) -> Path | None:
+        # This simply returns `self.expected_reflections_file_path`
+        # if the file exists. Otherwise, it returns `None`.
+        path = self.expected_reflections_file_path
+        return path if path.is_file() else None
+
+    @reflections_file_path.setter
+    def reflections_file_path(self, v: PathLike | None):
+        if v is not None:
+            v = Path(v).resolve()
+
+        write_path = self.expected_reflections_file_path
+        if v == write_path:
+            return
+
+        if v is None:
+            # Delete the current reflections file in the project directory
+            write_path.unlink(missing_ok=True)
+            return
+
+        write_path.write_bytes(v.read_bytes())
+
+    @property
+    def reflections_file_path_str(self) -> str | None:
+        p = self.reflections_file_path
+        return str(p) if p is not None else None
+
+    @reflections_file_path_str.setter
+    def reflections_file_path_str(self, v: str | None):
+        if v is not None and v.strip() == '':
+            v = None
+
+        self.reflections_file_path = v
+
+    # Serialization code
+    _attrs_to_serialize = [
+        'name',
+        'description',
+        'series_serialized',
+    ]
 
     @property
     def series_serialized(self) -> list[dict]:
@@ -104,14 +130,28 @@ class Section(Editable):
     @classmethod
     def get_parameters_description(cls) -> dict[str, ParameterDescription]:
         return {
-            "name": {
-                "type": "string",
-                "label": "Name",
-                "min": 1,
+            'name': {
+                'type': 'string',
+                'label': 'Name',
+                'min': 1,
+                'tooltip': 'The name of the section (must be unique)',
             },
-            "description": {
-                "type": "string",
-                "label": "Description",
-                "required": False,
+            'description': {
+                'type': 'string',
+                'label': 'Description',
+                'required': False,
+                'tooltip': 'A description for personal records',
+            },
+            'reflections_file_path_str': {
+                'type': 'file',
+                'label': 'Reflections File',
+                'extensions': ['h5', 'hdf5'],
+                'required': False,
+                'tooltip': (
+                    'Path to PolyLaue reflections file (HDF5).\n\n'
+                    'The file will be copied into the section directory as '
+                    '"reflections.h5". If one is not provided, this file will '
+                    'be generated automatically when predicting reflections.'
+                ),
             },
         }

@@ -18,6 +18,30 @@ class ExternalReflections(BaseReflections):
         # file when we are actually reading something from it.
         self.filepath = filepath
 
+    @property
+    def num_crystals(self) -> int:
+        with h5py.File(self.filepath, 'r') as f:
+            if '/crystals' not in f:
+                return 0
+
+            return len(f['/crystals'])
+
+    @property
+    def crystals_table(self) -> np.ndarray:
+        with h5py.File(self.filepath, 'r') as f:
+            if '/crystals' not in f:
+                return np.empty((0,))
+
+            return f['/crystals'][()]
+
+    @crystals_table.setter
+    def crystals_table(self, v: np.ndarray):
+        with h5py.File(self.filepath, 'a') as f:
+            if '/crystals' in f:
+                del f['/crystals']
+
+            f['/crystals'] = v
+
     def reflections_table(
         self, row: int, column: int, scan_number: int
     ) -> np.ndarray | None:
@@ -28,11 +52,6 @@ class ExternalReflections(BaseReflections):
                 return None
 
             return f[path][()]
-
-    @property
-    def num_crystals(self):
-        with h5py.File(self.filepath, 'r') as f:
-            return len(f['/crystals'])
 
     def write_reflections_table(
         self, table: np.ndarray, row: int, column: int, scan_number: int

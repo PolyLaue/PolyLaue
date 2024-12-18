@@ -45,12 +45,6 @@
      <height>26</height>
     </rect>
    </property>
-   <widget class="QMenu" name="menu_file">
-    <property name="title">
-     <string>File</string>
-    </property>
-    <addaction name="action_open_series"/>
-   </widget>
    <widget class="QMenu" name="menu_projects">
     <property name="title">
      <string>Projects</string>
@@ -81,7 +75,6 @@
     </property>
     <addaction name="action_apply_background_subtraction"/>
    </widget>
-   <addaction name="menu_file"/>
    <addaction name="menu_projects"/>
    <addaction name="menu_overlays"/>
    <addaction name="menu_mapping"/>
