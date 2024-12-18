@@ -15,8 +15,6 @@ from polylaue.model.scan import Scan
 from polylaue.model.section import Section
 from polylaue.model.series import Series
 from polylaue.model.state import load_project_manager, save_project_manager
-from polylaue.typing import PathLike
-from polylaue.ui.editor import EditorDialog
 from polylaue.ui.frame_tracker import FrameTracker
 from polylaue.ui.image_view import PolyLaueImageView
 from polylaue.ui.reflections_editor import ReflectionsEditor
@@ -56,7 +54,10 @@ class MainWindow:
         )
         self.ui.image_view_layout.addWidget(self.image_view)
 
-        self.reflections_editor = ReflectionsEditor(self.ui)
+        self.reflections_editor = ReflectionsEditor(
+            self.frame_tracker,
+            self.ui,
+        )
 
         self.roi_manager = ROIManager()
 

@@ -387,7 +387,7 @@ class Series(Editable):
                 'type': 'string',
                 'label': 'Name',
                 'min': 1,
-                'tooltip': 'The name of the series (must be unique)'
+                'tooltip': 'The name of the series (must be unique)',
             },
             'description': {
                 'type': 'string',

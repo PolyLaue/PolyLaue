@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from polylaue.model.series import Series
 from polylaue.model.editable import Editable, ParameterDescription
+from polylaue.typing import PathLike
 
 if TYPE_CHECKING:
     from polylaue.model.project import Project

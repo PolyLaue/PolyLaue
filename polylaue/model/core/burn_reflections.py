@@ -1,3 +1,5 @@
+# Copyright © 2024, UChicago Argonne, LLC. See "LICENSE" for full details.
+
 import numpy as np
 
 
@@ -8,11 +10,20 @@ VALID_STRUCTURE_TYPES = [
 ]
 
 
-def burn(energy_highest: float, energy_lowest: float,
-         structure_type: str, image_size_x: int, image_size_y: int,
-         abc: np.ndarray, det_org: np.ndarray, beam_dir: np.ndarray,
-         pix_dist: np.ndarray, res_lim: float = 0, nscan: int = -1,
-         ang_shifts: np.ndarray | None = None):
+def burn(
+    energy_highest: float,
+    energy_lowest: float,
+    structure_type: str,
+    image_size_x: int,
+    image_size_y: int,
+    abc: np.ndarray,
+    det_org: np.ndarray,
+    beam_dir: np.ndarray,
+    pix_dist: np.ndarray,
+    res_lim: float = 0,
+    nscan: int = -1,
+    ang_shifts: np.ndarray | None = None,
+):
 
     if nscan > 1:
         if ang_shifts[(nscan - 2), 9] > 50:
@@ -20,7 +31,7 @@ def burn(energy_highest: float, energy_lowest: float,
 
         ten = np.reshape(ang_shifts[(nscan - 2), 0:9], (3, -1))
 
-    if structue_type not in VALID_STRUCTURE_TYPES:
+    if structure_type not in VALID_STRUCTURE_TYPES:
         msg = f'Unhandled structure type: {structure_type}'
         raise NotImplementedError(msg)
 

@@ -1,3 +1,5 @@
+# Copyright © 2024, UChicago Argonne, LLC. See "LICENSE" for full details.
+
 import numpy as np
 
 
@@ -115,5 +117,6 @@ if __name__ == '__main__':
     image_size_y = 2048
     white_beam_shift = 0.01
 
-    geo_from_dioptas(sys.argv[1], sys.argv[2], image_size_x, image_size_y,
-                     white_beam_shift)
+    geo_from_dioptas(
+        sys.argv[1], sys.argv[2], image_size_x, image_size_y, white_beam_shift
+    )

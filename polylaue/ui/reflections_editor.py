@@ -3,10 +3,13 @@
 from pathlib import Path
 
 from PySide6.QtCore import QObject, Signal
-from PySide6.QtWidgets import QFileDialog
+
+import h5py
 
 from polylaue.model.reflections.external import ExternalReflections
 from polylaue.model.section import Section
+from polylaue.ui.burn_workflow import BurnWorkflow
+from polylaue.ui.frame_tracker import FrameTracker
 from polylaue.ui.reflections_style import ReflectionsStyle
 from polylaue.ui.reflections_style_editor import ReflectionsStyleEditor
 from polylaue.ui.utils.ui_loader import UiLoader
@@ -23,12 +26,14 @@ class ReflectionsEditor(QObject):
     """Emitted when the reflections style was modified"""
     reflections_style_changed = Signal()
 
-    def __init__(self, parent=None):
+    def __init__(self, frame_tracker: FrameTracker, parent=None):
         super().__init__(parent)
         self.ui = UiLoader().load_file('reflections_editor.ui', parent)
 
+        self.frame_tracker = frame_tracker
         self._section = None
         self.reflections = None
+        self._burn_workflow = None
 
         self.reflections_style_editor = ReflectionsStyleEditor(self.ui)
         self.ui.reflections_style_editor_layout.addWidget(
@@ -49,6 +54,8 @@ class ReflectionsEditor(QObject):
         self.reflections_style_editor.style_edited.connect(
             lambda: self.reflections_style_changed.emit()
         )
+
+        self.ui.burn.clicked.connect(self.start_burn)
 
     def clear(self):
         self.reflections = None
@@ -107,3 +114,35 @@ class ReflectionsEditor(QObject):
     @style.setter
     def style(self, v: ReflectionsStyle):
         self.reflections_style_editor.style = v
+
+    def create_empty_reflections_file(self):
+        path = self.section.expected_reflections_file_path
+        with h5py.File(path, 'w'):
+            pass
+
+        self.load_reflections()
+
+    def start_burn(self):
+        if self.reflections is None:
+            # We ought to make some default reflections
+            self.create_empty_reflections_file()
+
+        # Turn on reflections
+        self.show_reflections = True
+
+        if self._burn_workflow is not None:
+            self._burn_workflow.clear()
+
+        self._burn_workflow = BurnWorkflow(
+            self.section,
+            self.frame_tracker,
+            self.reflections,
+            parent=self.ui,
+        )
+
+        def on_reflections_edited():
+            self.reflections_changed.emit()
+
+        self._burn_workflow.reflections_edited.connect(on_reflections_edited)
+
+        self._burn_workflow.start()

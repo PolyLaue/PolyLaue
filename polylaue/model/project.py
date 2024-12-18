@@ -1,8 +1,11 @@
 # Copyright © 2024, UChicago Argonne, LLC. See "LICENSE" for full details.
 
 from __future__ import annotations
+from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING
+
+import numpy as np
 
 from polylaue.model.core import VALID_STRUCTURE_TYPES
 from polylaue.model.editable import Editable, ParameterDescription
@@ -103,6 +106,17 @@ class Project(Editable):
         self.geometry_path = v
 
     @property
+    def geometry_data(self) -> dict:
+        path = self.geometry_path
+        if path is None:
+            raise RuntimeError(
+                'Geometry file does not exist: '
+                f'{self.expected_geometry_file_path}'
+            )
+
+        return load_geometry_file(path)
+
+    @property
     def structure_type(self) -> str:
         return self._structure_type
 
@@ -184,7 +198,7 @@ class Project(Editable):
                 'length': 2,
                 'min': 1e-8,
                 'max': float('inf'),
-                'tooltip': 'The energy range of the x-ray beam in keV'
+                'tooltip': 'The energy range of the x-ray beam in keV',
             },
             'white_beam_shift': {
                 'type': 'float',
@@ -212,3 +226,19 @@ class Project(Editable):
                 ),
             },
         }
+
+
+# We probably only need to cache one geometry file, but since they are
+# small, just cache 2...
+@lru_cache(maxsize=2)
+def load_geometry_file(path: str) -> dict:
+    return _load_geometry_file(path)
+
+
+def _load_geometry_file(path: str) -> dict:
+    npz_file = np.load(path)
+    return {
+        'det_org': npz_file['iitt1'],
+        'beam_dir': npz_file['iitt2'],
+        'pix_dist': npz_file['iitt3'],
+    }
