@@ -381,7 +381,11 @@ class MainWindow(QObject):
 
     def on_change_scan_position(self, i: int, j: int):
         """Change the current scan position to `i` row and `j` column"""
-        self.scan_pos = np.array([i, j])
+        if self.frame_tracker.scan_pos == (i, j):
+            # Nothing to do, it is already in that position.
+            return
+
+        self.frame_tracker.scan_pos = (i, j)
 
         for dialog in self.region_mapping_dialogs.values():
             dialog.set_scan_position(self.scan_pos[0], self.scan_pos[1])
@@ -391,6 +395,7 @@ class MainWindow(QObject):
     def on_frame_changed(self):
         self.load_current_image()
         self.update_info_label()
+        self.reflections_editor.on_frame_changed()
 
         # Update the mouse hover info with the new frame
         self.image_view.on_mouse_move()

@@ -62,6 +62,27 @@ class ExternalReflections(BaseReflections):
                 del f[path]
             f[path] = table
 
+    def delete_reflections_table(
+        self,
+        row: int,
+        column: int,
+        scan_number: int,
+    ):
+        """Delete a reflections table and all empty parents"""
+        path = self._reflections_table_path(row, column, scan_number)
+        with h5py.File(self.filepath, 'a') as f:
+            parent = None
+            if path in f:
+                parent = f[path].parent
+                del f[path]
+
+            while (
+                parent is not None and len(parent) == 0 and parent.name != '/'
+            ):
+                group = parent
+                parent = group.parent
+                del f[group.name]
+
     def path_exists(self, row: int, column: int, scan_number: int) -> bool:
         path = self._reflections_table_path(row, column, scan_number)
         with h5py.File(self.filepath, 'r') as f:

@@ -178,7 +178,7 @@ class PolyLaueImageView(pg.ImageView):
             else:
                 reflections = search_array
 
-        if reflections is None:
+        if reflections is None or reflections.size == 0:
             # Nothing to do...
             return
 

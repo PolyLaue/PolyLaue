@@ -66,6 +66,11 @@ class BurnWorkflow(QObject):
             self.burn_dialog.ui.hide()
             self.burn_dialog = None
 
+    def on_frame_changed(self):
+        if self.burn_dialog is not None:
+            # When the frame changes, deactivate burn
+            self.burn_dialog.deactivate_burn()
+
     @property
     def abc_matrix_path(self) -> Path:
         return self.project.directory / 'abc_matrix.npy'
@@ -98,7 +103,8 @@ class BurnWorkflow(QObject):
             self.burn_dialog.ui.hide()
 
         self.burn_dialog = BurnDialog(self.parent)
-        self.burn_dialog.settings_changed.connect(self.run_burn)
+        self.burn_dialog.burn_triggered.connect(self.run_burn)
+        self.burn_dialog.clear_reflections.connect(self.clear_reflections)
         self.burn_dialog.ui.show()
 
     @property
@@ -131,24 +137,28 @@ class BurnWorkflow(QObject):
         self.validate_crystal_id()
         pred_list1, pred_list2 = burn(**self.burn_kwargs)
 
-        table = np.hstack(
-            (
-                # x, y
-                pred_list2[:, 0:2],
-                # h, k, l
-                pred_list1[:, 0:3],
-                # energy
-                pred_list2[:, 2:3],
-                # First order, last order
-                pred_list1[:, 3:5],
-                # d-spacing
-                pred_list2[:, 3:4],
-            )
-        )
-
-        # Add the crystal ID into the 9th column
         crystal_id = self.crystal_id
-        table = np.insert(table, 9, crystal_id, axis=1)
+
+        if pred_list1.size != 0:
+            table = np.hstack(
+                (
+                    # x, y
+                    pred_list2[:, 0:2],
+                    # h, k, l
+                    pred_list1[:, 0:3],
+                    # energy
+                    pred_list2[:, 2:3],
+                    # First order, last order
+                    pred_list1[:, 3:5],
+                    # d-spacing
+                    pred_list2[:, 3:4],
+                )
+            )
+
+            # Add the crystal ID into the 9th column
+            table = np.insert(table, 9, crystal_id, axis=1)
+        else:
+            table = pred_list2
 
         # Check if there's an existing table. If so, replace any
         # reflections matching our crystal ID with the new reflections.
@@ -156,7 +166,7 @@ class BurnWorkflow(QObject):
             *self.frame_tracker.scan_pos,
             self.frame_tracker.scan_num,
         )
-        if existing_table is not None:
+        if existing_table is not None and existing_table.size > 0:
             # Remove all rows that match our crystal id
             existing_table = np.delete(
                 existing_table,
@@ -164,8 +174,11 @@ class BurnWorkflow(QObject):
                 axis=0,
             )
 
-            # Add our new table
-            table = np.vstack((existing_table, table))
+            if table.size != 0:
+                # Add our new table
+                table = np.vstack((existing_table, table))
+            else:
+                table = existing_table
 
             # Sort by crystal ID
             table = table[table[:, 9].argsort()]
@@ -176,6 +189,13 @@ class BurnWorkflow(QObject):
             self.frame_tracker.scan_num,
         )
 
+        self.reflections_edited.emit()
+
+    def clear_reflections(self):
+        self.reflections.delete_reflections_table(
+            *self.frame_tracker.scan_pos,
+            self.frame_tracker.scan_num,
+        )
         self.reflections_edited.emit()
 
 
