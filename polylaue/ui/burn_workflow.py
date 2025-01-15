@@ -33,6 +33,7 @@ class BurnWorkflow(QObject):
         self.parent = parent
 
         self.abc_matrix = None
+        self.angular_shifts = None
         self.burn_dialog = None
 
     def start(self):
@@ -42,7 +43,6 @@ class BurnWorkflow(QObject):
             QMessageBox.critical(None, 'Validation Failed', str(e))
             return
 
-        self.abc_matrix = np.load(self.abc_matrix_path)
         self.show_burn_dialog()
 
     def validate(self):
@@ -53,27 +53,67 @@ class BurnWorkflow(QObject):
             )
             raise ValidationError(msg)
 
-        if not self.abc_matrix_path.exists():
-            msg = (
-                'ABC Matrix file must be present in the root project '
-                f'directory ({self.abc_matrix_path})'
-            )
-            raise ValidationError(msg)
-
     def clear(self):
         self.abc_matrix = None
         if self.burn_dialog is not None:
             self.burn_dialog.ui.hide()
             self.burn_dialog = None
 
+    def on_frame_changed(self):
+        if self.burn_dialog is not None:
+            # When the frame changes, deactivate burn
+            self.burn_dialog.deactivate_burn()
+
     @property
-    def abc_matrix_path(self) -> Path:
+    def project_dir_abc_matrix_path(self) -> Path:
         return self.project.directory / 'abc_matrix.npy'
 
-    def validate_crystal_id(self):
-        # Check if the ABC matrix is already present within the predictions
-        # file. If it is, set the crystal ID to match. If it is not, add it
-        # and set the crystal id.
+    @property
+    def angular_shifts_path(self) -> Path:
+        return self.project.directory / 'ang_shifts.npy'
+
+    def load_abc_matrix(self):
+        self.abc_matrix = None
+        if self.burn_dialog.crystal_orientation_is_from_project_dir:
+            path = self.project_dir_abc_matrix_path
+            if not path.exists():
+                crystal_orientation = self.burn_dialog.crystal_orientation
+                msg = (
+                    f'Crystal orientation is set to "{crystal_orientation}", '
+                    'but the ABC Matrix file is missing from its expected '
+                    f'location ({path})'
+                )
+                print(msg)
+                QMessageBox.critical(None, 'Failed to Load ABC Matrix', msg)
+                return
+
+            self.abc_matrix = np.load(path)
+            self.set_abc_matrix_to_crystals_table_if_missing()
+        elif self.burn_dialog.crystal_orientation_is_from_hdf5_file:
+            crystals_table = self.reflections.crystals_table
+            if self.crystal_id >= len(crystals_table):
+                crystal_orientation = self.burn_dialog.crystal_orientation
+                msg = (
+                    f'Crystal orientation is set to "{crystal_orientation}", '
+                    f'but the selected crystal ID ({self.crystal_id}) '
+                    'is out of range for the crystals table at "/crystals" '
+                    f'(length {len(crystals_table)})'
+                )
+                print(msg)
+                QMessageBox.critical(None, 'Failed to Load ABC Matrix', msg)
+                return
+
+            self.abc_matrix = crystals_table[self.crystal_id]
+        else:
+            msg = (
+                f'Crystal Orientation: {self.burn_dialog.crystal_orientation}'
+            )
+            raise NotImplementedError(msg)
+
+    def set_abc_matrix_to_crystals_table_if_missing(self):
+        # This sets the ABC Matrix to the crystals table (using
+        # the currently selected Crystal ID) if the ABC matrix
+        # is not already present for this crystal ID.
         crystals_table = self.reflections.crystals_table
 
         if self.crystal_id < len(crystals_table):
@@ -93,12 +133,30 @@ class BurnWorkflow(QObject):
 
         self.reflections.crystals_table = crystals_table
 
+    def load_angular_shifts(self):
+        self.angular_shifts = None
+        if not self.apply_angular_shift:
+            return
+
+        path = self.angular_shifts_path
+        if not path.exists():
+            msg = (
+                '"Apply Angular Shift" is enabled, but the angular shifts '
+                f'file does not exist at its expected path ({path})'
+            )
+            print(msg)
+            QMessageBox.critical(None, 'Failed to Load Angular Shifts', msg)
+            return
+
+        self.angular_shifts = np.load(path)
+
     def show_burn_dialog(self):
         if self.burn_dialog:
             self.burn_dialog.ui.hide()
 
         self.burn_dialog = BurnDialog(self.parent)
-        self.burn_dialog.settings_changed.connect(self.run_burn)
+        self.burn_dialog.burn_triggered.connect(self.run_burn)
+        self.burn_dialog.clear_reflections.connect(self.clear_reflections)
         self.burn_dialog.ui.show()
 
     @property
@@ -106,7 +164,11 @@ class BurnWorkflow(QObject):
         return self.section.parent
 
     @property
-    def crystal_id(self):
+    def apply_angular_shift(self) -> bool:
+        return self.burn_dialog.apply_angular_shift
+
+    @property
+    def crystal_id(self) -> int:
         return self.burn_dialog.crystal_id
 
     @property
@@ -125,30 +187,45 @@ class BurnWorkflow(QObject):
             'beam_dir': geometry['beam_dir'],
             'pix_dist': geometry['pix_dist'],
             'res_lim': self.burn_dialog.dmin,
+            'nscan': self.burn_dialog.angular_shift_scan_number,
+            'ang_shifts': self.angular_shifts,
         }
 
     def run_burn(self):
-        self.validate_crystal_id()
+        self.load_abc_matrix()
+        if self.abc_matrix is None:
+            print('Failed to load ABC matrix. Aborting burn()...')
+            return
+
+        self.load_angular_shifts()
+        if self.apply_angular_shift and self.angular_shifts is None:
+            print('Failed to load angular shifts. Aborting burn()...')
+            return
+
         pred_list1, pred_list2 = burn(**self.burn_kwargs)
 
-        table = np.hstack(
-            (
-                # x, y
-                pred_list2[:, 0:2],
-                # h, k, l
-                pred_list1[:, 0:3],
-                # energy
-                pred_list2[:, 2:3],
-                # First order, last order
-                pred_list1[:, 3:5],
-                # d-spacing
-                pred_list2[:, 3:4],
-            )
-        )
-
-        # Add the crystal ID into the 9th column
         crystal_id = self.crystal_id
-        table = np.insert(table, 9, crystal_id, axis=1)
+
+        if pred_list1.size != 0:
+            table = np.hstack(
+                (
+                    # x, y
+                    pred_list2[:, 0:2],
+                    # h, k, l
+                    pred_list1[:, 0:3],
+                    # energy
+                    pred_list2[:, 2:3],
+                    # First order, last order
+                    pred_list1[:, 3:5],
+                    # d-spacing
+                    pred_list2[:, 3:4],
+                )
+            )
+
+            # Add the crystal ID into the 9th column
+            table = np.insert(table, 9, crystal_id, axis=1)
+        else:
+            table = pred_list2
 
         # Check if there's an existing table. If so, replace any
         # reflections matching our crystal ID with the new reflections.
@@ -156,7 +233,7 @@ class BurnWorkflow(QObject):
             *self.frame_tracker.scan_pos,
             self.frame_tracker.scan_num,
         )
-        if existing_table is not None:
+        if existing_table is not None and existing_table.size > 0:
             # Remove all rows that match our crystal id
             existing_table = np.delete(
                 existing_table,
@@ -164,8 +241,11 @@ class BurnWorkflow(QObject):
                 axis=0,
             )
 
-            # Add our new table
-            table = np.vstack((existing_table, table))
+            if table.size != 0:
+                # Add our new table
+                table = np.vstack((existing_table, table))
+            else:
+                table = existing_table
 
             # Sort by crystal ID
             table = table[table[:, 9].argsort()]
@@ -176,6 +256,13 @@ class BurnWorkflow(QObject):
             self.frame_tracker.scan_num,
         )
 
+        self.reflections_edited.emit()
+
+    def clear_reflections(self):
+        self.reflections.delete_reflections_table(
+            *self.frame_tracker.scan_pos,
+            self.frame_tracker.scan_num,
+        )
         self.reflections_edited.emit()
 
 

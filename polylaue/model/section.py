@@ -36,6 +36,11 @@ class Section(Editable):
     def num_series(self):
         return len(self.series)
 
+    @property
+    def path_from_root(self) -> list[int]:
+        index = self.parent.sections.index(self)
+        return self.parent.path_from_root + [index]
+
     def series_with_scan_index(self, scan_index: int) -> Series | None:
         # Return the first series we can find that contains the scan
         # index.

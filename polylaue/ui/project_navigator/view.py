@@ -3,6 +3,7 @@
 from PySide6.QtCore import (
     QAbstractItemModel,
     QEvent,
+    QItemSelectionModel,
     QModelIndex,
     QSortFilterProxyModel,
     Qt,
@@ -85,6 +86,11 @@ class ProjectNavigatorView(QTableView):
                 self.on_navigation_bar_button_clicked
             )
 
+    def set_current_path(self, current_path: list[int]):
+        self.model.set_path(current_path[:-1])
+        self.on_path_modified()
+        self.select_row(current_path[-1])
+
     @property
     def proxy_model(self):
         return super().model()
@@ -112,6 +118,19 @@ class ProjectNavigatorView(QTableView):
             self.proxy_model.mapToSource(x).row()
             for x in self.selectionModel().selectedRows()
         ]
+
+    def select_row(self, i: int):
+        if i >= self.model.rowCount():
+            # Out of range. Don't do anything.
+            return
+
+        # Select the row
+        selection_model = self.selectionModel()
+        selection_model.clearSelection()
+
+        model_index = selection_model.model().index(i, 0)
+        command = QItemSelectionModel.Select | QItemSelectionModel.Rows
+        selection_model.select(model_index, command)
 
     def contextMenuEvent(self, event: QEvent):
         actions = {}
@@ -257,8 +276,10 @@ class ProjectNavigatorView(QTableView):
 
     def on_navigation_bar_button_clicked(self, i: int):
         # Truncate the path based upon the index the user clicked
+        previous_row = self.model.path[i]
         self.model.set_path(self.model.path[:i])
         self.on_path_modified()
+        self.select_row(previous_row)
 
     def edit_entry(self, row: int):
         if self.submodel.edit_entry(row):

@@ -150,22 +150,20 @@ class MainWindow(QObject):
             settings.value('apply_background_subtraction', 'true') == 'true'
         )
 
+    @property
+    def current_series_path(self) -> list[int] | None:
+        if self.series is None:
+            return None
+
+        return self.series.path_from_root
+
     def _serialize_last_loaded_frame(self) -> dict:
         if self.series is None:
             return {}
 
         # Save the path to the currently viewed series
-        series = self.series
-        section = series.parent
-        project = section.parent
-        project_manager = project.parent
-
-        series_idx = section.series.index(series)
-        section_idx = project.sections.index(section)
-        project_idx = project_manager.projects.index(project)
-
         return {
-            'series_path': [project_idx, section_idx, series_idx],
+            'series_path': self.series.path_from_root,
             'scan_num': self.scan_num,
             'scan_pos': self.scan_pos.tolist(),
         }
@@ -298,6 +296,12 @@ class MainWindow(QObject):
             d.view.open_scan.connect(self.on_project_navigator_open_scan)
             self._project_navigator_dialog = d
 
+        # Each time the project navigator is triggered to open,
+        # reset the path to the currently selected series.
+        current_path = self.current_series_path
+        if current_path is not None:
+            self._project_navigator_dialog.view.set_current_path(current_path)
+
         self._project_navigator_dialog.show()
 
     def on_project_navigator_series_modified(self, series: Series):
@@ -377,7 +381,11 @@ class MainWindow(QObject):
 
     def on_change_scan_position(self, i: int, j: int):
         """Change the current scan position to `i` row and `j` column"""
-        self.scan_pos = np.array([i, j])
+        if self.frame_tracker.scan_pos == (i, j):
+            # Nothing to do, it is already in that position.
+            return
+
+        self.frame_tracker.scan_pos = (i, j)
 
         for dialog in self.region_mapping_dialogs.values():
             dialog.set_scan_position(self.scan_pos[0], self.scan_pos[1])
@@ -387,6 +395,7 @@ class MainWindow(QObject):
     def on_frame_changed(self):
         self.load_current_image()
         self.update_info_label()
+        self.reflections_editor.on_frame_changed()
 
         # Update the mouse hover info with the new frame
         self.image_view.on_mouse_move()

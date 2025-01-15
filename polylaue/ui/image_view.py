@@ -178,13 +178,20 @@ class PolyLaueImageView(pg.ImageView):
             else:
                 reflections = search_array
 
-        if reflections is None:
+        if reflections is None or reflections.size == 0:
             # Nothing to do...
             return
 
+        crystal_ids = reflections[:, 9].astype(int)
+
+        # Remove any out-of-bound reflections before storing
+        valid = crystal_ids < len(self.reflection_pens)
+        crystal_ids = crystal_ids[valid]
+        reflections = reflections[valid]
+
+        # Now store the reflections array
         self.reflections_array = reflections
 
-        crystal_ids = reflections[:, 9].astype(int)
         pens = self.reflection_pens[crystal_ids]
 
         style = self.reflections_style

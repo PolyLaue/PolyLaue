@@ -107,6 +107,10 @@ class ReflectionsEditor(QObject):
         self.ui.number_of_crystals.setValue(num_crystals)
         self.ui.prediction_matcher.setEnabled(has_reflections)
 
+    def on_frame_changed(self):
+        if self._burn_workflow is not None:
+            self._burn_workflow.on_frame_changed()
+
     @property
     def style(self) -> ReflectionsStyle:
         return self.reflections_style_editor.style

@@ -6,15 +6,150 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>358</width>
-    <height>171</height>
+    <width>460</width>
+    <height>396</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Burn Reflections</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
+   <item row="2" column="0">
+    <widget class="QLabel" name="crystal_id_label">
+     <property name="toolTip">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the crystal ID that these reflections will correspond to. Existings reflections with this crystal ID will be overwritten when the structure type or dmin are modified.&lt;br/&gt;&lt;/p&gt;&lt;p&gt;If this crystal ID does not already exist within the reflections HDF5 file, a new entry will be made using the current ABC matrix as the parameters.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="text">
+      <string>Crystal ID:</string>
+     </property>
+    </widget>
+   </item>
    <item row="5" column="0" colspan="2">
+    <widget class="QGroupBox" name="groupBox">
+     <property name="title">
+      <string>Min d-spacing</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_2">
+      <item row="0" column="1">
+       <layout class="QHBoxLayout" name="horizontalLayout">
+        <item>
+         <widget class="ScientificDoubleSpinBox" name="max_dmin">
+          <property name="toolTip">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Maximum value for the burn slider.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+          <property name="keyboardTracking">
+           <bool>false</bool>
+          </property>
+          <property name="decimals">
+           <number>8</number>
+          </property>
+          <property name="maximum">
+           <double>100000.000000000000000</double>
+          </property>
+          <property name="value">
+           <double>1.000000000000000</double>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QSlider" name="dmin_slider">
+          <property name="toolTip">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The burn slider. Edit this to visualize changes in predicted reflections.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+          <property name="maximum">
+           <number>100</number>
+          </property>
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="min_dmin">
+          <property name="toolTip">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The minimum value for the burn slider is always 0.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+          <property name="text">
+           <string>0.0</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item row="1" column="1">
+       <widget class="ScientificDoubleSpinBox" name="dmin_value">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The current value of the burn slider.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="decimals">
+         <number>8</number>
+        </property>
+        <property name="maximum">
+         <double>100000.000000000000000</double>
+        </property>
+        <property name="value">
+         <double>1.000000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string>Value:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="label_2">
+        <property name="text">
+         <string>Slider:</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="2" column="1">
+    <widget class="QSpinBox" name="crystal_id">
+     <property name="toolTip">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the crystal ID that these reflections will correspond to. Existings reflections with this crystal ID will be overwritten when the structure type or dmin are modified.&lt;br/&gt;&lt;/p&gt;&lt;p&gt;If this crystal ID does not already exist within the reflections HDF5 file, a new entry will be made using the current ABC matrix as the parameters.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="maximum">
+      <number>1000000</number>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="0">
+    <widget class="QLabel" name="structure_type_label">
+     <property name="toolTip">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the structure type used when burning reflections.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="text">
+      <string>Structure Type:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="8" column="0" colspan="2">
+    <widget class="QPushButton" name="clear">
+     <property name="toolTip">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Clear all reflections in the HDF5 file for the currently viewed frame.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="text">
+      <string>Clear Reflections</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="1">
+    <widget class="QComboBox" name="structure_type">
+     <property name="toolTip">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the structure type used when burning reflections.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+    </widget>
+   </item>
+   <item row="7" column="0" colspan="2">
     <spacer name="vertical_spacer">
      <property name="orientation">
       <enum>Qt::Vertical</enum>
@@ -27,105 +162,121 @@
      </property>
     </spacer>
    </item>
-   <item row="1" column="1">
-    <widget class="QSpinBox" name="crystal_id">
-     <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the crystal ID that these reflections will correspond to. Existings reflections with this crystal ID will be overwritten when the structure type or dmin are modified.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;If this crystal ID does not already exist within the reflections HDF5 file, a new entry will be made using the current ABC matrix as the parameters.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-     </property>
-     <property name="maximum">
-      <number>100000</number>
-     </property>
-    </widget>
-   </item>
-   <item row="4" column="0" colspan="2">
-    <widget class="ScientificDoubleSpinBox" name="dmin_value">
-     <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The current value of the burn slider.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-     </property>
-     <property name="keyboardTracking">
-      <bool>false</bool>
-     </property>
-     <property name="decimals">
-      <number>8</number>
-     </property>
-     <property name="maximum">
-      <double>100000.000000000000000</double>
-     </property>
-     <property name="value">
-      <double>1.000000000000000</double>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="0">
-    <widget class="QLabel" name="crystal_id_label">
-     <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the crystal ID that these reflections will correspond to. Existings reflections with this crystal ID will be overwritten when the structure type or dmin are modified.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;If this crystal ID does not already exist within the reflections HDF5 file, a new entry will be made using the current ABC matrix as the parameters.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-     </property>
-     <property name="text">
-      <string>Crystal ID:</string>
-     </property>
-    </widget>
-   </item>
-   <item row="3" column="0" colspan="2">
-    <layout class="QHBoxLayout" name="horizontalLayout">
-     <item>
-      <widget class="ScientificDoubleSpinBox" name="max_dmin">
+   <item row="0" column="0" colspan="2">
+    <layout class="QGridLayout" name="gridLayout_3">
+     <item row="0" column="1">
+      <widget class="QCheckBox" name="activate_burn">
        <property name="toolTip">
-        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Maximum value for the burn slider.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Activate the burn function, so that when the dmin slider or structure type is edited, burn is triggered.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;If the crystal ID changes, or the current frame changes, burn is automatically deactivated in order to prevent any accidental overwriting of previously burned reflections.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
        </property>
-       <property name="keyboardTracking">
-        <bool>false</bool>
+       <property name="styleSheet">
+        <string notr="true">Q</string>
        </property>
-       <property name="decimals">
-        <number>8</number>
-       </property>
-       <property name="maximum">
-        <double>100000.000000000000000</double>
-       </property>
-       <property name="value">
-        <double>1.000000000000000</double>
+       <property name="text">
+        <string>Activate Burn</string>
        </property>
       </widget>
      </item>
-     <item>
-      <widget class="QSlider" name="dmin_slider">
-       <property name="toolTip">
-        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The burn slider. Edit this to visualize changes in predicted reflections.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-       </property>
-       <property name="maximum">
-        <number>100</number>
-       </property>
+     <item row="0" column="0">
+      <spacer name="horizontalSpacer">
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
-      </widget>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
      </item>
-     <item>
-      <widget class="QLabel" name="min_dmin">
-       <property name="toolTip">
-        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The minimum value for the burn slider is always 0.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     <item row="0" column="2">
+      <spacer name="horizontalSpacer_2">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
        </property>
-       <property name="text">
-        <string>0.0</string>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
        </property>
-      </widget>
+      </spacer>
      </item>
     </layout>
    </item>
-   <item row="2" column="0">
-    <widget class="QLabel" name="structure_type_label">
+   <item row="1" column="0" colspan="2">
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeType">
+      <enum>QSizePolicy::Fixed</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>20</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item row="3" column="0">
+    <widget class="QLabel" name="label_3">
      <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the structure type used when burning reflections.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Specify the location from which the crystal's ABC matrix (orientation) will be obtained.&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&amp;quot;From HDF5 File&amp;quot; - the ABC matrix within the HDF5 file corresponding to the selected &amp;quot;Crystal ID&amp;quot; will be used. There must already exist an ABC matrix with the specified crystal ID in the &amp;quot;/crystals&amp;quot; dataset in order for this option to be used.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&amp;quot;From Project Directory&amp;quot; - the ABC matrix within the file &amp;quot;abc_matrix.npy&amp;quot; located at the root level of the project directory will be used. This file must exist in order for this option to be used. If the selected &amp;quot;Crystal ID&amp;quot; does not already exist within the HDF5 file, this ABC matrix will be written to the HDF5 file with that &amp;quot;Crystal ID&amp;quot; upon executing burn.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
      <property name="text">
-      <string>Structure Type:</string>
+      <string>Crystal Orientation:</string>
      </property>
     </widget>
    </item>
-   <item row="2" column="1">
-    <widget class="QComboBox" name="structure_type">
+   <item row="3" column="1">
+    <widget class="QComboBox" name="crystal_orientation">
      <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the structure type used when burning reflections.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Specify the location from which the crystal's ABC matrix (orientation) will be obtained.&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&amp;quot;From HDF5 File&amp;quot; - the ABC matrix within the HDF5 file corresponding to the selected &amp;quot;Crystal ID&amp;quot; will be used. There must already exist an ABC matrix with the specified crystal ID in the &amp;quot;/crystals&amp;quot; dataset in order for this option to be used.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&amp;quot;From Project Directory&amp;quot; - the ABC matrix within the file &amp;quot;abc_matrix.npy&amp;quot; located at the root level of the project directory will be used. This file must exist in order for this option to be used. If the selected &amp;quot;Crystal ID&amp;quot; does not already exist within the HDF5 file, this ABC matrix will be written to the HDF5 file with that &amp;quot;Crystal ID&amp;quot; upon executing burn.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <item>
+      <property name="text">
+       <string>From HDF5 File</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>From Project Directory</string>
+      </property>
+     </item>
+    </widget>
+   </item>
+   <item row="6" column="0">
+    <widget class="QCheckBox" name="apply_angular_shift">
+     <property name="toolTip">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Apply an angular shift to the ABC Matrix.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;If checked, the file &amp;quot;ang_shifts.npy&amp;quot; must be present in the root level of the project directory. This file will be loaded, and the number of specified scans will be used to extract the angular shift from the array.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="text">
+      <string>Apply Angular Shift</string>
+     </property>
+    </widget>
+   </item>
+   <item row="6" column="1">
+    <widget class="QSpinBox" name="angular_shift_scan_number">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="toolTip">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Apply an angular shift to the ABC Matrix.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;If checked, the file &amp;quot;ang_shifts.npy&amp;quot; must be present in the root level of the project directory. This file will be loaded, and the number of specified scans will be used to extract the angular shift from the array.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="suffix">
+      <string> (scan number)</string>
+     </property>
+     <property name="prefix">
+      <string/>
+     </property>
+     <property name="minimum">
+      <number>2</number>
+     </property>
+     <property name="maximum">
+      <number>10000000</number>
      </property>
     </widget>
    </item>
@@ -139,12 +290,34 @@
   </customwidget>
  </customwidgets>
  <tabstops>
+  <tabstop>activate_burn</tabstop>
   <tabstop>crystal_id</tabstop>
+  <tabstop>crystal_orientation</tabstop>
   <tabstop>structure_type</tabstop>
   <tabstop>max_dmin</tabstop>
   <tabstop>dmin_slider</tabstop>
   <tabstop>dmin_value</tabstop>
+  <tabstop>apply_angular_shift</tabstop>
+  <tabstop>angular_shift_scan_number</tabstop>
+  <tabstop>clear</tabstop>
  </tabstops>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>apply_angular_shift</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>angular_shift_scan_number</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>116</x>
+     <y>322</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>338</x>
+     <y>322</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>

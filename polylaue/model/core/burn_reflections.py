@@ -23,8 +23,7 @@ def burn(
     res_lim: float = 0,
     nscan: int = -1,
     ang_shifts: np.ndarray | None = None,
-):
-
+) -> tuple[np.ndarray, np.ndarray]:
     if nscan > 1:
         if ang_shifts[(nscan - 2), 9] > 50:
             raise RuntimeError('No angular shift available')
@@ -284,6 +283,11 @@ def burn(
     hkl_tet = hkl_tet[vec_sel]
     hkl_enr = hkl_enr[vec_sel]
     hkl = hkl[vec_sel, :]
+
+    if hkl.shape[0] == 0:
+        print('No reflections predicted')
+        return np.array([], dtype=int), np.array([])
+
     print(' ')
     print('... Predicted reflections:', np.shape(hkl)[0])
     print('Multiplicity distribution')

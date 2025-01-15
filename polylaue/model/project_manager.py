@@ -22,6 +22,11 @@ class ProjectManager(Serializable):
     def num_projects(self):
         return len(self.projects)
 
+    @property
+    def path_from_root(self) -> list[int]:
+        # This is the root
+        return []
+
     # Serialization code
     _attrs_to_serialize = [
         'projects_serialized',
