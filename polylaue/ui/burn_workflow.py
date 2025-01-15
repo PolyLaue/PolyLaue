@@ -33,6 +33,7 @@ class BurnWorkflow(QObject):
         self.parent = parent
 
         self.abc_matrix = None
+        self.angular_shifts = None
         self.burn_dialog = None
 
     def start(self):
@@ -66,6 +67,10 @@ class BurnWorkflow(QObject):
     @property
     def project_dir_abc_matrix_path(self) -> Path:
         return self.project.directory / 'abc_matrix.npy'
+
+    @property
+    def angular_shifts_path(self) -> Path:
+        return self.project.directory / 'ang_shifts.npy'
 
     def load_abc_matrix(self):
         self.abc_matrix = None
@@ -128,6 +133,23 @@ class BurnWorkflow(QObject):
 
         self.reflections.crystals_table = crystals_table
 
+    def load_angular_shifts(self):
+        self.angular_shifts = None
+        if not self.apply_angular_shift:
+            return
+
+        path = self.angular_shifts_path
+        if not path.exists():
+            msg = (
+                '"Apply Angular Shift" is enabled, but the angular shifts '
+                f'file does not exist at its expected path ({path})'
+            )
+            print(msg)
+            QMessageBox.critical(None, 'Failed to Load Angular Shifts', msg)
+            return
+
+        self.angular_shifts = np.load(path)
+
     def show_burn_dialog(self):
         if self.burn_dialog:
             self.burn_dialog.ui.hide()
@@ -142,7 +164,11 @@ class BurnWorkflow(QObject):
         return self.section.parent
 
     @property
-    def crystal_id(self):
+    def apply_angular_shift(self) -> bool:
+        return self.burn_dialog.apply_angular_shift
+
+    @property
+    def crystal_id(self) -> int:
         return self.burn_dialog.crystal_id
 
     @property
@@ -161,12 +187,19 @@ class BurnWorkflow(QObject):
             'beam_dir': geometry['beam_dir'],
             'pix_dist': geometry['pix_dist'],
             'res_lim': self.burn_dialog.dmin,
+            'nscan': self.burn_dialog.angular_shift_scan_number,
+            'ang_shifts': self.angular_shifts,
         }
 
     def run_burn(self):
         self.load_abc_matrix()
         if self.abc_matrix is None:
             print('Failed to load ABC matrix. Aborting burn()...')
+            return
+
+        self.load_angular_shifts()
+        if self.apply_angular_shift and self.angular_shifts is None:
+            print('Failed to load angular shifts. Aborting burn()...')
             return
 
         pred_list1, pred_list2 = burn(**self.burn_kwargs)
