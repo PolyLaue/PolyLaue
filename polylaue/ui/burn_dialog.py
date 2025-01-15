@@ -29,6 +29,10 @@ class BurnDialog(QObject):
 
         self.ui.crystal_id.valueChanged.connect(self.on_crystal_id_changed)
 
+        self.ui.crystal_orientation.currentIndexChanged.connect(
+            self.on_crystal_orientation_changed
+        )
+
         self.ui.max_dmin.valueChanged.connect(self.on_max_dmin_changed)
 
         self.ui.dmin_slider.valueChanged.connect(self.on_dmin_slider_changed)
@@ -56,12 +60,24 @@ class BurnDialog(QObject):
         self.ui.activate_burn.setChecked(b)
 
     @property
-    def structure_type(self) -> str:
-        return self.ui.structure_type.currentText()
+    def crystal_orientation(self) -> str:
+        return self.ui.crystal_orientation.currentText()
+
+    @property
+    def crystal_orientation_is_from_hdf5_file(self) -> bool:
+        return self.crystal_orientation == 'From HDF5 File'
+
+    @property
+    def crystal_orientation_is_from_project_dir(self) -> bool:
+        return self.crystal_orientation == 'From Project Directory'
 
     @property
     def crystal_id(self) -> int:
         return self.ui.crystal_id.value()
+
+    @property
+    def structure_type(self) -> str:
+        return self.ui.structure_type.currentText()
 
     @property
     def max_dmin(self) -> float:
@@ -95,6 +111,10 @@ class BurnDialog(QObject):
         self.emit_if_active()
 
     def on_crystal_id_changed(self):
+        # Deactivate the burn function
+        self.deactivate_burn()
+
+    def on_crystal_orientation_changed(self):
         # Deactivate the burn function
         self.deactivate_burn()
 

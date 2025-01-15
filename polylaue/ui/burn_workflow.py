@@ -42,7 +42,6 @@ class BurnWorkflow(QObject):
             QMessageBox.critical(None, 'Validation Failed', str(e))
             return
 
-        self.abc_matrix = np.load(self.abc_matrix_path)
         self.show_burn_dialog()
 
     def validate(self):
@@ -50,13 +49,6 @@ class BurnWorkflow(QObject):
             msg = (
                 'Geometry path must be defined for this project '
                 f'({self.project.name}) in order to burn reflections'
-            )
-            raise ValidationError(msg)
-
-        if not self.abc_matrix_path.exists():
-            msg = (
-                'ABC Matrix file must be present in the root project '
-                f'directory ({self.abc_matrix_path})'
             )
             raise ValidationError(msg)
 
@@ -72,13 +64,51 @@ class BurnWorkflow(QObject):
             self.burn_dialog.deactivate_burn()
 
     @property
-    def abc_matrix_path(self) -> Path:
+    def project_dir_abc_matrix_path(self) -> Path:
         return self.project.directory / 'abc_matrix.npy'
 
-    def validate_crystal_id(self):
-        # Check if the ABC matrix is already present within the predictions
-        # file. If it is, set the crystal ID to match. If it is not, add it
-        # and set the crystal id.
+    def load_abc_matrix(self):
+        self.abc_matrix = None
+        if self.burn_dialog.crystal_orientation_is_from_project_dir:
+            path = self.project_dir_abc_matrix_path
+            if not path.exists():
+                crystal_orientation = self.burn_dialog.crystal_orientation
+                msg = (
+                    f'Crystal orientation is set to "{crystal_orientation}", '
+                    'but the ABC Matrix file is missing from its expected '
+                    f'location ({path})'
+                )
+                print(msg)
+                QMessageBox.critical(None, 'Failed to Load ABC Matrix', msg)
+                return
+
+            self.abc_matrix = np.load(path)
+            self.set_abc_matrix_to_crystals_table_if_missing()
+        elif self.burn_dialog.crystal_orientation_is_from_hdf5_file:
+            crystals_table = self.reflections.crystals_table
+            if self.crystal_id >= len(crystals_table):
+                crystal_orientation = self.burn_dialog.crystal_orientation
+                msg = (
+                    f'Crystal orientation is set to "{crystal_orientation}", '
+                    f'but the selected crystal ID ({self.crystal_id}) '
+                    'is out of range for the crystals table at "/crystals" '
+                    f'(length {len(crystals_table)})'
+                )
+                print(msg)
+                QMessageBox.critical(None, 'Failed to Load ABC Matrix', msg)
+                return
+
+            self.abc_matrix = crystals_table[self.crystal_id]
+        else:
+            msg = (
+                f'Crystal Orientation: {self.burn_dialog.crystal_orientation}'
+            )
+            raise NotImplementedError(msg)
+
+    def set_abc_matrix_to_crystals_table_if_missing(self):
+        # This sets the ABC Matrix to the crystals table (using
+        # the currently selected Crystal ID) if the ABC matrix
+        # is not already present for this crystal ID.
         crystals_table = self.reflections.crystals_table
 
         if self.crystal_id < len(crystals_table):
@@ -134,7 +164,11 @@ class BurnWorkflow(QObject):
         }
 
     def run_burn(self):
-        self.validate_crystal_id()
+        self.load_abc_matrix()
+        if self.abc_matrix is None:
+            print('Failed to load ABC matrix. Aborting burn()...')
+            return
+
         pred_list1, pred_list2 = burn(**self.burn_kwargs)
 
         crystal_id = self.crystal_id
