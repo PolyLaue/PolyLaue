@@ -48,6 +48,11 @@ class Project(Editable):
         return len(self.sections)
 
     @property
+    def path_from_root(self) -> list[int]:
+        index = self.parent.projects.index(self)
+        return self.parent.path_from_root + [index]
+
+    @property
     def directory(self) -> Path:
         return self._directory
 

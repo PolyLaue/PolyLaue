@@ -70,6 +70,11 @@ class Series(Editable):
         self.file_list = []
         self.parent = parent
 
+    @property
+    def path_from_root(self) -> list[int]:
+        index = self.parent.series.index(self)
+        return self.parent.path_from_root + [index]
+
     def filepath(self, row: int, column: int, scan_number: int = 1) -> Path:
         """Get the filepath for a specified, row, column, and scan_number"""
         if row >= self.scan_shape[0]:

@@ -150,22 +150,20 @@ class MainWindow(QObject):
             settings.value('apply_background_subtraction', 'true') == 'true'
         )
 
+    @property
+    def current_series_path(self) -> list[int] | None:
+        if self.series is None:
+            return None
+
+        return self.series.path_from_root
+
     def _serialize_last_loaded_frame(self) -> dict:
         if self.series is None:
             return {}
 
         # Save the path to the currently viewed series
-        series = self.series
-        section = series.parent
-        project = section.parent
-        project_manager = project.parent
-
-        series_idx = section.series.index(series)
-        section_idx = project.sections.index(section)
-        project_idx = project_manager.projects.index(project)
-
         return {
-            'series_path': [project_idx, section_idx, series_idx],
+            'series_path': self.series.path_from_root,
             'scan_num': self.scan_num,
             'scan_pos': self.scan_pos.tolist(),
         }
@@ -297,6 +295,12 @@ class MainWindow(QObject):
             )
             d.view.open_scan.connect(self.on_project_navigator_open_scan)
             self._project_navigator_dialog = d
+
+        # Each time the project navigator is triggered to open,
+        # reset the path to the currently selected series.
+        current_path = self.current_series_path
+        if current_path is not None:
+            self._project_navigator_dialog.view.set_current_path(current_path)
 
         self._project_navigator_dialog.show()
 
