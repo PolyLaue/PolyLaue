@@ -144,6 +144,16 @@ class Series(Editable):
     def num_scans(self):
         return len(self.scans)
 
+    @property
+    def scan_shape_reversed(self) -> tuple[int, int]:
+        """Get the scan shape in the user-facing, HPCAT convention"""
+        return self.scan_shape[::-1]
+
+    @scan_shape_reversed.setter
+    def scan_shape_reversed(self, v: tuple[int, int]):
+        """Set the scan shape in the user-facing, HPCAT convention"""
+        self.scan_shape = v[::-1]
+
     @staticmethod
     def identify_file_prefix(dirpath: Path):
         """Inspect the tif files and identify the file template"""
@@ -410,7 +420,7 @@ class Series(Editable):
                     'which is computed via the other settings in this dialog.'
                 ),
             },
-            'scan_shape': {
+            'scan_shape_reversed': {
                 'type': 'tuple',
                 'subtype': 'integer',
                 'label': 'Scan shape',

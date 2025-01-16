@@ -156,6 +156,7 @@ class BurnWorkflow(QObject):
 
         self.burn_dialog = BurnDialog(self.parent)
         self.burn_dialog.burn_triggered.connect(self.run_burn)
+        self.burn_dialog.overwrite_crystal.connect(self.overwrite_crystal)
         self.burn_dialog.clear_reflections.connect(self.clear_reflections)
         self.burn_dialog.ui.show()
 
@@ -170,6 +171,15 @@ class BurnWorkflow(QObject):
     @property
     def crystal_id(self) -> int:
         return self.burn_dialog.crystal_id
+
+    @property
+    def angular_shift_scan_number(self) -> int:
+        # This returns the current scan number if angular_shifts is not
+        # None, and it returns `-1` if angular_shifts is None.
+        if self.angular_shifts is None:
+            return -1
+
+        return self.frame_tracker.scan_num
 
     @property
     def burn_kwargs(self) -> dict:
@@ -187,7 +197,7 @@ class BurnWorkflow(QObject):
             'beam_dir': geometry['beam_dir'],
             'pix_dist': geometry['pix_dist'],
             'res_lim': self.burn_dialog.dmin,
-            'nscan': self.burn_dialog.angular_shift_scan_number,
+            'nscan': self.angular_shift_scan_number,
             'ang_shifts': self.angular_shifts,
         }
 
@@ -258,11 +268,58 @@ class BurnWorkflow(QObject):
 
         self.reflections_edited.emit()
 
+    def overwrite_crystal(self):
+        self.load_abc_matrix()
+        if self.abc_matrix is None:
+            print('Failed to load ABC matrix. Aborting crystal overwrite...')
+            return
+
+        crystal_id = self.crystal_id
+        crystals_table = self.reflections.crystals_table
+        if crystal_id >= len(crystals_table):
+            # Re-use the logic where we are missing the crystal
+            self.set_abc_matrix_to_crystals_table_if_missing()
+            return
+
+        # Otherwise, we'll overwrite the crystal!
+        crystals_table[crystal_id] = self.abc_matrix
+        self.reflections.crystals_table = crystals_table
+
     def clear_reflections(self):
-        self.reflections.delete_reflections_table(
+        # Delete any reflections matching the currently selected crystal ID
+        crystal_id = self.crystal_id
+
+        table = self.reflections.reflections_table(
             *self.frame_tracker.scan_pos,
             self.frame_tracker.scan_num,
         )
+        if table is None:
+            # Nothing to do...
+            return
+
+        if table.size > 0:
+            # Remove all rows that match the crystal id
+            table = np.delete(
+                table,
+                np.where(table[:, 9].astype(int) == crystal_id)[0],
+                axis=0,
+            )
+
+        if table.size == 0:
+            # After deleting reflections, if the table size is now zero,
+            # just delete the whole thing.
+            self.reflections.delete_reflections_table(
+                *self.frame_tracker.scan_pos,
+                self.frame_tracker.scan_num,
+            )
+        else:
+            # Otherwise, write the table back
+            self.reflections.write_reflections_table(
+                table,
+                *self.frame_tracker.scan_pos,
+                self.frame_tracker.scan_num,
+            )
+
         self.reflections_edited.emit()
 
 
