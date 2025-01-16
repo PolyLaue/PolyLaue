@@ -238,12 +238,12 @@
      </property>
      <item>
       <property name="text">
-       <string>From HDF5 File</string>
+       <string>From Project Directory</string>
       </property>
      </item>
      <item>
       <property name="text">
-       <string>From Project Directory</string>
+       <string>From HDF5 File</string>
       </property>
      </item>
     </widget>
