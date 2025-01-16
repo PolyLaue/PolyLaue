@@ -156,6 +156,7 @@ class BurnWorkflow(QObject):
 
         self.burn_dialog = BurnDialog(self.parent)
         self.burn_dialog.burn_triggered.connect(self.run_burn)
+        self.burn_dialog.overwrite_crystal.connect(self.overwrite_crystal)
         self.burn_dialog.clear_reflections.connect(self.clear_reflections)
         self.burn_dialog.ui.show()
 
@@ -266,6 +267,23 @@ class BurnWorkflow(QObject):
         )
 
         self.reflections_edited.emit()
+
+    def overwrite_crystal(self):
+        self.load_abc_matrix()
+        if self.abc_matrix is None:
+            print('Failed to load ABC matrix. Aborting crystal overwrite...')
+            return
+
+        crystal_id = self.crystal_id
+        crystals_table = self.reflections.crystals_table
+        if crystal_id >= len(crystals_table):
+            # Re-use the logic where we are missing the crystal
+            self.set_abc_matrix_to_crystals_table_if_missing()
+            return
+
+        # Otherwise, we'll overwrite the crystal!
+        crystals_table[crystal_id] = self.abc_matrix
+        self.reflections.crystals_table = crystals_table
 
     def clear_reflections(self):
         # Delete any reflections matching the currently selected crystal ID

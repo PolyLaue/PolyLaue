@@ -10,6 +10,7 @@ from polylaue.ui.utils.ui_loader import UiLoader
 class BurnDialog(QObject):
 
     burn_triggered = Signal()
+    overwrite_crystal = Signal()
     clear_reflections = Signal()
 
     def __init__(self, parent=None):
@@ -19,6 +20,8 @@ class BurnDialog(QObject):
 
         self.add_structure_options()
 
+        self.update_enable_states()
+
         self.setup_connections()
 
     def add_structure_options(self):
@@ -27,14 +30,18 @@ class BurnDialog(QObject):
     def setup_connections(self):
         self.ui.activate_burn.toggled.connect(self.on_activate_burn)
 
+        self.ui.structure_type.currentIndexChanged.connect(
+            self.on_structure_type_changed
+        )
+
         self.ui.crystal_id.valueChanged.connect(self.on_crystal_id_changed)
 
         self.ui.crystal_orientation.currentIndexChanged.connect(
             self.on_crystal_orientation_changed
         )
 
-        self.ui.structure_type.currentIndexChanged.connect(
-            self.on_structure_type_changed
+        self.ui.overwrite_crystal.clicked.connect(
+            self.on_overwrite_crystal_clicked
         )
 
         self.ui.max_dmin.valueChanged.connect(self.on_max_dmin_changed)
@@ -48,6 +55,10 @@ class BurnDialog(QObject):
         )
 
         self.ui.clear.clicked.connect(self.on_clear_clicked)
+
+    def update_enable_states(self):
+        enable = not self.crystal_orientation_is_from_hdf5_file
+        self.ui.overwrite_crystal.setEnabled(enable)
 
     def activate_burn(self):
         self.burn_activated = True
@@ -64,6 +75,10 @@ class BurnDialog(QObject):
         self.ui.activate_burn.setChecked(b)
 
     @property
+    def structure_type(self) -> str:
+        return self.ui.structure_type.currentText()
+
+    @property
     def crystal_orientation(self) -> str:
         return self.ui.crystal_orientation.currentText()
 
@@ -78,10 +93,6 @@ class BurnDialog(QObject):
     @property
     def crystal_id(self) -> int:
         return self.ui.crystal_id.value()
-
-    @property
-    def structure_type(self) -> str:
-        return self.ui.structure_type.currentText()
 
     @property
     def max_dmin(self) -> float:
@@ -122,6 +133,9 @@ class BurnDialog(QObject):
     def on_activate_burn(self):
         self.emit_if_active()
 
+    def on_structure_type_changed(self):
+        self.emit_if_active()
+
     def on_crystal_id_changed(self):
         # Deactivate the burn function
         self.deactivate_burn()
@@ -129,9 +143,10 @@ class BurnDialog(QObject):
     def on_crystal_orientation_changed(self):
         # Deactivate the burn function
         self.deactivate_burn()
+        self.update_enable_states()
 
-    def on_structure_type_changed(self):
-        self.emit_if_active()
+    def on_overwrite_crystal_clicked(self):
+        self.overwrite_crystal.emit()
 
     def on_max_dmin_changed(self):
         # First, adjust the value if the value is above the new max dmin
