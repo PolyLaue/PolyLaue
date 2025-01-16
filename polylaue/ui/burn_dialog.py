@@ -47,10 +47,6 @@ class BurnDialog(QObject):
             self.on_apply_angular_shift_changed
         )
 
-        self.ui.angular_shift_scan_number.valueChanged.connect(
-            self.on_angular_shift_scan_number_changed
-        )
-
         self.ui.clear.clicked.connect(self.on_clear_clicked)
 
     def activate_burn(self):
@@ -123,21 +119,6 @@ class BurnDialog(QObject):
     def apply_angular_shift(self, b: bool):
         self.ui.apply_angularShift.setChecked(b)
 
-    @property
-    def angular_shift_scan_number(self) -> int:
-        if not self.apply_angular_shift:
-            return -1
-
-        return self.ui.angular_shift_scan_number.value()
-
-    @angular_shift_scan_number.setter
-    def angular_shift_scan_number(self, v: int):
-        apply = v > 1
-        self.apply_angular_shift = apply
-
-        if apply:
-            self.ui.angular_shift_scan_number.setValue(v)
-
     def on_activate_burn(self):
         self.emit_if_active()
 
@@ -184,9 +165,6 @@ class BurnDialog(QObject):
         self.emit_if_active()
 
     def on_apply_angular_shift_changed(self):
-        self.emit_if_active()
-
-    def on_angular_shift_scan_number_changed(self):
         self.emit_if_active()
 
     def emit_if_active(self):

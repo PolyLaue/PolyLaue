@@ -172,6 +172,15 @@ class BurnWorkflow(QObject):
         return self.burn_dialog.crystal_id
 
     @property
+    def angular_shift_scan_number(self) -> int:
+        # This returns the current scan number if angular_shifts is not
+        # None, and it returns `-1` if angular_shifts is None.
+        if self.angular_shifts is None:
+            return -1
+
+        return self.frame_tracker.scan_num
+
+    @property
     def burn_kwargs(self) -> dict:
         project = self.project
         geometry = project.geometry_data
@@ -187,7 +196,7 @@ class BurnWorkflow(QObject):
             'beam_dir': geometry['beam_dir'],
             'pix_dist': geometry['pix_dist'],
             'res_lim': self.burn_dialog.dmin,
-            'nscan': self.burn_dialog.angular_shift_scan_number,
+            'nscan': self.angular_shift_scan_number,
             'ang_shifts': self.angular_shifts,
         }
 
