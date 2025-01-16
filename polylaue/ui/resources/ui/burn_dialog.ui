@@ -135,7 +135,7 @@
    <item row="8" column="0" colspan="2">
     <widget class="QPushButton" name="clear">
      <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Clear all reflections in the HDF5 file for the currently viewed frame.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Clear reflections matching the currently selected crystal ID in the HDF5 file for the currently viewed frame.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
      <property name="text">
       <string>Clear Reflections</string>

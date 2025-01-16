@@ -268,10 +268,40 @@ class BurnWorkflow(QObject):
         self.reflections_edited.emit()
 
     def clear_reflections(self):
-        self.reflections.delete_reflections_table(
+        # Delete any reflections matching the currently selected crystal ID
+        crystal_id = self.crystal_id
+
+        table = self.reflections.reflections_table(
             *self.frame_tracker.scan_pos,
             self.frame_tracker.scan_num,
         )
+        if table is None:
+            # Nothing to do...
+            return
+
+        if table.size > 0:
+            # Remove all rows that match the crystal id
+            table = np.delete(
+                table,
+                np.where(table[:, 9].astype(int) == crystal_id)[0],
+                axis=0,
+            )
+
+        if table.size == 0:
+            # After deleting reflections, if the table size is now zero,
+            # just delete the whole thing.
+            self.reflections.delete_reflections_table(
+                *self.frame_tracker.scan_pos,
+                self.frame_tracker.scan_num,
+            )
+        else:
+            # Otherwise, write the table back
+            self.reflections.write_reflections_table(
+                table,
+                *self.frame_tracker.scan_pos,
+                self.frame_tracker.scan_num,
+            )
+
         self.reflections_edited.emit()
 
 
