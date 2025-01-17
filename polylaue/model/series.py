@@ -313,7 +313,7 @@ class Series(Editable):
         self.validate_files(
             params['dirpath_str'],
             params['skip_frames'],
-            params['scan_shape'],
+            params['scan_shape_reversed'],
             params['scan_range_tuple'],
             dry=True,  # Don't change any attributes on self
         )
