@@ -583,8 +583,8 @@ class RegionMappingDialog(QDialog):
         pos_ij_unclamped = world_to_display(pos_xy)
         pos_ij = np.clip(pos_ij_unclamped, (0, 0), (w - 1, h - 1))
 
-        size_ij = world_to_display(size_xy)
-        size_ij = np.clip(size_ij, (0, 0), (w - pos_ij[0], h - pos_ij[1]))
+        size_ij = world_to_display(size_xy) - (pos_ij - pos_ij_unclamped)
+        size_ij = np.clip(size_ij, (1, 1), (w - pos_ij[0], h - pos_ij[1]))
 
         n_y, n_x = series.scan_shape
 

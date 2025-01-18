@@ -1,15 +1,21 @@
 # Copyright © 2024, UChicago Argonne, LLC. See "LICENSE" for full details.
 
-from typing import TypedDict
+from typing import TypedDict, NotRequired
 from collections import OrderedDict
 
+import numpy as np
+
 from polylaue.typing import WorldPoint
+
+from polylaue.model.hkl_provider import HKL
 
 
 class ROI(TypedDict):
     id: str
     position: WorldPoint
     size: WorldPoint
+    crystal_id: NotRequired[int]
+    hkl: NotRequired[HKL]
 
 
 def unique_id_generator(initial_id: int = 0):
@@ -22,6 +28,7 @@ def unique_id_generator(initial_id: int = 0):
 
 
 class ROIManager:
+    global_roi_count = 0
     unique_id = unique_id_generator(0)
 
     def __init__(self):
@@ -32,6 +39,12 @@ class ROIManager:
     def add_roi(self, position: WorldPoint, size: WorldPoint) -> str:
         id = str(next(ROIManager.unique_id))
 
+        if not isinstance(position, np.ndarray):
+            position = np.array(position, dtype=np.float32)
+
+        if not isinstance(size, np.ndarray):
+            size = np.array(size, dtype=np.float32)
+
         roi: ROI = {'id': id, 'position': position, 'size': size}
 
         self.rois[id] = roi
@@ -40,6 +53,8 @@ class ROIManager:
         self._indices = {}
         for i, key in enumerate(self._ordered_keys):
             self._indices[key] = i
+
+        ROIManager.global_roi_count += 1
 
         return id
 
@@ -53,7 +68,8 @@ class ROIManager:
                 self._indices[key] = i
 
             # Make roi id starts from 0 again if we removed all existing rois
-            if len(self._ordered_keys) == 0:
+            ROIManager.global_roi_count -= 1
+            if ROIManager.global_roi_count == 0:
                 ROIManager.unique_id = unique_id_generator(0)
 
             return True
@@ -62,6 +78,12 @@ class ROIManager:
 
     def update_roi(self, id: str, position: WorldPoint, size: WorldPoint):
         if id in self.rois:
+            if not isinstance(position, np.ndarray):
+                position = np.array(position, dtype=np.float32)
+
+            if not isinstance(size, np.ndarray):
+                size = np.array(size, dtype=np.float32)
+
             self.rois[id]['position'] = position
             self.rois[id]['size'] = size
 
@@ -87,3 +109,30 @@ class ROIManager:
             return -1
 
         return self._indices[id]
+
+
+class HklROIManager(ROIManager):
+    def add_roi(
+        self, crystal_id: int, hkl: HKL, position: WorldPoint, size: WorldPoint
+    ) -> str:
+        id = super().add_roi(position, size)
+        self.rois[id]['crystal_id'] = crystal_id
+        self.rois[id]['hkl'] = hkl
+
+        return id
+
+    def update_roi(
+        self,
+        id: str,
+        crystal_id: int,
+        hkl: HKL,
+        position: WorldPoint,
+        size: WorldPoint,
+    ):
+        if super().update_roi(id, position, size):
+            self.rois[id]['crystal_id'] = crystal_id
+            self.rois[id]['hkl'] = hkl
+
+            return True
+        else:
+            return False
