@@ -71,7 +71,7 @@ class MainWindow(QObject):
 
         self.roi_manager = ROIManager()
 
-        self.hkl_provider = HklProvider(self)
+        self.hkl_provider = HklProvider(self.frame_tracker, self)
         self.hkl_roi_manager = HklROIManager()
 
         self.region_mapping_dialogs = {}
@@ -357,7 +357,7 @@ class MainWindow(QObject):
             self.scan_num = new_scan_idx
             self.on_series_or_scan_changed()
             self.on_frame_changed()
-            self.hkl_provider._update_hkls()
+            self.hkl_provider.sigHklsChanged.emit()
             return
 
         new_series = self.section.series_with_scan_index(new_scan_idx)
@@ -372,7 +372,7 @@ class MainWindow(QObject):
         self.scan_num = new_scan_idx
         self.on_series_or_scan_changed()
         self.on_frame_changed()
-        self.hkl_provider._update_hkls()
+        self.hkl_provider.sigHklsChanged.emit()
 
     def on_shift_scan_position(self, i: int, j: int):
         """Shift the scan position by `i` rows and `j` columns"""
@@ -521,12 +521,12 @@ class MainWindow(QObject):
 
     def on_reflections_changed(self):
         editor = self.reflections_editor
-        if editor.show_reflections:
-            reflections = editor.reflections
-        else:
-            reflections = None
+        reflections = editor.reflections
 
-        self.image_view.reflections = reflections
+        self.hkl_provider.reflections = reflections
+
+        visible_reflections = reflections if editor.show_reflections else None
+        self.image_view.reflections = visible_reflections
 
     def on_action_apply_background_subtraction_toggled(self):
         self.load_current_image()

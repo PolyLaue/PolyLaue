@@ -298,30 +298,15 @@ class HklRegionsNavigatorDialog(QDialog):
         pass
 
     def on_add_clicked(self):
-        hkls = self.hkl_provider.get_hkls()
-
-        if len(hkls) == 0:
-            return
-
-        def hkl_roi_exists(hkl):
-            for _, roi in self.roi_manager.items():
-                if not 'hkl' in roi:
-                    continue
-
-                if hkl == roi['hkl']:
-                    return True
-
-            return False
-
-        for hkl in hkls:
-            if not hkl_roi_exists(hkl):
-                break
-
+        hkl = (0, 0, 0)
         crystal_id = 0
-        center = self.hkl_provider.get_hkl_center(crystal_id, hkl)
 
-        if center is None:
-            return
+        # FIXME: when this invalid ROI is displayed, you right-click the image
+        # and click "View All", which resets the camera, it messes up the
+        # camera position since the camera reset tries to view the ROI too.
+        # Maybe you can make the ROI widget invisible somehow, if it is
+        # invalid, to fix this issue?
+        center = (-1e300, -1e300)
 
         size = np.array([150, 150])
         position = center - size // 2

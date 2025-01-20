@@ -2,14 +2,84 @@
 
 from PySide6.QtCore import QObject, Signal
 
+from polylaue.model.reflections.external import ExternalReflections
 from polylaue.typing import WorldPoint
+from polylaue.ui.frame_tracker import FrameTracker
 
 import numpy as np
 
 HKL = tuple[int, int, int]
 
 
+class HklProvider(QObject):
+    sigHklsChanged = Signal()
+
+    def __init__(self, frame_tracker: FrameTracker, parent=None):
+        super().__init__(parent)
+
+        self.frame_tracker = frame_tracker
+        self._reflections = None
+
+    @property
+    def reflections(self) -> ExternalReflections | None:
+        return self._reflections
+
+    @reflections.setter
+    def reflections(self, v: ExternalReflections | None):
+        self._reflections = v
+        self.sigHklsChanged.emit()
+
+    def get_hkl_center(self, crystal_id: int, hkl: HKL) -> WorldPoint:
+        # Extract the HKL center from the reflections table by averaging
+        # together all HKL centers for the current scan number.
+        reflections = self.reflections
+        if reflections is None:
+            raise ReflectionsNotFound
+
+        if crystal_id >= len(reflections.crystals_table):
+            raise CrystalNotFound
+
+        hkl_centers = []
+
+        scan_num = self.frame_tracker.scan_num
+        for row, col in reflections.iterate_scan_positions(scan_num):
+            table = reflections.reflections_table(row, col, scan_num)
+            if table.size == 0:
+                continue
+
+            # Remove rows that don't match the crystal ID
+            table = table[table[:, 9].astype(int) == crystal_id]
+
+            if table.size == 0:
+                continue
+
+            # Remove all rows that don't match the HKL.
+            matches = np.all(table[:, 2:5].astype(int) == hkl, axis=1)
+            table = table[matches]
+
+            if table.size == 0:
+                continue
+            elif table.shape[0] > 1:
+                print(
+                    f'Scan position ({col + 1}, {row + 1}) unexpectedly '
+                    f'contains {table.size} matches for HKL {hkl}, '
+                    f'crystal ID {crystal_id}, and scan number {scan_num}. '
+                    'We will take the first HKL center and ignore the rest.'
+                )
+
+            hkl_centers.append(table[0][:2])
+
+        if not hkl_centers:
+            raise HklNotFound
+
+        return tuple(np.mean(hkl_centers, axis=0).tolist())
+
+
 class InvalidHklError(Exception):
+    pass
+
+
+class ReflectionsNotFound(InvalidHklError):
     pass
 
 
@@ -19,53 +89,3 @@ class HklNotFound(InvalidHklError):
 
 class CrystalNotFound(InvalidHklError):
     pass
-
-
-class HklProvider(QObject):
-    sigHklsChanged = Signal()
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-
-        self._i = 0
-        self._hkls: list[tuple[HKL, WorldPoint]] = []
-        dx, dy = 200, 200
-        start, stop = -1, 2
-
-        for i, h in enumerate(range(start, stop)):
-            for j, k in enumerate(range(start, stop)):
-                hkl = (h, k, 0)
-                center = np.array([(i + 1) * dx, (j + 1) * dy])
-                self._hkls.append((hkl, center))
-
-        self._update_hkls()
-
-    def _update_hkls(self):
-        self._hkl = {}
-        dx, dy = 50, 50
-        delta = self._i * np.array([dx, dy])
-
-        for i, (hkl, center) in enumerate(self._hkls):
-            if i % 3 == self._i:
-                continue
-
-            self._hkl[hkl] = center + delta
-
-        self._i = (self._i + 1) % 2
-
-        self.sigHklsChanged.emit()
-
-    def get_hkls(self) -> list[HKL]:
-        return list(self._hkl.keys())
-
-    def get_hkl_center(self, crystal_id: int, hkl: HKL) -> WorldPoint:
-        if not hkl in self._hkl:
-            raise HklNotFound()
-
-        if crystal_id < 0 or crystal_id > 5:
-            raise CrystalNotFound()
-
-        position = self._hkl[hkl]
-        dx, dy = 0, 25
-        delta = crystal_id * np.array([dx, dy])
-        return position + delta
