@@ -63,7 +63,6 @@ class RegionItemsManager(QObject):
         self.hkl_provider = hkl_provider
 
         self.roi_model.dataChanged.connect(self.on_roi_table_update)
-        self.hkl_provider.sigHklsChanged.connect(self.on_hkls_changed)
 
         self.current_roi_id: str | None = None
 
@@ -94,17 +93,19 @@ class RegionItemsManager(QObject):
         hkl = roi['hkl']
         crystal_id = roi['crystal_id']
 
-        try:
-            self.hkl_provider.get_hkl_center(crystal_id, hkl)
-            actually_show = True
-        except InvalidHklError:
-            actually_show = False
+        actually_show = show
+
+        if show:
+            try:
+                self.hkl_provider.get_hkl_center(crystal_id, hkl)
+            except InvalidHklError:
+                actually_show = False
 
         view = self.image_view.getView()
 
         if actually_show:
             view.addItem(roi_item)
-        else:
+        elif roi_item.scene() is self.image_view.scene:
             view.removeItem(roi_item)
 
     def create_roi_item(self, id, position, size):
@@ -113,7 +114,7 @@ class RegionItemsManager(QObject):
         roi_item.sigRegionChanged.connect(partial(self.on_roi_update, id))
         roi_item.sigClicked.connect(partial(self.on_roi_click, id))
         self.roi_items[id] = roi_item
-        self.image_view.getView().addItem(roi_item)
+        self._show_item(id, self.do_show)
 
     def remove_roi_item(self, id) -> bool:
         if id in self.roi_items:
@@ -301,12 +302,7 @@ class HklRegionsNavigatorDialog(QDialog):
         hkl = (0, 0, 0)
         crystal_id = 0
 
-        # FIXME: when this invalid ROI is displayed, you right-click the image
-        # and click "View All", which resets the camera, it messes up the
-        # camera position since the camera reset tries to view the ROI too.
-        # Maybe you can make the ROI widget invisible somehow, if it is
-        # invalid, to fix this issue?
-        center = (-1e300, -1e300)
+        center = np.array((OUT_OF_BOUNDS, OUT_OF_BOUNDS), dtype=np.float32)
 
         size = np.array([150, 150])
         position = center - size // 2

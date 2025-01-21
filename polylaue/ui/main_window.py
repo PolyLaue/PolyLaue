@@ -71,7 +71,7 @@ class MainWindow(QObject):
 
         self.roi_manager = ROIManager()
 
-        self.hkl_provider = HklProvider(self.frame_tracker, self)
+        self.hkl_provider = HklProvider(self.frame_tracker)
         self.hkl_roi_manager = HklROIManager()
 
         self.region_mapping_dialogs = {}
@@ -357,7 +357,7 @@ class MainWindow(QObject):
             self.scan_num = new_scan_idx
             self.on_series_or_scan_changed()
             self.on_frame_changed()
-            self.hkl_provider.sigHklsChanged.emit()
+            self.on_hkls_changed()
             return
 
         new_series = self.section.series_with_scan_index(new_scan_idx)
@@ -372,7 +372,7 @@ class MainWindow(QObject):
         self.scan_num = new_scan_idx
         self.on_series_or_scan_changed()
         self.on_frame_changed()
-        self.hkl_provider.sigHklsChanged.emit()
+        self.on_hkls_changed()
 
     def on_shift_scan_position(self, i: int, j: int):
         """Shift the scan position by `i` rows and `j` columns"""
@@ -419,6 +419,11 @@ class MainWindow(QObject):
         for dialog in self.region_mapping_dialogs.values():
             dialog.set_series(self.series)
             dialog.set_scan_number(self.scan_num)
+
+    def on_hkls_changed(self):
+        if hasattr(self, '_hkl_regions_navigator_dialog'):
+            d = self._hkl_regions_navigator_dialog
+            d.roi_items_manager.on_hkls_changed()
 
     def set_mapping_dialogs_stale(self):
         for dialog in self.region_mapping_dialogs.values():

@@ -1,7 +1,5 @@
 # Copyright © 2024, UChicago Argonne, LLC. See "LICENSE" for full details.
 
-from PySide6.QtCore import QObject, Signal
-
 from polylaue.model.reflections.external import ExternalReflections
 from polylaue.typing import WorldPoint
 from polylaue.ui.frame_tracker import FrameTracker
@@ -11,12 +9,8 @@ import numpy as np
 HKL = tuple[int, int, int]
 
 
-class HklProvider(QObject):
-    sigHklsChanged = Signal()
-
-    def __init__(self, frame_tracker: FrameTracker, parent=None):
-        super().__init__(parent)
-
+class HklProvider:
+    def __init__(self, frame_tracker: FrameTracker):
         self.frame_tracker = frame_tracker
         self._reflections = None
 
@@ -27,7 +21,6 @@ class HklProvider(QObject):
     @reflections.setter
     def reflections(self, v: ExternalReflections | None):
         self._reflections = v
-        self.sigHklsChanged.emit()
 
     def get_hkl_center(self, crystal_id: int, hkl: HKL) -> WorldPoint:
         # Extract the HKL center from the reflections table by averaging
@@ -72,7 +65,7 @@ class HklProvider(QObject):
         if not hkl_centers:
             raise HklNotFound
 
-        return tuple(np.mean(hkl_centers, axis=0).tolist())
+        return np.mean(hkl_centers, axis=0)
 
 
 class InvalidHklError(Exception):
