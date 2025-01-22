@@ -533,6 +533,8 @@ class MainWindow(QObject):
         visible_reflections = reflections if editor.show_reflections else None
         self.image_view.reflections = visible_reflections
 
+        self.on_hkls_changed()
+
     def on_action_apply_background_subtraction_toggled(self):
         self.load_current_image()
         # We don't want to call self.image_view.autoRange(),
