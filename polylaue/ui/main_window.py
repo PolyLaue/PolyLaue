@@ -1,6 +1,6 @@
 # Copyright © 2024, UChicago Argonne, LLC. See "LICENSE" for full details.
 
-from functools import lru_cache
+from functools import lru_cache, partial
 import logging
 from pathlib import Path
 
@@ -16,13 +16,15 @@ from PySide6.QtWidgets import (
 
 import numpy as np
 
+from polylaue.model.hkl_provider import HklProvider
 from polylaue.model.io import load_image_file, identify_loader_function, Bounds
-from polylaue.model.roi_manager import ROIManager
+from polylaue.model.roi_manager import ROIManager, HklROIManager
 from polylaue.model.scan import Scan
 from polylaue.model.section import Section
 from polylaue.model.series import Series
 from polylaue.model.state import load_project_manager, save_project_manager
 from polylaue.ui.frame_tracker import FrameTracker
+from polylaue.ui.hkl_regions_navigator.dialog import HklRegionsNavigatorDialog
 from polylaue.ui.image_view import PolyLaueImageView
 from polylaue.ui.reflections_editor import ReflectionsEditor
 from polylaue.ui.point_selector import PointSelectorDialog
@@ -69,6 +71,9 @@ class MainWindow(QObject):
 
         self.roi_manager = ROIManager()
 
+        self.hkl_provider = HklProvider(self.frame_tracker)
+        self.hkl_roi_manager = HklROIManager()
+
         self.region_mapping_dialogs = {}
         self.mapping_highlight_area = None
         self.mapping_domain_area = None
@@ -95,6 +100,9 @@ class MainWindow(QObject):
 
         self.ui.action_regions_manager.triggered.connect(
             self.open_mapping_regions_manager
+        )
+        self.ui.action_hkl_regions_manager.triggered.connect(
+            self.open_hkl_mapping_regions_manager
         )
         self.ui.action_apply_background_subtraction.toggled.connect(
             self.on_action_apply_background_subtraction_toggled
@@ -349,6 +357,7 @@ class MainWindow(QObject):
             self.scan_num = new_scan_idx
             self.on_series_or_scan_changed()
             self.on_frame_changed()
+            self.on_hkls_changed()
             return
 
         new_series = self.section.series_with_scan_index(new_scan_idx)
@@ -363,6 +372,7 @@ class MainWindow(QObject):
         self.scan_num = new_scan_idx
         self.on_series_or_scan_changed()
         self.on_frame_changed()
+        self.on_hkls_changed()
 
     def on_shift_scan_position(self, i: int, j: int):
         """Shift the scan position by `i` rows and `j` columns"""
@@ -409,6 +419,11 @@ class MainWindow(QObject):
         for dialog in self.region_mapping_dialogs.values():
             dialog.set_series(self.series)
             dialog.set_scan_number(self.scan_num)
+
+    def on_hkls_changed(self):
+        if hasattr(self, '_hkl_regions_navigator_dialog'):
+            d = self._hkl_regions_navigator_dialog
+            d.roi_items_manager.on_hkls_changed()
 
     def set_mapping_dialogs_stale(self):
         for dialog in self.region_mapping_dialogs.values():
@@ -511,12 +526,14 @@ class MainWindow(QObject):
 
     def on_reflections_changed(self):
         editor = self.reflections_editor
-        if editor.show_reflections:
-            reflections = editor.reflections
-        else:
-            reflections = None
+        reflections = editor.reflections
 
-        self.image_view.reflections = reflections
+        self.hkl_provider.reflections = reflections
+
+        visible_reflections = reflections if editor.show_reflections else None
+        self.image_view.reflections = visible_reflections
+
+        self.on_hkls_changed()
 
     def on_action_apply_background_subtraction_toggled(self):
         self.load_current_image()
@@ -535,13 +552,34 @@ class MainWindow(QObject):
                 parent=self.ui,
             )
 
-            d.sigDisplayRoiClicked.connect(self.on_roi_display_clicked)
+            d.sigDisplayRoiClicked.connect(
+                partial(self.on_roi_display_clicked, self.roi_manager)
+            )
             d.sigRemoveRoiClicked.connect(self.on_roi_remove_clicked)
             d.sigRoiModified.connect(self.on_roi_modified)
 
             self._regions_navigator_dialog = d
 
         self._regions_navigator_dialog.show()
+
+    def open_hkl_mapping_regions_manager(self):
+        if not hasattr(self, '_hkl_regions_navigator_dialog'):
+            d = HklRegionsNavigatorDialog(
+                self.image_view,
+                self.hkl_roi_manager,
+                self.hkl_provider,
+                parent=self.ui,
+            )
+
+            d.sigDisplayRoiClicked.connect(
+                partial(self.on_roi_display_clicked, self.hkl_roi_manager)
+            )
+            d.sigRemoveRoiClicked.connect(self.on_roi_remove_clicked)
+            d.sigRoiModified.connect(self.on_roi_modified)
+
+            self._hkl_regions_navigator_dialog = d
+
+        self._hkl_regions_navigator_dialog.show()
 
     def begin_prediction_matcher(self):
         selected_file, selected_filter = QFileDialog.getOpenFileName(
@@ -683,7 +721,7 @@ class MainWindow(QObject):
             self.mapping_domain_area = None
             self.mapping_highlight_area = None
 
-    def on_roi_display_clicked(self, id: str):
+    def on_roi_display_clicked(self, roi_manager: ROIManager, id: str):
         # Initialize mapping highlight and domain regions the first time a mapping is shown
         if len(self.region_mapping_dialogs) == 0:
             # # Initial mapping domain target is a 5x5 square in scan position
@@ -716,7 +754,7 @@ class MainWindow(QObject):
         if id in self.region_mapping_dialogs:
             dialog = self.region_mapping_dialogs[id]
         else:
-            dialog = RegionMappingDialog(id, self.roi_manager, self.ui)
+            dialog = RegionMappingDialog(id, roi_manager, self.ui)
             histogram_widget = self.image_view.getHistogramWidget()
 
             if histogram_widget:

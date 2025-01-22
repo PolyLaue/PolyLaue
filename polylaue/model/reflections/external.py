@@ -1,5 +1,7 @@
 # Copyright © 2024, UChicago Argonne, LLC. See "LICENSE" for full details.
 
+from collections.abc import Generator
+
 import h5py
 import numpy as np
 
@@ -87,6 +89,26 @@ class ExternalReflections(BaseReflections):
         path = self._reflections_table_path(row, column, scan_number)
         with h5py.File(self.filepath, 'r') as f:
             return path in f
+
+    def iterate_scan_positions(
+        self,
+        scan_number: int,
+    ) -> Generator[tuple[int, int]]:
+        # Iterate through all scan positions containing reflections tables
+        # for a given scan number. The generator returns a tuple of
+        # (row, column) intendend to be passed to `reflections_table()`.
+        # Note: this holds the file open for reading until iteration is
+        # complete.
+        with h5py.File(self.filepath, 'r') as f:
+            path = f'/predictions/{scan_number}'
+            if path not in f:
+                # Nothing
+                raise StopIteration
+
+            scan = f[path]
+            for column in scan.keys():
+                for row in scan[column].keys():
+                    yield (int(row) - 1, int(column) - 1)
 
     def _reflections_table_path(
         self, row: int, column: int, scan_number: int

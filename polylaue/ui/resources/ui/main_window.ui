@@ -62,6 +62,7 @@
      <string>Mapping</string>
     </property>
     <addaction name="action_regions_manager"/>
+    <addaction name="action_hkl_regions_manager"/>
    </widget>
    <widget class="QMenu" name="menu_indexing">
     <property name="title">
@@ -110,6 +111,11 @@
   <action name="action_regions_manager">
    <property name="text">
     <string>Regions</string>
+   </property>
+  </action>
+  <action name="action_hkl_regions_manager">
+   <property name="text">
+    <string>HKL Regions</string>
    </property>
   </action>
   <action name="action_select_indexing_points">
