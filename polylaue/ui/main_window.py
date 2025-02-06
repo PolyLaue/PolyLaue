@@ -155,7 +155,8 @@ class MainWindow(QObject):
         self._deserialize_last_loaded_frame(last_loaded_frame)
 
         self.apply_background_subtraction = (
-            settings.value('apply_background_subtraction', 'true') == 'true'
+            settings.value('apply_background_subtraction', 'true') in
+            ('true', True)
         )
 
     @property
