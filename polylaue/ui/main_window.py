@@ -4,9 +4,10 @@ from functools import lru_cache, partial
 import logging
 from pathlib import Path
 
-from PySide6.QtCore import QCoreApplication, QEvent, QObject, QSettings
+from PySide6.QtCore import QCoreApplication, QEvent, QObject, QSettings, Qt
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
+    QCheckBox,
     QFileDialog,
     QInputDialog,
     QMainWindow,
@@ -672,17 +673,6 @@ class MainWindow(QObject):
             or not project_dir
             or not Path(project_dir).exists()
         )
-        if not select_file_manually:
-            path = Path(project_dir) / filename
-            if path.exists():
-                msg = f'"{path}"\nAlready exists. Overwrite?'
-                if (
-                    QMessageBox.question(self.ui, 'File exists', msg)
-                    == QMessageBox.No
-                ):
-                    # Force the file to be selected manually.
-                    select_file_manually = True
-
         if select_file_manually:
             if not project_dir or not Path(project_dir).exists():
                 msg = (
@@ -703,13 +693,32 @@ class MainWindow(QObject):
             if not path:
                 # User canceled
                 return
+        else:
+            path = Path(project_dir) / filename
 
         points = np.asarray(d.points)
         np.savetxt(path, points, fmt='%8.3f')
         if not select_file_manually:
             # Tell the user where it was saved
             msg = f'File saved to:\n{path}'
-            QMessageBox.information(self.ui, 'File Saved', msg)
+            print(msg)
+
+            settings = QSettings()
+            skip_message_key = '_skip_write_indexing_points_message'
+            skip_message = settings.value(skip_message_key, False)
+            if not skip_message:
+                box = QMessageBox(
+                    QMessageBox.Icon.Information,
+                    'File saved',
+                    msg,
+                    QMessageBox.StandardButton.Ok,
+                )
+                cb = QCheckBox("Don't show this again")
+                box.setCheckBox(cb)
+                box.layout().setAlignment(cb, Qt.AlignRight)
+                box.exec_()
+                if cb.isChecked():
+                    settings.setValue(skip_message_key, True)
 
     def on_roi_remove_clicked(self, id: str):
         if id in self.region_mapping_dialogs:
