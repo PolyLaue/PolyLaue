@@ -11,6 +11,7 @@ class BurnDialog(QObject):
 
     burn_triggered = Signal()
     overwrite_crystal = Signal()
+    write_crystal_orientation = Signal()
     clear_reflections = Signal()
 
     def __init__(self, parent=None):
@@ -42,6 +43,10 @@ class BurnDialog(QObject):
 
         self.ui.overwrite_crystal.clicked.connect(
             self.on_overwrite_crystal_clicked
+        )
+
+        self.ui.write_crystal_orientation.clicked.connect(
+            self.on_write_crystal_orientation_clicked
         )
 
         self.ui.max_dmin.valueChanged.connect(self.on_max_dmin_changed)
@@ -147,6 +152,9 @@ class BurnDialog(QObject):
 
     def on_overwrite_crystal_clicked(self):
         self.overwrite_crystal.emit()
+
+    def on_write_crystal_orientation_clicked(self):
+        self.write_crystal_orientation.emit()
 
     def on_max_dmin_changed(self):
         # First, adjust the value if the value is above the new max dmin
