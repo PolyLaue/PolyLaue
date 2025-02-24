@@ -2,8 +2,8 @@
 
 from pathlib import Path
 
-from PySide6.QtCore import QObject, Signal
-from PySide6.QtWidgets import QMessageBox, QWidget
+from PySide6.QtCore import QObject, QSettings, Qt, Signal
+from PySide6.QtWidgets import QCheckBox, QMessageBox, QWidget
 
 import numpy as np
 
@@ -157,6 +157,9 @@ class BurnWorkflow(QObject):
         self.burn_dialog = BurnDialog(self.parent)
         self.burn_dialog.burn_triggered.connect(self.run_burn)
         self.burn_dialog.overwrite_crystal.connect(self.overwrite_crystal)
+        self.burn_dialog.write_crystal_orientation.connect(
+            self.write_crystal_orientation
+        )
         self.burn_dialog.clear_reflections.connect(self.clear_reflections)
         self.burn_dialog.ui.show()
 
@@ -284,6 +287,47 @@ class BurnWorkflow(QObject):
         # Otherwise, we'll overwrite the crystal!
         crystals_table[crystal_id] = self.abc_matrix
         self.reflections.crystals_table = crystals_table
+
+    def write_crystal_orientation(self):
+        self.load_abc_matrix()
+        if self.abc_matrix is None:
+            QMessageBox.critical(
+                None,
+                'Failed to load ABC matrix',
+                'Failed to load ABC matrix. Aborting write...',
+            )
+            return
+
+        project_dir = self.project.directory
+        filenames = [
+            'abc_matrix.npy',
+            'abc_matrix0.npy',
+        ]
+        filenames_joined = ' and '.join(f'"{x}"' for x in filenames)
+        msg = f'{filenames_joined} were saved to:\n\n{project_dir}\n'
+
+        for filename in filenames:
+            filepath = project_dir / filename
+            np.save(filepath, self.abc_matrix)
+
+        print(msg)
+
+        settings = QSettings()
+        skip_message_key = '_skip_burn_write_crystal_orientation_message'
+        skip_message = settings.value(skip_message_key, False)
+        if not skip_message:
+            box = QMessageBox(
+                QMessageBox.Icon.Information,
+                'Files saved',
+                msg,
+                QMessageBox.StandardButton.Ok,
+            )
+            cb = QCheckBox("Don't show this again")
+            box.setCheckBox(cb)
+            box.layout().setAlignment(cb, Qt.AlignRight)
+            box.exec_()
+            if cb.isChecked():
+                settings.setValue(skip_message_key, True)
 
     def clear_reflections(self):
         # Delete any reflections matching the currently selected crystal ID
