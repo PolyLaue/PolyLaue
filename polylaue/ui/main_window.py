@@ -149,15 +149,24 @@ class MainWindow(QObject):
             self.apply_background_subtraction,
         )
 
+        # Save image view settings
+        settings.setValue(
+            'image_view_settings',
+            self.image_view.settings_serialized,
+        )
+
     def load_settings(self):
         settings = QSettings()
 
         last_loaded_frame = settings.value('last_loaded_frame', {})
         self._deserialize_last_loaded_frame(last_loaded_frame)
 
-        self.apply_background_subtraction = (
-            settings.value('apply_background_subtraction', 'true') in
-            ('true', True)
+        self.apply_background_subtraction = settings.value(
+            'apply_background_subtraction', 'true'
+        ) in ('true', True)
+
+        self.image_view.settings_serialized = settings.value(
+            'image_view_settings', {}
         )
 
     @property
