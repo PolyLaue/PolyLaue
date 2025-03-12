@@ -1,5 +1,7 @@
 # Copyright © 2024, UChicago Argonne, LLC. See "LICENSE" for full details.
 
+import logging
+
 from PySide6.QtCore import QEvent, QPointF, Qt, Signal
 from PySide6.QtWidgets import QInputDialog
 
@@ -10,6 +12,8 @@ import numpy as np
 import pyqtgraph as pg
 
 Key = Qt.Key
+
+logger = logging.getLogger(__name__)
 
 
 class PolyLaueImageView(pg.ImageView):
@@ -83,6 +87,77 @@ class PolyLaueImageView(pg.ImageView):
         lower = np.nanpercentile(data, 0.5)
         upper = np.nanpercentile(data, 99.8)
         self.setHistogramRange(lower, upper)
+
+    @property
+    def _attributes_to_serialize(self) -> list[str]:
+        return [
+            'histogram_range',
+            'cmap_serialized',
+            'cmap_levels',
+        ]
+
+    @property
+    def settings_serialized(self) -> dict:
+        to_serialize = self._attributes_to_serialize
+        return {k: getattr(self, k) for k in to_serialize}
+
+    @settings_serialized.setter
+    def settings_serialized(self, v: dict):
+        for k in self._attributes_to_serialize:
+            if k in v:
+                setattr(self, k, v[k])
+
+    @property
+    def histogram_range(self) -> list[float, float]:
+        hist = self.getHistogramWidget()
+        return list(map(float, hist.vb.viewRange()[1]))
+
+    @histogram_range.setter
+    def histogram_range(self, v: list[float, float]):
+        self.setHistogramRange(*v)
+
+    @property
+    def cmap_serialized(self) -> dict:
+        # HSV colormaps would raise an exception here.
+        # If that happens, just don't save the cmap settings...
+        try:
+            hist = self.getHistogramWidget()
+            gradient = hist.item.gradient
+            cmap = gradient.colorMap()
+
+            return {
+                'pos': cmap.pos.tolist(),
+                # These colors are floats from 0 to 1
+                'color': cmap.color.tolist(),
+            }
+        except Exception as e:
+            logger.warning(f'Failed to serialize cmap with error: {e}')
+            return {}
+
+    @cmap_serialized.setter
+    def cmap_serialized(self, v: dict):
+        required_keys = ('pos', 'color')
+        if any(x not in v for x in required_keys):
+            # Cannot set it
+            return
+
+        hist = self.getHistogramWidget()
+        gradient = hist.item.gradient
+
+        cmap = pg.ColorMap(
+            pos=np.array(v['pos']),
+            # When initializing, colors are expected to be from zero to 255
+            color=np.array(v['color']) * 255,
+        )
+        gradient.setColorMap(cmap)
+
+    @property
+    def cmap_levels(self) -> tuple[float, float]:
+        return self.getLevels()
+
+    @cmap_levels.setter
+    def cmap_levels(self, v: tuple[float, float]):
+        self.setLevels(*v)
 
     @property
     def reflections(self) -> BaseReflections | None:
