@@ -146,6 +146,7 @@ class ReflectionsEditor(QObject):
 
         def on_reflections_edited():
             self.reflections_changed.emit()
+            self.update_info()
 
         self._burn_workflow.reflections_edited.connect(on_reflections_edited)
 
