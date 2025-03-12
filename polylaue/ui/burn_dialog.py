@@ -11,6 +11,8 @@ class BurnDialog(QObject):
 
     burn_triggered = Signal()
     overwrite_crystal = Signal()
+    crystal_name_modified = Signal()
+    load_crystal_name = Signal()
     write_crystal_orientation = Signal()
     clear_reflections = Signal()
 
@@ -36,6 +38,7 @@ class BurnDialog(QObject):
         )
 
         self.ui.crystal_id.valueChanged.connect(self.on_crystal_id_changed)
+        self.ui.crystal_name.textEdited.connect(self.on_crystal_name_edited)
 
         self.ui.crystal_orientation.currentIndexChanged.connect(
             self.on_crystal_orientation_changed
@@ -100,6 +103,14 @@ class BurnDialog(QObject):
         return self.ui.crystal_id.value()
 
     @property
+    def crystal_name(self) -> str:
+        return self.ui.crystal_name.text()
+
+    @crystal_name.setter
+    def crystal_name(self, v: str):
+        self.ui.crystal_name.setText(v)
+
+    @property
     def max_dmin(self) -> float:
         return self.ui.max_dmin.value()
 
@@ -144,6 +155,12 @@ class BurnDialog(QObject):
     def on_crystal_id_changed(self):
         # Deactivate the burn function
         self.deactivate_burn()
+
+        # Load the crystal name
+        self.load_crystal_name.emit()
+
+    def on_crystal_name_edited(self):
+        self.crystal_name_modified.emit()
 
     def on_crystal_orientation_changed(self):
         # Deactivate the burn function

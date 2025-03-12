@@ -44,6 +44,49 @@ class ExternalReflections(BaseReflections):
 
             f['/crystals'] = v
 
+    @property
+    def crystal_names(self) -> np.ndarray:
+        """An array of crystal names
+
+        Crystal at index `i` has a crystal name at `crystal_names[i]`
+
+        If the length of the crystal names is less than or equal to
+        `i`, then the crystal at index `i` does not have a name.
+
+        The returned numpy array has a dtype of `S`. HDF5 cannot handle
+        utf-16 or utf32, so we have to force the numpy arrays to us `S`.
+        """
+        with h5py.File(self.filepath, 'r') as f:
+            if '/crystal_names' not in f:
+                return np.empty((0,), dtype='S1')
+
+            return f['/crystal_names'][()]
+
+    @crystal_names.setter
+    def crystal_names(self, v: np.ndarray):
+        """Set the array of crystal names.
+
+        Crystal at index `i` has a crystal name at `crystal_names[i]`
+
+        If the length of the crystal names is less than or equal to
+        `i`, then the crystal at index `i` does not have a name.
+
+        The numpy array must have a dtype of `S`. HDF5 cannot handle
+        utf-16 or utf32, so we have to force the numpy arrays to us `S`.
+        """
+        if not np.issubdtype(v.dtype, 'S'):
+            msg = (
+                'Crystal names array must have a dtype of "S", '
+                f'not "{v.dtype}"'
+            )
+            raise ValueError(msg)
+
+        with h5py.File(self.filepath, 'a') as f:
+            if '/crystal_names' in f:
+                del f['/crystal_names']
+
+            f['/crystal_names'] = v
+
     def reflections_table(
         self, row: int, column: int, scan_number: int
     ) -> np.ndarray | None:

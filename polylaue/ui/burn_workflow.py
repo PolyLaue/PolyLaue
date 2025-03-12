@@ -156,11 +156,14 @@ class BurnWorkflow(QObject):
 
         self.burn_dialog = BurnDialog(self.parent)
         self.burn_dialog.burn_triggered.connect(self.run_burn)
+        self.burn_dialog.crystal_name_modified.connect(self.write_crystal_name)
+        self.burn_dialog.load_crystal_name.connect(self.load_crystal_name)
         self.burn_dialog.overwrite_crystal.connect(self.overwrite_crystal)
         self.burn_dialog.write_crystal_orientation.connect(
             self.write_crystal_orientation
         )
         self.burn_dialog.clear_reflections.connect(self.clear_reflections)
+        self.load_crystal_name()
         self.burn_dialog.ui.show()
 
     @property
@@ -270,6 +273,34 @@ class BurnWorkflow(QObject):
         )
 
         self.reflections_edited.emit()
+
+    def write_crystal_name(self):
+        # Encode the crystal name to utf-8
+        # We may need to adjust size.
+        name = self.burn_dialog.crystal_name.encode()
+        crystal_id = self.crystal_id
+        crystal_names = self.reflections.crystal_names
+
+        size = max(crystal_names.itemsize, len(name))
+        crystal_names = crystal_names.astype(f'|S{size}')
+
+        if crystal_id >= len(crystal_names):
+            # Need to add some empty crystal names until we get to `i`
+            to_add = crystal_id - len(crystal_names) + 1
+            crystal_names = np.append(crystal_names, [b''] * to_add)
+
+        crystal_names[crystal_id] = name
+        self.reflections.crystal_names = crystal_names
+
+    def load_crystal_name(self):
+        crystal_id = self.crystal_id
+        crystal_names = self.reflections.crystal_names
+        if crystal_id < len(crystal_names):
+            name = crystal_names[crystal_id].decode()
+        else:
+            name = ''
+
+        self.burn_dialog.crystal_name = name
 
     def overwrite_crystal(self):
         self.load_abc_matrix()

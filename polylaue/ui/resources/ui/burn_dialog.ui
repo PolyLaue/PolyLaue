@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>460</width>
-    <height>512</height>
+    <height>540</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -116,16 +116,6 @@
         </property>
        </widget>
       </item>
-      <item row="2" column="0" colspan="2">
-       <widget class="QPushButton" name="overwrite_crystal">
-        <property name="toolTip">
-         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;In the HDF5 reflections file, overwrite the ABC matrix corresponding to the currently selected crystal ID with the current ABC Matrix (as determined by the crystal orientation selection).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-        </property>
-        <property name="text">
-         <string>Overwrite Crystal in Reflections File</string>
-        </property>
-       </widget>
-      </item>
       <item row="0" column="0">
        <widget class="QLabel" name="crystal_id_label">
         <property name="toolTip">
@@ -136,8 +126,8 @@
         </property>
        </widget>
       </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="label_3">
+      <item row="2" column="0">
+       <widget class="QLabel" name="crystal_orientation_label">
         <property name="toolTip">
          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Specify the location from which the crystal's ABC matrix (orientation) will be obtained.&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&amp;quot;From HDF5 File&amp;quot; - the ABC matrix within the HDF5 file corresponding to the selected &amp;quot;Crystal ID&amp;quot; will be used. There must already exist an ABC matrix with the specified crystal ID in the &amp;quot;/crystals&amp;quot; dataset in order for this option to be used.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&amp;quot;From Project Directory&amp;quot; - the ABC matrix within the file &amp;quot;abc_matrix.npy&amp;quot; located at the root level of the project directory will be used. This file must exist in order for this option to be used. If the selected &amp;quot;Crystal ID&amp;quot; does not already exist within the HDF5 file, this ABC matrix will be written to the HDF5 file with that &amp;quot;Crystal ID&amp;quot; upon executing burn.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
         </property>
@@ -146,7 +136,24 @@
         </property>
        </widget>
       </item>
-      <item row="1" column="1">
+      <item row="4" column="0" colspan="2">
+       <widget class="QPushButton" name="write_crystal_orientation">
+        <property name="text">
+         <string>Write Orientation to Project Directory</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0" colspan="2">
+       <widget class="QPushButton" name="overwrite_crystal">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;In the HDF5 reflections file, overwrite the ABC matrix corresponding to the currently selected crystal ID with the current ABC Matrix (as determined by the crystal orientation selection).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+        <property name="text">
+         <string>Overwrite Crystal in Reflections File</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
        <widget class="QComboBox" name="crystal_orientation">
         <property name="toolTip">
          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Specify the location from which the crystal's ABC matrix (orientation) will be obtained.&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&amp;quot;From HDF5 File&amp;quot; - the ABC matrix within the HDF5 file corresponding to the selected &amp;quot;Crystal ID&amp;quot; will be used. There must already exist an ABC matrix with the specified crystal ID in the &amp;quot;/crystals&amp;quot; dataset in order for this option to be used.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&amp;quot;From Project Directory&amp;quot; - the ABC matrix within the file &amp;quot;abc_matrix.npy&amp;quot; located at the root level of the project directory will be used. This file must exist in order for this option to be used. If the selected &amp;quot;Crystal ID&amp;quot; does not already exist within the HDF5 file, this ABC matrix will be written to the HDF5 file with that &amp;quot;Crystal ID&amp;quot; upon executing burn.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -163,10 +170,17 @@
         </item>
        </widget>
       </item>
-      <item row="3" column="0" colspan="2">
-       <widget class="QPushButton" name="write_crystal_orientation">
+      <item row="1" column="0">
+       <widget class="QLabel" name="crystal_name_label">
         <property name="text">
-         <string>Write Orientation to Project Directory</string>
+         <string>Name:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QLineEdit" name="crystal_name">
+        <property name="maxLength">
+         <number>30</number>
         </property>
        </widget>
       </item>
@@ -284,6 +298,7 @@
   <tabstop>activate_burn</tabstop>
   <tabstop>structure_type</tabstop>
   <tabstop>crystal_id</tabstop>
+  <tabstop>crystal_name</tabstop>
   <tabstop>crystal_orientation</tabstop>
   <tabstop>overwrite_crystal</tabstop>
   <tabstop>write_crystal_orientation</tabstop>
