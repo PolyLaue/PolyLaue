@@ -1,5 +1,6 @@
 # Copyright © 2024, UChicago Argonne, LLC. See "LICENSE" for full details.
 
+from pathlib import Path
 from typing import Optional, Any, Callable
 
 from PySide6.QtWidgets import (
@@ -15,6 +16,7 @@ from PySide6.QtCore import (
     QEvent,
     QPointF,
     QRectF,
+    QSettings,
     Qt,
     QTimer,
     Signal,
@@ -22,6 +24,11 @@ from PySide6.QtCore import (
 
 from PySide6.QtGui import (
     QShowEvent,
+)
+
+from PySide6.QtWidgets import (
+    QCheckBox,
+    QMessageBox,
 )
 
 import pyqtgraph as pg
@@ -110,6 +117,10 @@ class RegionMappingDialog(QDialog):
         self.visible = False
         self.debounced_refresh = Debouncer(self.on_refresh_clicked, 500)
 
+        # Keep track of the current map data so we can save it as an npy file
+        # if the user requests it.
+        self._current_map_data = []
+
         self.setLayout(QVBoxLayout())
 
         w = pg.GraphicsView()
@@ -136,6 +147,9 @@ class RegionMappingDialog(QDialog):
         self.refresh_button = QPushButton('Refresh Map', self)
         self.refresh_button.clicked.connect(self.on_refresh_clicked)
 
+        self.save_data_button = QPushButton('Save Map Data', self)
+        self.save_data_button.clicked.connect(self.on_save_data_clicked)
+
         self.show_highlight_button = QPushButton(SHOW_HIGHLIGHT_MSG, self)
         self.show_highlight_button.clicked.connect(self.on_highlight_clicked)
 
@@ -145,6 +159,7 @@ class RegionMappingDialog(QDialog):
         buttons_layout.addWidget(self.show_highlight_button)
         buttons_layout.addWidget(self.show_domain_button)
         buttons_layout.addWidget(self.refresh_button)
+        buttons_layout.addWidget(self.save_data_button)
 
         self.progress_bar = QProgressBar()
         self.layout().addWidget(self.progress_bar)
@@ -388,6 +403,43 @@ class RegionMappingDialog(QDialog):
         self.set_show_domain(not self._show_domain)
         self.sigShowDomainChanged.emit(self._show_domain)
 
+    def on_save_data_clicked(self):
+        if not self._current_map_data:
+            msg = 'No map data. Cannot save.'
+            QMessageBox.critical(None, 'No Map Data', msg)
+            return
+
+        path = Path('.').resolve()
+        if self.series and self.series.parent:
+            # Use section directory if available (it should be)
+            section = self.series.parent
+            path = section.directory
+
+        filepath = path / 'map_data.npy'
+
+        np.save(filepath, self._current_map_data)
+
+        msg = f'Map data saved to: {filepath}'
+
+        print(msg)
+
+        settings = QSettings()
+        skip_message_key = '_skip_region_mapping_save_data_message'
+        skip_message = settings.value(skip_message_key, False)
+        if not skip_message:
+            box = QMessageBox(
+                QMessageBox.Icon.Information,
+                'Files saved',
+                msg,
+                QMessageBox.StandardButton.Ok,
+            )
+            cb = QCheckBox("Don't show this again")
+            box.setCheckBox(cb)
+            box.layout().setAlignment(cb, Qt.AlignRight)
+            box.exec_()
+            if cb.isChecked():
+                settings.setValue(skip_message_key, True)
+
     def _update_highlight_roi_item(self):
         pos = self.roi_size_ij * self._highlight_roi["position"]
         size = self.roi_size_ij * self._highlight_roi["size"]
@@ -601,8 +653,10 @@ class RegionMappingDialog(QDialog):
         self.progress_bar.setRange(i0, i1)
         self.progress_bar.setValue(i0)
 
+        self._current_map_data.clear()
         for i in range(i0, i1):
             self.progress_bar.setValue(i)
+            map_data_row = []
             for j in range(j0, j1):
                 scan_position[0] = i
                 scan_position[1] = j
@@ -617,12 +671,17 @@ class RegionMappingDialog(QDialog):
                 frame_j_start = pos_ij[1]
                 frame_j_end = frame_j_start + size_ij[1]
 
-                _, map_img[i_start:i_end, j_start:j_end] = self.open_image_fn(
+                region_img = self.open_image_fn(
                     series,
                     scan_number,
                     scan_position,
                     (frame_i_start, frame_i_end, frame_j_start, frame_j_end),
-                )
+                )[1]
+
+                map_data_row.append(region_img)
+                map_img[i_start:i_end, j_start:j_end] = region_img
+
+            self._current_map_data.append(map_data_row)
 
         self.progress_bar.setValue(i1)
 
