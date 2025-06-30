@@ -259,8 +259,12 @@ class Series(Editable):
         # This needs to be fast because we will check it multiple times each
         # second during acquisition.
         prefix = self.file_prefix
-        if not prefix:
+        if not prefix or not self.file_list:
             return False
+
+        # Assume that we will use the same file extension as the other files
+        last_file = self.file_list[-1]
+        suffix = Path(last_file).suffix
 
         # We make assumptions here about the file name pattern that we don't
         # exactly make elsewhere. We assume it has enough leading zeroes to
@@ -269,7 +273,8 @@ class Series(Editable):
         final_file_idx = self.skip_frames + (self.num_scans + 1) * np.prod(
             self.scan_shape
         )
-        filename = f'{prefix}_{final_file_idx:03d}.tif'
+
+        filename = f'{prefix}_{final_file_idx:03d}{suffix}'
         return (self.dirpath / filename).exists()
 
     def invalidate(self):
