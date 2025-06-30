@@ -4,7 +4,14 @@ from functools import lru_cache, partial
 import logging
 from pathlib import Path
 
-from PySide6.QtCore import QCoreApplication, QEvent, QObject, QSettings, Qt
+from PySide6.QtCore import (
+    QCoreApplication,
+    QEvent,
+    QObject,
+    QSettings,
+    QTimer,
+    Qt,
+)
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -81,6 +88,10 @@ class MainWindow(QObject):
         self.show_mapping_highlight_area = False
         self.show_mapping_domain_area = False
 
+        self._live_acquisition_running = False
+        # Check every third of a second
+        self._live_acquisition_check_gap = 1 / 3
+
         self.setup_connections()
 
         if '--ignore-settings' not in QCoreApplication.arguments():
@@ -107,6 +118,9 @@ class MainWindow(QObject):
         )
         self.ui.action_apply_background_subtraction.toggled.connect(
             self.on_action_apply_background_subtraction_toggled
+        )
+        self.ui.action_enable_live_acquisition.toggled.connect(
+            self.on_action_enable_live_acquisition_toggled
         )
 
         self.image_view.shift_scan_number.connect(self.on_shift_scan_number)
@@ -230,6 +244,14 @@ class MainWindow(QObject):
     @apply_background_subtraction.setter
     def apply_background_subtraction(self, b: bool):
         return self.ui.action_apply_background_subtraction.setChecked(b)
+
+    @property
+    def live_acquisition_enabled(self) -> bool:
+        return self.ui.action_enable_live_acquisition.isChecked()
+
+    @live_acquisition_enabled.setter
+    def live_acquisition_enabled(self, b: bool):
+        self.ui.action_enable_live_acquisition.setChecked(b)
 
     @property
     def scan_pos(self) -> np.ndarray:
@@ -554,6 +576,48 @@ class MainWindow(QObject):
         self.image_view.auto_level_histogram_range()
         self.image_view.on_mouse_move()
         self.set_mapping_dialogs_stale()
+
+    def on_action_enable_live_acquisition_toggled(self):
+        if self.live_acquisition_enabled:
+            self.begin_live_acquisition()
+
+        # Live acquisition will end itself if disabled
+
+    def begin_live_acquisition(self):
+        if self._live_acquisition_running:
+            # It's already running. No need to start it again.
+            return
+
+        # Start the loop
+        self._live_acquisition_running = True
+        self._live_acquisition_loop()
+
+    def _live_acquisition_loop(self):
+        if not self.live_acquisition_enabled:
+            # It was disabled
+            self._live_acquisition_running = False
+            return
+
+        # Add a new scan if one is available
+        self._add_new_scan_if_available()
+
+        # Run the check again after the check gap time expires.
+        QTimer.singleShot(
+            self._live_acquisition_check_gap,
+            self._live_acquisition_loop,
+        )
+
+    def _add_new_scan_if_available(self):
+        series = self.series
+        if series is None or not series.has_enough_data_for_new_scan:
+            # Can't add a new scan
+            return
+
+        first_scan = series.scan_range_tuple[0]
+        new_final_scan = series.scan_range_tuple[1] + 1
+        series.scan_range_tuple = (first_scan, new_final_scan)
+        series.self_validate()
+        self.on_shift_scan_number(1)
 
     def open_mapping_regions_manager(self):
         if not hasattr(self, '_regions_navigator_dialog'):

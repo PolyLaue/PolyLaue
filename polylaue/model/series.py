@@ -253,6 +253,25 @@ class Series(Editable):
 
         return file_prefix, file_list
 
+    @property
+    def has_enough_data_for_new_scan(self) -> bool:
+        # Check if there are enough data files present for a new scan.
+        # This needs to be fast because we will check it multiple times each
+        # second during acquisition.
+        prefix = self.file_prefix
+        if not prefix:
+            return False
+
+        # We make assumptions here about the file name pattern that we don't
+        # exactly make elsewhere. We assume it has enough leading zeroes to
+        # always contain at least 3 digits, which is true for the data we
+        # are currently looking at, but might not always be true.
+        final_file_idx = self.skip_frames + (self.num_scans + 1) * np.prod(
+            self.scan_shape
+        )
+        filename = f'{prefix}_{final_file_idx:03d}.tif'
+        return (self.dirpath / filename).exists()
+
     def invalidate(self):
         self.file_prefix = None
         self.file_list.clear()
