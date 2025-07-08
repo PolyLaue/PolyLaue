@@ -89,6 +89,10 @@ class ReflectionsEditor(QObject):
         self._section = v
         self.load_reflections()
 
+        if self._burn_workflow is not None:
+            # Restart the burn workflow
+            self.start_burn()
+
     def load_reflections(self):
         if self.reflections_file_path is None:
             self.clear()
