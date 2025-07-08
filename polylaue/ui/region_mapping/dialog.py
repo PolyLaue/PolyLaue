@@ -410,10 +410,10 @@ class RegionMappingDialog(QDialog):
             return
 
         path = Path('.').resolve()
-        if self.series and self.series.parent:
-            # Use section directory if available (it should be)
-            section = self.series.parent
-            path = section.directory
+        if self.series and self.series.parent and self.series.parent.parent:
+            # Use project directory if available (it should be)
+            project = self.series.parent.parent
+            path = project.directory
 
         filepath = path / 'map_data.npy'
 
