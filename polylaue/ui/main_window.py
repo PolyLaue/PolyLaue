@@ -26,6 +26,7 @@ import numpy as np
 
 from polylaue.model.hkl_provider import HklProvider
 from polylaue.model.io import load_image_file, identify_loader_function, Bounds
+from polylaue.model.project import Project
 from polylaue.model.roi_manager import ROIManager, HklROIManager
 from polylaue.model.scan import Scan
 from polylaue.model.section import Section
@@ -273,6 +274,10 @@ class MainWindow(QObject):
     def section(self) -> Section | None:
         return self.series.parent if self.series is not None else None
 
+    @property
+    def project(self) -> Project | None:
+        return self.section.parent if self.section is not None else None
+
     def reset_scan_position(self):
         self.scan_pos = np.array([0, 0])
 
@@ -287,6 +292,7 @@ class MainWindow(QObject):
 
         This will also reset the current image settings and scan position.
         """
+        prev_project = self.project
         prev_section = self.section
 
         self.series = series
@@ -306,7 +312,10 @@ class MainWindow(QObject):
         # the name of this series
         self.ui.setWindowTitle(f'PolyLaue - {series.name}')
 
-        if self.section is not prev_section:
+        if self.project is not prev_project:
+            # Trigger functions for when the project changes
+            self.on_project_changed()
+        elif self.section is not prev_section:
             # Trigger functions for when the section changes
             self.on_section_changed()
 
@@ -444,9 +453,22 @@ class MainWindow(QObject):
         self.image_view.on_mouse_move()
         self.image_view.update_reflection_overlays()
 
+    def on_project_changed(self):
+        # The section definitely changed as well
+        self.on_section_changed()
+
     def on_section_changed(self):
         # Update the section on the reflections editor
         self.reflections_editor.section = self.section
+
+        # Remove all ROIs
+        d = getattr(self, '_hkl_regions_navigator_dialog', None)
+        if d is not None:
+            d.remove_all_rois()
+
+        d = getattr(self, '_regions_navigator_dialog', None)
+        if d is not None:
+            d.remove_all_rois()
 
     def on_series_or_scan_changed(self):
         for dialog in self.region_mapping_dialogs.values():
