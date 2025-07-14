@@ -42,6 +42,7 @@ from polylaue.ui.prediction_matcher import PredictionMatcherDialog
 from polylaue.ui.project_navigator.dialog import ProjectNavigatorDialog
 from polylaue.ui.region_mapping.dialog import RegionMappingDialog
 from polylaue.ui.regions_navigator.dialog import RegionsNavigatorDialog
+from polylaue.ui.track_dialog import TrackDialog
 from polylaue.ui.utils.ui_loader import UiLoader
 
 
@@ -825,6 +826,15 @@ class MainWindow(QObject):
             # Hide the points when the dialog is closed
             dialog.ui.rejected.connect(d.disconnect)
             self._find_dialog = dialog
+        elif d.refinement_selected:
+            dialog = TrackDialog(
+                points,
+                self.reflections_editor,
+            )
+            dialog.show()
+            # Hide the points when the dialog is closed
+            dialog.ui.rejected.connect(d.disconnect)
+            self._track_dialog = dialog
         else:
             # Hide the points
             d.disconnect()

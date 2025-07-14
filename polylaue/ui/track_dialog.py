@@ -8,12 +8,11 @@ from PySide6.QtWidgets import (
     QDialogButtonBox,
     QMessageBox,
     QProgressDialog,
-    QWidget,
 )
 
 import numpy as np
 
-from polylaue.model.core import find, find_py
+from polylaue.model.core import track, track_py
 from polylaue.model.project import Project
 from polylaue.model.section import Section
 from polylaue.ui.async_worker import AsyncWorker
@@ -21,18 +20,18 @@ from polylaue.ui.reflections_editor import ReflectionsEditor
 from polylaue.ui.utils.ui_loader import UiLoader
 
 
-class FindDialog:
+class TrackDialog:
 
     def __init__(
         self,
         points: np.ndarray,
         reflections_editor: ReflectionsEditor,
     ):
-        self.ui = UiLoader().load_file('find_dialog.ui')
+        self.ui = UiLoader().load_file('track_dialog.ui')
 
         self.points = points
         self.reflections_editor = reflections_editor
-        self.crystal_id = None
+        self.writing_crystal_id = None
 
         self.load_settings()
         self.setup_connections()
@@ -44,9 +43,25 @@ class FindDialog:
     def show(self):
         return self.ui.show()
 
+    def validate(self):
+        reflections = self.reflections_editor.reflections
+        crystals_table = reflections.crystals_table
+        num_crystals = len(crystals_table)
+
+        if self.selected_crystal_id >= num_crystals:
+            msg = (
+                f'Crystal ID "{self.selected_crystal_id}" is invalid '
+                f'because the table contains "{num_crystals}" crystals'
+            )
+            print(msg, file=sys.stderr)
+            QMessageBox.critical(None, 'Validation Error', msg)
+            raise Exception(msg)
+
     def on_apply(self):
+        self.validate()
+
         progress = QProgressDialog(
-            'Running find. Please wait...', '', 0, 0, self.ui
+            'Running track. Please wait...', '', 0, 0, self.ui
         )
         progress.setCancelButton(None)
         # No close button in the corner
@@ -55,7 +70,7 @@ class FindDialog:
             (flags | Qt.CustomizeWindowHint) & ~Qt.WindowCloseButtonHint
         )
 
-        worker = AsyncWorker(self.run_find)
+        worker = AsyncWorker(self.run_track)
 
         def on_finished():
             progress.reject()
@@ -65,7 +80,7 @@ class FindDialog:
             QMessageBox.critical(self, 'PolyLaue', str(error[1]))
 
         # Get the results and close the progress dialog when finished
-        worker.signals.result.connect(self.on_find_finished)
+        worker.signals.result.connect(self.on_track_finished)
         worker.signals.error.connect(on_error)
         worker.signals.finished.connect(on_finished)
 
@@ -73,40 +88,40 @@ class FindDialog:
 
         progress.exec()
 
-    def on_find_finished(self, abc_matrix: np.ndarray):
+    def on_track_finished(self, abc_matrix: np.ndarray):
         if abc_matrix is None:
             msg = (
-                'Finding orientation failed.\n'
+                'Tracking orientation failed.\n'
                 'Try again with different settings or picks.'
             )
-            QMessageBox.critical(None, 'Find Failed', msg)
+            QMessageBox.critical(None, 'Track Failed', msg)
             return
 
         self.save_settings()
-
         self.show_reflections(abc_matrix)
 
     @property
-    def find_func(self) -> Callable:
-        return find_py if self.conserve_memory else find
+    def track_func(self) -> Callable:
+        return track_py if self.conserve_memory else track
 
     @property
-    def find_kwargs(self) -> dict:
+    def track_kwargs(self) -> dict:
         geometry = self.project.geometry_data
         return {
             'obs_xy': self.points,
+            'abc': self.selected_abc_matrix,
             'energy_highest': self.project.energy_range[1],
-            'cell_parameters': self.cell_parameters,
             'det_org': geometry['det_org'],
             'beam_dir': geometry['beam_dir'],
             'pix_dist': geometry['pix_dist'],
             'ang_tol': self.angular_tolerance,
+            'ang_lim': self.angular_limit,
             'res_lim': self.resolution_limit,
             'ref_thr': self.reference_threshold,
         }
 
-    def run_find(self) -> np.ndarray | None:
-        return self.find_func(**self.find_kwargs)
+    def run_track(self) -> np.ndarray | None:
+        return self.track_func(**self.track_kwargs)
 
     def show_reflections(self, abc_matrix: np.ndarray):
         reflections = self.reflections_editor.reflections
@@ -122,11 +137,11 @@ class FindDialog:
             burn_workflow.start()
             new_burn = True
 
-        if self.crystal_id is None:
+        if self.writing_crystal_id is None:
             # Add the new crystal to the back
-            self.crystal_id = reflections.num_crystals
+            self.writing_crystal_id = reflections.num_crystals
 
-        crystal_id = self.crystal_id
+        crystal_id = self.writing_crystal_id
 
         dialog = burn_workflow.burn_dialog
         dialog.set_crystal_orientation_to_hdf5_file()
@@ -143,25 +158,23 @@ class FindDialog:
             # Set the dmin to 0.5
             dialog.dmin = 0.5
 
-        if not dialog.ui.isVisible():
-            dialog.ui.show()
-
         # Activate burn to trigger drawing of the reflections
         dialog.burn_activated = True
 
     def load_settings(self):
         settings = QSettings()
-        self.settings_serialized = settings.value('find_dialog_settings', {})
+        self.settings_serialized = settings.value('track_dialog_settings', {})
 
     def save_settings(self):
         settings = QSettings()
-        settings.setValue('find_dialog_settings', self.settings_serialized)
+        settings.setValue('track_dialog_settings', self.settings_serialized)
 
     @property
     def _attrs_to_serialize(self) -> list[str]:
         return [
-            'cell_parameters',
+            'selected_crystal_id',
             'angular_tolerance',
+            'angular_limit',
             'resolution_limit',
             'reference_threshold',
             'conserve_memory',
@@ -186,18 +199,24 @@ class FindDialog:
         return self.reflections_editor.section
 
     @property
-    def cell_parameter_widgets(self) -> list[QWidget]:
-        names = ['a', 'b', 'c', 'alpha', 'beta', 'gamma']
-        return [getattr(self.ui, x) for x in names]
+    def selected_abc_matrix(self) -> np.ndarray:
+        reflections = self.reflections_editor.reflections
+        crystals_table = reflections.crystals_table
+        return crystals_table[self.selected_crystal_id]
 
     @property
-    def cell_parameters(self) -> list[float]:
-        return [w.value() for w in self.cell_parameter_widgets]
+    def selected_crystal_id(self) -> int:
+        return self.ui.crystal_id.value()
 
-    @cell_parameters.setter
-    def cell_parameters(self, values: list[float]):
-        for w, v in zip(self.cell_parameter_widgets, values):
-            w.setValue(v)
+    @selected_crystal_id.setter
+    def selected_crystal_id(self, v: int):
+        # Verify that it is valid within the table. If not,
+        # skip setting it.
+        reflections = self.reflections_editor.reflections
+        crystals_table = reflections.crystals_table
+
+        if v < len(crystals_table):
+            self.ui.crystal_id.setValue(v)
 
     @property
     def angular_tolerance(self) -> float:
@@ -206,6 +225,14 @@ class FindDialog:
     @angular_tolerance.setter
     def angular_tolerance(self, v: float):
         self.ui.angular_tolerance.setValue(v)
+
+    @property
+    def angular_limit(self) -> float:
+        return self.ui.angular_limit.value()
+
+    @angular_limit.setter
+    def angular_limit(self, v: float):
+        self.ui.angular_limit.setValue(v)
 
     @property
     def resolution_limit(self) -> float:
