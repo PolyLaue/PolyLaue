@@ -12,25 +12,53 @@
                             "name": "Series4",
                             "description": "Fourth series",
                             "dirpath_str": "/__test_series_path/series4",
-                            "num_scans": 3,
+                            "scan_start_number": 1,
                             "scan_shape": [
                                 21,
                                 21
                             ],
                             "skip_frames": 10,
-                            "file_prefix": null
+                            "file_prefix": null,
+                            "scans_serialized": [
+                                {
+                                    "shift_x": 0,
+                                    "shift_y": 0
+                                },
+                                {
+                                    "shift_x": 0,
+                                    "shift_y": 0
+                                },
+                                {
+                                    "shift_x": 0,
+                                    "shift_y": 0
+                                }
+                            ]
                         },
                         {
                             "name": "Series5",
                             "description": "Fifth series",
                             "dirpath_str": "/__test_series_path/series5",
-                            "num_scans": 3,
+                            "scan_start_number": 4,
                             "scan_shape": [
                                 21,
                                 21
                             ],
                             "skip_frames": 10,
-                            "file_prefix": null
+                            "file_prefix": null,
+                            "scans_serialized": [
+                                {
+                                    "shift_x": 0,
+                                    "shift_y": 0
+                                },
+                                {
+                                    "shift_x": 0,
+                                    "shift_y": 0
+                                },
+                                {
+                                    "shift_x": 0,
+                                    "shift_y": 0
+                                }
+                            ]
                         }
                     ]
                 }
@@ -48,13 +76,27 @@
                             "name": "Series6",
                             "description": "Sixth series",
                             "dirpath_str": "/__test_series_path/series6",
-                            "num_scans": 3,
+                            "scan_start_number": 1,
                             "scan_shape": [
                                 21,
                                 21
                             ],
                             "skip_frames": 10,
-                            "file_prefix": null
+                            "file_prefix": null,
+                            "scans_serialized": [
+                                {
+                                    "shift_x": 0,
+                                    "shift_y": 0
+                                },
+                                {
+                                    "shift_x": 0,
+                                    "shift_y": 0
+                                },
+                                {
+                                    "shift_x": 0,
+                                    "shift_y": 0
+                                }
+                            ]
                         }
                     ]
                 },
@@ -66,37 +108,79 @@
                             "name": "Series7",
                             "description": "Seventh series",
                             "dirpath_str": "/__test_series_path/series7",
-                            "num_scans": 3,
+                            "scan_start_number": 1,
                             "scan_shape": [
                                 21,
                                 21
                             ],
                             "skip_frames": 10,
-                            "file_prefix": null
+                            "file_prefix": null,
+                            "scans_serialized": [
+                                {
+                                    "shift_x": 0,
+                                    "shift_y": 0
+                                },
+                                {
+                                    "shift_x": 0,
+                                    "shift_y": 0
+                                },
+                                {
+                                    "shift_x": 0,
+                                    "shift_y": 0
+                                }
+                            ]
                         },
                         {
                             "name": "Series8",
                             "description": "Eighth series",
                             "dirpath_str": "/__test_series_path/series8",
-                            "num_scans": 3,
+                            "scan_start_number": 4,
                             "scan_shape": [
                                 21,
                                 21
                             ],
                             "skip_frames": 10,
-                            "file_prefix": null
+                            "file_prefix": null,
+                            "scans_serialized": [
+                                {
+                                    "shift_x": 0,
+                                    "shift_y": 0
+                                },
+                                {
+                                    "shift_x": 0,
+                                    "shift_y": 0
+                                },
+                                {
+                                    "shift_x": 0,
+                                    "shift_y": 0
+                                }
+                            ]
                         },
                         {
                             "name": "Series9",
                             "description": "Ninth series",
                             "dirpath_str": "/__test_series_path/series9",
-                            "num_scans": 3,
+                            "scan_start_number": 7,
                             "scan_shape": [
                                 21,
                                 21
                             ],
                             "skip_frames": 10,
-                            "file_prefix": null
+                            "file_prefix": null,
+                            "scans_serialized": [
+                                {
+                                    "shift_x": 0,
+                                    "shift_y": 0
+                                },
+                                {
+                                    "shift_x": 0,
+                                    "shift_y": 0
+                                },
+                                {
+                                    "shift_x": 0,
+                                    "shift_y": 0
+                                }
+                            ]
                         }
                     ]
                 }

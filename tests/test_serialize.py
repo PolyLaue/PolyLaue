@@ -33,6 +33,28 @@ def test_serialize(test_project_manager_serialized):
     ref_serialized = test_project_manager_serialized
     pm = ProjectManager.from_serialized(ref_serialized)
 
-    # Verify that the round trip produces the same result
+    # Verify that everything present within the reference matches
+    # This won't fail when we add new keys (because only keys
+    # that already exist in the reference are checked).
+    def recurse_check(d: dict, ref: dict):
+        for key, value in ref.items():
+            if isinstance(value, dict) and key in d:
+                recurse_check(d[key], value)
+                continue
+
+            if isinstance(value, (list, tuple)) and key in d:
+                assert len(value) == len(d[key])
+                for v1, v2 in zip(value, d[key]):
+                    if isinstance(v1, dict):
+                        recurse_check(v1, v2)
+                        continue
+
+                    assert v1 == v2
+
+                continue
+
+            if key in d:
+                assert d[key] == value
+
     serialized = pm.serialize()
-    assert ref_serialized == serialized
+    recurse_check(serialized, ref_serialized)

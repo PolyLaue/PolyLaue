@@ -8,7 +8,7 @@ import signal
 from PySide6.QtWidgets import QApplication
 
 from polylaue.model.project_manager import ProjectManager
-from polylaue.model.series import Series
+from polylaue.model.scan import Scan
 from polylaue.ui.project_navigator.dialog import ProjectNavigatorDialog
 
 # Kill the program when ctrl-c is used
@@ -45,11 +45,11 @@ def on_data_modified():
     print(json.dumps(pm.serialize(), indent=4))
 
 
-def on_open_series(series: Series):
-    print('Open series:', series.name)
+def on_open_scan(scan: Scan):
+    print('Open scan:', scan)
 
 
-dialog.view.open_series.connect(on_open_series)
+dialog.view.open_scan.connect(on_open_scan)
 dialog.model.data_modified.connect(on_data_modified)
 
 app.exec()
