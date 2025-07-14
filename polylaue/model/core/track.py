@@ -11,9 +11,9 @@ def track(
     beam_dir: np.ndarray,
     pix_dist: np.ndarray,
     ang_tol: float = 0.07,
-    ang_lim: float = 29,
+    ang_lim: float = 29.,
     res_lim: float = 0.3,
-    ref_thr: float = 3,
+    ref_thr: int = 3,
 ) -> np.ndarray | None:
 
     abc_dir = np.reshape(abc, (3, -1))
@@ -322,7 +322,7 @@ def track_py(
     ang_tol: float = 0.07,
     ang_lim: float = 29,
     res_lim: float = 0.3,
-    ref_thr: float = 3,
+    ref_thr: int = 3,
 ) -> np.ndarray | None:
     """This version of track() takes up substantially less RAM, but
     may run slower"""

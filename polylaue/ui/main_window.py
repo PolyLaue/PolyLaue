@@ -32,6 +32,7 @@ from polylaue.model.scan import Scan
 from polylaue.model.section import Section
 from polylaue.model.series import Series
 from polylaue.model.state import load_project_manager, save_project_manager
+from polylaue.ui.find_dialog import FindDialog
 from polylaue.ui.frame_tracker import FrameTracker
 from polylaue.ui.hkl_regions_navigator.dialog import HklRegionsNavigatorDialog
 from polylaue.ui.image_view import PolyLaueImageView
@@ -740,7 +741,7 @@ class MainWindow(QObject):
             return
 
         if hasattr(self, '_point_selector_dialog'):
-            self._point_selector_dialog.on_finished()
+            self._point_selector_dialog.on_rejected()
 
         d = PointSelectorDialog(
             self.image_view,
@@ -814,6 +815,19 @@ class MainWindow(QObject):
                 box.exec_()
                 if cb.isChecked():
                     settings.setValue(skip_message_key, True)
+
+        if d.indexing_selected:
+            dialog = FindDialog(
+                points,
+                self.reflections_editor,
+            )
+            dialog.show()
+            # Hide the points when the dialog is closed
+            dialog.ui.rejected.connect(d.disconnect)
+            self._find_dialog = dialog
+        else:
+            # Hide the points
+            d.disconnect()
 
     def on_roi_remove_clicked(self, id: str):
         if id in self.region_mapping_dialogs:

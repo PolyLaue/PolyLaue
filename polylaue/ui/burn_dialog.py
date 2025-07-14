@@ -90,6 +90,9 @@ class BurnDialog(QObject):
     def crystal_orientation(self) -> str:
         return self.ui.crystal_orientation.currentText()
 
+    def set_crystal_orientation_to_hdf5_file(self):
+        self.ui.crystal_orientation.setCurrentText('From HDF5 File')
+
     @property
     def crystal_orientation_is_from_hdf5_file(self) -> bool:
         return self.crystal_orientation == 'From HDF5 File'
@@ -101,6 +104,10 @@ class BurnDialog(QObject):
     @property
     def crystal_id(self) -> int:
         return self.ui.crystal_id.value()
+
+    @crystal_id.setter
+    def crystal_id(self, v: int):
+        self.ui.crystal_id.setValue(v)
 
     @property
     def crystal_name(self) -> str:

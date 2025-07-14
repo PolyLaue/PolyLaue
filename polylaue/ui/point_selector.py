@@ -76,25 +76,31 @@ class PointSelector(QObject):
         return f'{x}, {y}'
 
     def mouse_clicked(self, event):
+        pos = self.image_view.view.mapSceneToView(event.pos())
+        pos = np.round(pos.toTuple(), 3)
+
         if event.button() == MouseButton.RightButton:
-            # Right-click is undo
-            self.undo_point()
+            # Right-click removes the nearest point
+            self.remove_nearest_point(pos)
             return
 
         if event.button() != MouseButton.LeftButton:
             # At this point, ignore anything that is not left-click
             return
 
-        pos = self.image_view.view.mapSceneToView(event.pos())
         # These points MUST not be reordered. Keep same ordering.
-        self.points.append(np.round(pos.toTuple(), 3))
+        self.points.append(pos)
         self.points_changed()
 
-    def undo_point(self):
-        if self.points:
-            # These points MUST not be reordered. Keep same ordering.
-            self.points.pop()
-            self.points_changed()
+    def remove_nearest_point(self, point: np.ndarray):
+        if not self.points:
+            return
+
+        all_points = np.asarray(self.points)
+        distances = np.linalg.norm(all_points - point, axis=1)
+        closest_idx = np.argmin(distances)
+        self.points.pop(closest_idx)
+        self.points_changed()
 
     def points_changed(self):
         """This function should be called whenever the points have changed"""
@@ -158,13 +164,21 @@ class PointSelectorDialog(QDialog):
         }
         return filenames[self.save_file_combo.currentText()]
 
+    @property
+    def indexing_selected(self) -> bool:
+        return self.save_file_combo.currentText() == 'Indexing'
+
+    @property
+    def refinement_selected(self) -> bool:
+        return self.save_file_combo.currentText() == 'Refinement'
+
     def setup_connections(self):
         self.point_selector.points_modified.connect(self.on_points_modified)
 
         self.button_box.accepted.connect(self.accept)
         self.button_box.rejected.connect(self.reject)
 
-        self.finished.connect(self.on_finished)
+        self.rejected.connect(self.on_rejected)
 
     def on_points_modified(self):
         self.update_num_points_label()
@@ -173,7 +187,10 @@ class PointSelectorDialog(QDialog):
         num_points = len(self.points)
         self.num_points_label.setText(f'Number of points: {num_points}')
 
-    def on_finished(self):
+    def on_rejected(self):
+        self.disconnect()
+
+    def disconnect(self):
         self.point_selector.disconnect()
 
     @property
