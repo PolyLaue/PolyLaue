@@ -6,6 +6,7 @@ from PySide6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
     QLabel,
+    QMessageBox,
     QPushButton,
     QVBoxLayout,
 )
@@ -214,12 +215,32 @@ class PointSelectorDialog(QDialog):
             self._auto_point_picker.ui.hide()
             del self._auto_point_picker
 
+        if not self.points:
+            title = 'No points picked'
+            msg = (
+                'It is recommended that you manually pick at least one point '
+                'before performing auto-picking in order to help ensure the '
+                'subsequent orientation-finding algorithms will succeed.\n\n'
+                'Proceed anyways?'
+            )
+            if QMessageBox.question(self, title, msg) == QMessageBox.No:
+                # Abort
+                return
+
         dialog = PointAutoPicker(self.image_view, self)
 
         original_points = self.point_selector.points.copy()
 
         def on_points_modified():
             self.point_selector.points = dialog.points.tolist()
+            self.point_selector.points_changed()
+
+        def on_accepted():
+            # Add back in the original points
+            self.point_selector.points = (
+                original_points +
+                self.point_selector.points
+            )
             self.point_selector.points_changed()
 
         def on_rejected():
@@ -229,6 +250,7 @@ class PointSelectorDialog(QDialog):
         def on_finished():
             self.show()
 
+        dialog.ui.accepted.connect(on_accepted)
         dialog.ui.rejected.connect(on_rejected)
         dialog.ui.finished.connect(on_finished)
         dialog.points_modified.connect(on_points_modified)

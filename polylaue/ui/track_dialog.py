@@ -16,20 +16,23 @@ from polylaue.model.core import track, track_py
 from polylaue.model.project import Project
 from polylaue.model.section import Section
 from polylaue.ui.async_worker import AsyncWorker
+from polylaue.ui.point_selector import PointSelectorDialog
 from polylaue.ui.reflections_editor import ReflectionsEditor
 from polylaue.ui.utils.ui_loader import UiLoader
+
+TrackResults = tuple[np.ndarray | None, float | None]
 
 
 class TrackDialog:
 
     def __init__(
         self,
-        points: np.ndarray,
+        point_selector_dialog: PointSelectorDialog,
         reflections_editor: ReflectionsEditor,
     ):
         self.ui = UiLoader().load_file('track_dialog.ui')
 
-        self.points = points
+        self.point_selector_dialog = point_selector_dialog
         self.reflections_editor = reflections_editor
         self.writing_crystal_id = None
 
@@ -88,7 +91,9 @@ class TrackDialog:
 
         progress.exec()
 
-    def on_track_finished(self, abc_matrix: np.ndarray):
+    def on_track_finished(self, results: TrackResults):
+        abc_matrix = results[0]
+        angular_shift = results[1]
         if abc_matrix is None:
             msg = (
                 'Tracking orientation failed.\n'
@@ -98,7 +103,19 @@ class TrackDialog:
             return
 
         self.save_settings()
+
+        msg = f'Angular shift is: {angular_shift:.2f}°'
+        QMessageBox.information(
+            None,
+            'Track Succeeded',
+            msg,
+        )
+
         self.show_reflections(abc_matrix)
+
+    @property
+    def points(self) -> np.ndarray:
+        return np.asarray(self.point_selector_dialog.points)
 
     @property
     def track_func(self) -> Callable:
@@ -120,7 +137,7 @@ class TrackDialog:
             'ref_thr': self.reference_threshold,
         }
 
-    def run_track(self) -> np.ndarray | None:
+    def run_track(self) -> TrackResults:
         return self.track_func(**self.track_kwargs)
 
     def show_reflections(self, abc_matrix: np.ndarray):
@@ -157,6 +174,9 @@ class TrackDialog:
         if new_burn:
             # Set the dmin to 0.5
             dialog.dmin = 0.5
+
+        if not dialog.ui.isVisible():
+            dialog.ui.show()
 
         # Activate burn to trigger drawing of the reflections
         dialog.burn_activated = True

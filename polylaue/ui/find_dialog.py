@@ -17,6 +17,7 @@ from polylaue.model.core import find, find_py
 from polylaue.model.project import Project
 from polylaue.model.section import Section
 from polylaue.ui.async_worker import AsyncWorker
+from polylaue.ui.point_selector import PointSelectorDialog
 from polylaue.ui.reflections_editor import ReflectionsEditor
 from polylaue.ui.utils.ui_loader import UiLoader
 
@@ -25,12 +26,12 @@ class FindDialog:
 
     def __init__(
         self,
-        points: np.ndarray,
+        point_selector_dialog: PointSelectorDialog,
         reflections_editor: ReflectionsEditor,
     ):
         self.ui = UiLoader().load_file('find_dialog.ui')
 
-        self.points = points
+        self.point_selector_dialog = point_selector_dialog
         self.reflections_editor = reflections_editor
         self.crystal_id = None
 
@@ -85,6 +86,10 @@ class FindDialog:
         self.save_settings()
 
         self.show_reflections(abc_matrix)
+
+    @property
+    def points(self) -> np.ndarray:
+        return np.asarray(self.point_selector_dialog.points)
 
     @property
     def find_func(self) -> Callable:

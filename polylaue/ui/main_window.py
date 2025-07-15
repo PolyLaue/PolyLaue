@@ -818,19 +818,13 @@ class MainWindow(QObject):
                     settings.setValue(skip_message_key, True)
 
         if d.indexing_selected:
-            dialog = FindDialog(
-                points,
-                self.reflections_editor,
-            )
+            dialog = FindDialog(d, self.reflections_editor)
             dialog.show()
             # Hide the points when the dialog is closed
             dialog.ui.rejected.connect(d.disconnect)
             self._find_dialog = dialog
         elif d.refinement_selected:
-            dialog = TrackDialog(
-                points,
-                self.reflections_editor,
-            )
+            dialog = TrackDialog(d, self.reflections_editor)
             dialog.show()
             # Hide the points when the dialog is closed
             dialog.ui.rejected.connect(d.disconnect)

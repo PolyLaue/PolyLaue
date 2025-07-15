@@ -72,7 +72,8 @@ class PointAutoPicker(QObject):
         coms = coms[areas > self.min_area]
 
         # Now make these the selected points
-        self.points = coms[:, [1, 0]]
+        # Round to 4 decimal places
+        self.points = np.round(coms[:, [1, 0]], 4)
 
         self.points_modified.emit()
 

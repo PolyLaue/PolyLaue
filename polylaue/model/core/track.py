@@ -309,7 +309,9 @@ def track(
         print('Indexed reflections:', n_foun)
         print('Angular shift, deg.:', round(nang, 2))
         abc_dir_n = np.reshape(abc_dir_n, 9)
-        return abc_dir_n
+        return abc_dir_n, nang
+
+    return None, None
 
 
 def track_py(
@@ -578,4 +580,6 @@ def track_py(
         print('Indexed reflections:', n_foun)
         print('Angular shift, deg.:', round(nang, 2))
         abc_dir_n = np.reshape(abc_dir_n, 9)
-        return abc_dir_n
+        return abc_dir_n, nang
+
+    return None, None
