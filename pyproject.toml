@@ -15,6 +15,7 @@ dependencies = [
     'pyside6',
     'pyqtgraph',
     'pillow',
+    'scikit-image',
     'scipy',
 ]
 readme = 'REAMDE.md'

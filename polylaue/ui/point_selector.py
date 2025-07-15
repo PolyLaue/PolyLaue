@@ -6,11 +6,14 @@ from PySide6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
     QLabel,
+    QPushButton,
     QVBoxLayout,
 )
 
 import numpy as np
 import pyqtgraph as pg
+
+from polylaue.ui.point_auto_picker import PointAutoPicker
 
 MouseButton = Qt.MouseButton
 
@@ -148,6 +151,11 @@ class PointSelectorDialog(QDialog):
         layout.addWidget(self.num_points_label)
         self.update_num_points_label()
 
+        button = QPushButton('Auto-pick Points')
+        layout.addWidget(button)
+        button.clicked.connect(self.start_auto_picker)
+        self.auto_pick_button = button
+
         # Add a button box for accept/cancel
         buttons = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
         self.button_box = QDialogButtonBox(buttons, self)
@@ -196,3 +204,36 @@ class PointSelectorDialog(QDialog):
     @property
     def points(self):
         return self.point_selector.points
+
+    @property
+    def image_view(self) -> pg.ImageView:
+        return self.point_selector.image_view
+
+    def start_auto_picker(self):
+        if getattr(self, '_auto_point_picker', None):
+            self._auto_point_picker.ui.hide()
+            del self._auto_point_picker
+
+        dialog = PointAutoPicker(self.image_view, self)
+
+        original_points = self.point_selector.points.copy()
+
+        def on_points_modified():
+            self.point_selector.points = dialog.points.tolist()
+            self.point_selector.points_changed()
+
+        def on_rejected():
+            self.point_selector.points = original_points
+            self.point_selector.points_changed()
+
+        def on_finished():
+            self.show()
+
+        dialog.ui.rejected.connect(on_rejected)
+        dialog.ui.finished.connect(on_finished)
+        dialog.points_modified.connect(on_points_modified)
+
+        self.hide()
+        dialog.show()
+
+        self._auto_point_picker = dialog
