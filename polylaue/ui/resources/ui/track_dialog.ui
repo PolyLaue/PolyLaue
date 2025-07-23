@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>632</width>
-    <height>344</height>
+    <height>272</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -21,7 +21,7 @@
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="4" column="1">
-    <widget class="QSpinBox" name="reference_threshold">
+    <widget class="QSpinBox" name="reflections_threshold">
      <property name="toolTip">
       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The minimum number of indexed reflections to assume the indexing routine was successful.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;Default: 3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
@@ -64,12 +64,12 @@
     </widget>
    </item>
    <item row="4" column="0">
-    <widget class="QLabel" name="reference_threshold_label">
+    <widget class="QLabel" name="reflections_threshold_label">
      <property name="toolTip">
       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The minimum number of indexed reflections to assume the indexing routine was successful.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;Default: 3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
      <property name="text">
-      <string>Reference Threshold:</string>
+      <string>Reflections Threshold:</string>
      </property>
     </widget>
    </item>
@@ -182,7 +182,7 @@
      <property name="sizeHint" stdset="0">
       <size>
        <width>20</width>
-       <height>40</height>
+       <height>0</height>
       </size>
      </property>
     </spacer>
@@ -201,7 +201,7 @@
   <tabstop>angular_tolerance</tabstop>
   <tabstop>angular_limit</tabstop>
   <tabstop>resolution_limit</tabstop>
-  <tabstop>reference_threshold</tabstop>
+  <tabstop>reflections_threshold</tabstop>
   <tabstop>conserve_memory</tabstop>
  </tabstops>
  <resources/>

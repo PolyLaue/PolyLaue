@@ -134,7 +134,7 @@ class TrackDialog:
             'ang_tol': self.angular_tolerance,
             'ang_lim': self.angular_limit,
             'res_lim': self.resolution_limit,
-            'ref_thr': self.reference_threshold,
+            'ref_thr': self.reflections_threshold,
         }
 
     def run_track(self) -> TrackResults:
@@ -196,7 +196,7 @@ class TrackDialog:
             'angular_tolerance',
             'angular_limit',
             'resolution_limit',
-            'reference_threshold',
+            'reflections_threshold',
             'conserve_memory',
         ]
 
@@ -263,12 +263,12 @@ class TrackDialog:
         self.ui.resolution_limit.setValue(v)
 
     @property
-    def reference_threshold(self) -> float:
-        return self.ui.reference_threshold.value()
+    def reflections_threshold(self) -> float:
+        return self.ui.reflections_threshold.value()
 
-    @reference_threshold.setter
-    def reference_threshold(self, v: float):
-        self.ui.reference_threshold.setValue(v)
+    @reflections_threshold.setter
+    def reflections_threshold(self, v: float):
+        self.ui.reflections_threshold.setValue(v)
 
     @property
     def conserve_memory(self) -> bool:
