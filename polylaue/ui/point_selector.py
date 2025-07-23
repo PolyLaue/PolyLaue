@@ -15,6 +15,7 @@ import numpy as np
 import pyqtgraph as pg
 
 from polylaue.ui.point_auto_picker import PointAutoPicker
+from polylaue.ui.utils.keep_dialog_on_top import keep_dialog_on_top
 
 MouseButton = Qt.MouseButton
 
@@ -122,6 +123,8 @@ class PointSelector(QObject):
 class PointSelectorDialog(QDialog):
     def __init__(self, image_view, window_title='Select Points', parent=None):
         super().__init__(parent=parent)
+        keep_dialog_on_top(self)
+
         self.point_selector = PointSelector(image_view)
 
         self.setWindowTitle(window_title)

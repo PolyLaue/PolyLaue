@@ -40,6 +40,7 @@ from polylaue.model.series import Series
 from polylaue.model.roi_manager import ROIManager
 from polylaue.ui.region_mapping.grid_item import CustomGridItem
 from polylaue.utils.coordinates import world_to_display, ij_to_xy
+from polylaue.ui.utils.keep_dialog_on_top import keep_dialog_on_top
 
 Key = Qt.Key
 
@@ -112,6 +113,7 @@ class RegionMappingDialog(QDialog):
         parent: Optional[QWidget] = None,
     ):
         super().__init__(parent)
+        keep_dialog_on_top(self)
 
         self.auto_refresh = True
         self.visible = False

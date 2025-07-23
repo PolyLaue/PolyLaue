@@ -33,6 +33,7 @@ from polylaue.ui.hkl_regions_navigator.model import (
     OUT_OF_BOUNDS,
 )
 from polylaue.ui.hkl_regions_navigator.view import RegionsNavigatorView
+from polylaue.ui.utils.keep_dialog_on_top import keep_dialog_on_top
 
 
 DEFAULT_ROI_ITEM_ARGS = {
@@ -238,6 +239,7 @@ class HklRegionsNavigatorDialog(QDialog):
         parent: Optional[QWidget] = None,
     ):
         super().__init__(parent)
+        keep_dialog_on_top(self)
 
         self.setWindowTitle('HKL Mapping Regions')
 

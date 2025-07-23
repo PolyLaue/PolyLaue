@@ -36,6 +36,7 @@ from polylaue.model.roi_manager import ROIManager
 from polylaue.typing import WorldPoint
 from polylaue.ui.regions_navigator.model import RegionsNavigatorModel
 from polylaue.ui.regions_navigator.view import RegionsNavigatorView
+from polylaue.ui.utils.keep_dialog_on_top import keep_dialog_on_top
 
 DEFAULT_ROI_ITEM_ARGS = {
     'scaleSnap': True,
@@ -234,6 +235,7 @@ class RegionsNavigatorDialog(QDialog):
         parent: Optional[QWidget] = None,
     ):
         super().__init__(parent)
+        keep_dialog_on_top(self)
 
         self.setWindowTitle('Mapping Regions')
 

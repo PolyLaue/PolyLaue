@@ -63,7 +63,7 @@ class FindDialog:
 
         def on_error(error: tuple):
             print(error[2], file=sys.stderr)
-            QMessageBox.critical(self, 'PolyLaue', str(error[1]))
+            QMessageBox.critical(self.ui, 'PolyLaue', str(error[1]))
 
         # Get the results and close the progress dialog when finished
         worker.signals.result.connect(self.on_find_finished)

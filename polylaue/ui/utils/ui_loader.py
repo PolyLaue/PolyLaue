@@ -1,11 +1,12 @@
 # Copyright © 2024, UChicago Argonne, LLC. See "LICENSE" for full details.
 
 from PySide6.QtCore import QBuffer, QByteArray, QFile, QObject
-from PySide6.QtWidgets import QWidget
+from PySide6.QtWidgets import QDialog, QWidget
 from PySide6.QtUiTools import QUiLoader
 
 from polylaue.typing import PathLike
 from polylaue.utils import resource_loader
+from polylaue.ui.utils.keep_dialog_on_top import keep_dialog_on_top
 from polylaue.ui.utils.qsingleton import QSingleton
 import polylaue.ui.resources.ui
 
@@ -56,4 +57,6 @@ class UiLoader(QUiLoader, QSingleton):
 
     def process_ui(self, ui: QWidget):
         """Perform any additional processing on loaded UI objects"""
-        pass
+        if isinstance(ui, QDialog):
+            # We always make dialogs stay on top by default
+            keep_dialog_on_top(ui)

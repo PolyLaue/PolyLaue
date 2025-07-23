@@ -6,6 +6,8 @@ from PySide6.QtWidgets import QDialog, QDialogButtonBox, QLabel, QVBoxLayout
 import numpy as np
 import pyqtgraph as pg
 
+from polylaue.ui.utils.keep_dialog_on_top import keep_dialog_on_top
+
 
 class PredictionMatcherDialog(QDialog):
     def __init__(
@@ -16,6 +18,8 @@ class PredictionMatcherDialog(QDialog):
         parent=None,
     ):
         super().__init__(parent=parent)
+        keep_dialog_on_top(self)
+
         self.image_view = image_view
         self.reflections_array = reflections_array
         self.crystal_id = crystal_id

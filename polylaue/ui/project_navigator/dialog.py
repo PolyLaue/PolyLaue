@@ -12,6 +12,7 @@ from polylaue.model.project_manager import ProjectManager
 from polylaue.ui.project_navigator.model import ProjectNavigatorModel
 from polylaue.ui.project_navigator.navigation_bar import NavigationBar
 from polylaue.ui.project_navigator.view import ProjectNavigatorView
+from polylaue.ui.utils.keep_dialog_on_top import keep_dialog_on_top
 
 
 class ProjectNavigatorDialog(QDialog):
@@ -19,6 +20,7 @@ class ProjectNavigatorDialog(QDialog):
         self, project_manager: ProjectManager, parent: QWidget = None
     ):
         super().__init__(parent)
+        keep_dialog_on_top(self)
 
         self.setWindowTitle('Project Navigator')
 
