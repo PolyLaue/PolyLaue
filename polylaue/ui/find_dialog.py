@@ -114,8 +114,6 @@ class FindDialog:
         return self.find_func(**self.find_kwargs)
 
     def show_reflections(self, abc_matrix: np.ndarray):
-        reflections = self.reflections_editor.reflections
-
         new_burn = False
         if self.reflections_editor._burn_workflow is None:
             self.reflections_editor.start_burn()
@@ -126,6 +124,9 @@ class FindDialog:
         if burn_workflow.burn_dialog is None:
             burn_workflow.start()
             new_burn = True
+
+        # Needs to be after burn workflow is started in case one is created
+        reflections = self.reflections_editor.reflections
 
         if self.crystal_id is None:
             # Add the new crystal to the back
@@ -138,6 +139,9 @@ class FindDialog:
         dialog.crystal_id = crystal_id
 
         crystals_table = reflections.crystals_table
+        if crystals_table.size == 0:
+            crystals_table = np.zeros((1, 9))
+
         while len(crystals_table) < crystal_id + 1:
             crystals_table = np.vstack((crystals_table, np.zeros((9,))))
 
