@@ -283,7 +283,13 @@ class Series(Editable):
         self.has_final_dark_file = False
 
     def validate_files(
-        self, dirpath_str, skip_frames, scan_shape, scan_range_tuple, dry=False
+        self,
+        dirpath_str,
+        skip_frames,
+        scan_shape,
+        scan_range_tuple,
+        dry=False,
+        check_dark_file=True,
     ):
         dirpath = Path(dirpath_str)
         file_prefix, file_list = self.generate_file_list(dirpath, skip_frames)
@@ -297,14 +303,14 @@ class Series(Editable):
         has_final_dark_file = False
 
         # The number of files should be equal to
-        if num_files == expected_num_files + 1:
+        if check_dark_file and num_files == expected_num_files + 1:
             # Assume the extra file is the final dark file
             has_final_dark_file = True
             logger.debug(
                 f'For series at "{dirpath}", assuming final file is a '
                 'dark file'
             )
-        elif num_files != expected_num_files:
+        elif num_files < expected_num_files:
             msg = (
                 f'For series at "{dirpath}", number of unskipped files '
                 f'"{num_files}" does not match the '
@@ -319,13 +325,14 @@ class Series(Editable):
             self.file_list = file_list
             self.has_final_dark_file = has_final_dark_file
 
-    def self_validate(self):
+    def self_validate(self, check_dark_file=True):
         self.validate_files(
             self.dirpath_str,
             self.skip_frames,
             self.scan_shape,
             self.scan_range_tuple,
             dry=False,  # Apply internal attributes
+            check_dark_file=check_dark_file,
         )
 
     def validate_parameters(self, params):

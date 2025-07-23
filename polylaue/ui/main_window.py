@@ -180,9 +180,7 @@ class MainWindow(QObject):
         try:
             self._deserialize_last_loaded_frame(last_loaded_frame)
         except Exception as e:
-            msg = (
-                f'Failed to load last loaded frame. Error message:\n{e}'
-            )
+            msg = f'Failed to load last loaded frame. Error message:\n{e}'
             print(msg, file=sys.stderr)
 
         self.apply_background_subtraction = settings.value(
@@ -647,7 +645,7 @@ class MainWindow(QObject):
         first_scan = series.scan_range_tuple[0]
         new_final_scan = series.scan_range_tuple[1] + 1
         series.scan_range_tuple = (first_scan, new_final_scan)
-        series.self_validate()
+        series.self_validate(check_dark_file=False)
         self.save_project_manager()
         self.on_shift_scan_number(1)
 
