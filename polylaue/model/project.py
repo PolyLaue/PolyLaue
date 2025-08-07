@@ -178,7 +178,7 @@ class Project(Editable):
                 'subtype': 'integer',
                 'length': 2,
                 'min': 1,
-                'max': 4096,
+                'max': 10000000,
                 'tooltip': 'The shape of the data frames (in pixels)',
             },
             'energy_range': {
@@ -186,13 +186,15 @@ class Project(Editable):
                 'label': 'Energy Range',
                 'subtype': 'float',
                 'length': 2,
-                'min': 1e-8,
+                'min': 1e-16,
                 'max': float('inf'),
                 'tooltip': 'The energy range of the x-ray beam in keV',
             },
             'white_beam_shift': {
                 'type': 'float',
                 'label': 'Beam Shift',
+                'min': 1e-16,
+                'max': float('inf'),
             },
             'geometry_path_str': {
                 'type': 'file',

@@ -456,12 +456,16 @@ class Series(Editable):
                 'subtype': 'integer',
                 'label': 'Scan shape',
                 'tooltip': 'Shape of the scans within this series',
+                'min': 0,
+                'max': 10000000,
             },
             'scan_range_tuple': {
                 'type': 'tuple',
                 'subtype': 'integer',
                 'label': 'Scan range',
                 'tooltip': 'Range of scan numbers in this series (inclusive)',
+                'min': 0,
+                'max': 10000000,
             },
             'skip_frames': {
                 'type': 'integer',
@@ -470,6 +474,8 @@ class Series(Editable):
                     'How many frames to skip from the beginning of the '
                     'series (usually invalid or background frames).'
                 ),
+                'min': 0,
+                'max': 10000000,
             },
             'background_image_path_str': {
                 'type': 'file',
