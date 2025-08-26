@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (
 
 import numpy as np
 
-from polylaue.model.core import track, track_py
+from polylaue.model.core import compute_angular_shift, track, track_py
 from polylaue.model.project import Project
 from polylaue.model.section import Section
 from polylaue.ui.async_worker import AsyncWorker
@@ -34,8 +34,8 @@ class TrackDialog:
 
         self.point_selector_dialog = point_selector_dialog
         self.reflections_editor = reflections_editor
-        self.writing_crystal_id = None
 
+        self.update_visibility_states()
         self.load_settings()
         self.setup_connections()
 
@@ -111,7 +111,8 @@ class TrackDialog:
             msg,
         )
 
-        self.show_reflections(abc_matrix)
+        self.save_angular_shift(abc_matrix)
+        self.show_burn_dialog()
 
     @property
     def points(self) -> np.ndarray:
@@ -140,9 +141,29 @@ class TrackDialog:
     def run_track(self) -> TrackResults:
         return self.track_func(**self.track_kwargs)
 
-    def show_reflections(self, abc_matrix: np.ndarray):
+    def save_angular_shift(self, abc_matrix: np.ndarray):
+        # Write the angular shift matrix for this crystal
+        abc_matrix0 = self.selected_abc_matrix
+        angular_shift = compute_angular_shift(abc_matrix0, abc_matrix)
+
         reflections = self.reflections_editor.reflections
 
+        if self.angular_shift_apply_all:
+            # Apply this angular shift to all crystals
+            crystal_ids = list(range(reflections.num_crystals))
+        else:
+            # Just this one
+            crystal_ids = [self.selected_crystal_id]
+
+        for crystal_id in crystal_ids:
+            reflections.set_angular_shift_matrix(
+                crystal_id,
+                self.scan_num,
+                angular_shift,
+            )
+
+    def show_burn_dialog(self):
+        # Set up the burn() dialog and begin to burn
         new_burn = False
         if self.reflections_editor._burn_workflow is None:
             self.reflections_editor.start_burn()
@@ -154,22 +175,10 @@ class TrackDialog:
             burn_workflow.start()
             new_burn = True
 
-        if self.writing_crystal_id is None:
-            # Add the new crystal to the back
-            self.writing_crystal_id = reflections.num_crystals
-
-        crystal_id = self.writing_crystal_id
-
         dialog = burn_workflow.burn_dialog
         dialog.set_crystal_orientation_to_hdf5_file()
-        dialog.crystal_id = crystal_id
-
-        crystals_table = reflections.crystals_table
-        while len(crystals_table) < crystal_id + 1:
-            crystals_table = np.vstack((crystals_table, np.zeros((9,))))
-
-        crystals_table[crystal_id] = abc_matrix
-        reflections.crystals_table = crystals_table
+        dialog.crystal_id = self.selected_crystal_id
+        dialog.apply_angular_shift = True
 
         if new_burn:
             # Set the dmin to 0.5
@@ -179,7 +188,16 @@ class TrackDialog:
             dialog.ui.show()
 
         # Activate burn to trigger drawing of the reflections
-        dialog.burn_activated = True
+        if dialog.burn_activated:
+            dialog.on_activate_burn()
+        else:
+            dialog.burn_activated = True
+
+    def update_visibility_states(self):
+        reflections = self.reflections_editor.reflections
+        visible = reflections is not None and reflections.num_crystals > 1
+        w = self.ui.angular_shift_apply_all
+        w.setVisible(visible)
 
     def load_settings(self):
         settings = QSettings()
@@ -197,6 +215,7 @@ class TrackDialog:
             'angular_limit',
             'resolution_limit',
             'reflections_threshold',
+            'angular_shift_apply_all',
             'conserve_memory',
         ]
 
@@ -217,6 +236,10 @@ class TrackDialog:
     @property
     def section(self) -> Section:
         return self.reflections_editor.section
+
+    @property
+    def scan_num(self) -> int:
+        return self.reflections_editor.frame_tracker.scan_num
 
     @property
     def selected_abc_matrix(self) -> np.ndarray:
@@ -269,6 +292,14 @@ class TrackDialog:
     @reflections_threshold.setter
     def reflections_threshold(self, v: float):
         self.ui.reflections_threshold.setValue(v)
+
+    @property
+    def angular_shift_apply_all(self) -> bool:
+        return self.ui.angular_shift_apply_all.isChecked()
+
+    @angular_shift_apply_all.setter
+    def angular_shift_apply_all(self, b: bool):
+        self.ui.angular_shift_apply_all.setChecked(b)
 
     @property
     def conserve_memory(self) -> bool:

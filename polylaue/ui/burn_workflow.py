@@ -7,7 +7,7 @@ from PySide6.QtWidgets import QCheckBox, QMessageBox, QWidget
 
 import numpy as np
 
-from polylaue.model.core import burn
+from polylaue.model.core import apply_angular_shift, burn
 from polylaue.model.reflections.external import ExternalReflections
 from polylaue.model.section import Section
 from polylaue.ui.burn_dialog import BurnDialog
@@ -33,7 +33,6 @@ class BurnWorkflow(QObject):
         self.parent = parent
 
         self.abc_matrix = None
-        self.angular_shifts = None
         self.burn_dialog = None
 
     def start(self):
@@ -64,16 +63,16 @@ class BurnWorkflow(QObject):
             # When the frame changes, deactivate burn
             self.burn_dialog.deactivate_burn()
 
+    def on_series_or_scan_changed(self):
+        self.update_angular_shift_state()
+
     @property
     def project_dir_abc_matrix_path(self) -> Path:
         return self.project.directory / 'abc_matrix.npy'
 
-    @property
-    def angular_shifts_path(self) -> Path:
-        return self.project.directory / 'ang_shifts.npy'
-
     def load_abc_matrix(self):
         self.abc_matrix = None
+        crystal_id = self.crystal_id
         if self.burn_dialog.crystal_orientation_is_from_project_dir:
             path = self.project_dir_abc_matrix_path
             if not path.exists():
@@ -90,12 +89,13 @@ class BurnWorkflow(QObject):
             self.abc_matrix = np.load(path)
             self.set_abc_matrix_to_crystals_table_if_missing()
         elif self.burn_dialog.crystal_orientation_is_from_hdf5_file:
-            crystals_table = self.reflections.crystals_table
-            if self.crystal_id >= len(crystals_table):
+            reflections = self.reflections
+            crystals_table = reflections.crystals_table
+            if crystal_id >= len(crystals_table):
                 crystal_orientation = self.burn_dialog.crystal_orientation
                 msg = (
                     f'Crystal orientation is set to "{crystal_orientation}", '
-                    f'but the selected crystal ID ({self.crystal_id}) '
+                    f'but the selected crystal ID ({crystal_id}) '
                     'is out of range for the crystals table at "/crystals" '
                     f'(length {len(crystals_table)})'
                 )
@@ -103,7 +103,25 @@ class BurnWorkflow(QObject):
                 QMessageBox.critical(None, 'Failed to Load ABC Matrix', msg)
                 return
 
-            self.abc_matrix = crystals_table[self.crystal_id]
+            abc_matrix = crystals_table[crystal_id]
+
+            # Apply the angular shift, if selected
+            if self.apply_angular_shift:
+                angular_shift = self.angular_shift_matrix
+                if angular_shift is None:
+                    msg = (
+                        '"Apply angular shift?" is checked, but crystal '
+                        f'"{crystal_id}" does not have an angular shift '
+                        f'matrix for scan number {self.scan_num}'
+                    )
+                    print(msg)
+                    title = 'Failed to apply angular shift'
+                    QMessageBox.critical(None, title, msg)
+                    return
+
+                abc_matrix = apply_angular_shift(abc_matrix, angular_shift)
+
+            self.abc_matrix = abc_matrix
         else:
             msg = (
                 f'Crystal Orientation: {self.burn_dialog.crystal_orientation}'
@@ -133,42 +151,39 @@ class BurnWorkflow(QObject):
 
         self.reflections.crystals_table = crystals_table
 
-    def load_angular_shifts(self):
-        self.angular_shifts = None
-        if not self.apply_angular_shift:
-            return
-
-        path = self.angular_shifts_path
-        if not path.exists():
-            msg = (
-                '"Apply Angular Shift" is enabled, but the angular shifts '
-                f'file does not exist at its expected path ({path})'
-            )
-            print(msg)
-            QMessageBox.critical(None, 'Failed to Load Angular Shifts', msg)
-            return
-
-        self.angular_shifts = np.load(path)
-
     def show_burn_dialog(self):
         if self.burn_dialog:
             self.burn_dialog.ui.hide()
 
         self.burn_dialog = BurnDialog(self.parent)
-        self.burn_dialog.burn_triggered.connect(self.run_burn)
-        self.burn_dialog.crystal_name_modified.connect(self.write_crystal_name)
-        self.burn_dialog.load_crystal_name.connect(self.load_crystal_name)
-        self.burn_dialog.overwrite_crystal.connect(self.overwrite_crystal)
-        self.burn_dialog.write_crystal_orientation.connect(
+        dialog = self.burn_dialog
+        dialog.burn_triggered.connect(self.run_burn)
+        dialog.crystal_name_modified.connect(self.write_crystal_name)
+        dialog.load_crystal_name.connect(self.load_crystal_name)
+        dialog.update_angular_shift_state.connect(
+            self.update_angular_shift_state
+        )
+        dialog.overwrite_crystal.connect(self.overwrite_crystal)
+        dialog.write_crystal_orientation.connect(
             self.write_crystal_orientation
         )
         self.burn_dialog.clear_reflections.connect(self.clear_reflections)
         self.load_crystal_name()
+        self.update_angular_shift_state()
         self.burn_dialog.ui.show()
 
     @property
     def project(self):
         return self.section.parent
+
+    @property
+    def scan_num(self) -> int:
+        return self.frame_tracker.scan_num
+
+    @property
+    def angular_shift_matrix(self) -> np.ndarray | None:
+        scan_num = self.scan_num
+        return self.reflections.angular_shift_matrix(self.crystal_id, scan_num)
 
     @property
     def apply_angular_shift(self) -> bool:
@@ -177,15 +192,6 @@ class BurnWorkflow(QObject):
     @property
     def crystal_id(self) -> int:
         return self.burn_dialog.crystal_id
-
-    @property
-    def angular_shift_scan_number(self) -> int:
-        # This returns the current scan number if angular_shifts is not
-        # None, and it returns `-1` if angular_shifts is None.
-        if self.angular_shifts is None:
-            return -1
-
-        return self.frame_tracker.scan_num
 
     @property
     def burn_kwargs(self) -> dict:
@@ -203,19 +209,16 @@ class BurnWorkflow(QObject):
             'beam_dir': geometry['beam_dir'],
             'pix_dist': geometry['pix_dist'],
             'res_lim': self.burn_dialog.dmin,
-            'nscan': self.angular_shift_scan_number,
-            'ang_shifts': self.angular_shifts,
+            # We never apply angular shifts with the following options.
+            # Instead, we apply it to the abc_matrix before passing it in.
+            'nscan': -1,
+            'ang_shifts': None,
         }
 
     def run_burn(self):
         self.load_abc_matrix()
         if self.abc_matrix is None:
             print('Failed to load ABC matrix. Aborting burn()...')
-            return
-
-        self.load_angular_shifts()
-        if self.apply_angular_shift and self.angular_shifts is None:
-            print('Failed to load angular shifts. Aborting burn()...')
             return
 
         pred_list1, pred_list2 = burn(**self.burn_kwargs)
@@ -301,6 +304,18 @@ class BurnWorkflow(QObject):
             name = ''
 
         self.burn_dialog.crystal_name = name
+
+    def update_angular_shift_state(self):
+        dialog = self.burn_dialog
+        if dialog is None:
+            # Nothing to do...
+            return
+
+        matrix = self.angular_shift_matrix
+        enable = (
+            dialog.crystal_orientation_is_from_hdf5_file and matrix is not None
+        )
+        dialog.ui.apply_angular_shift.setEnabled(enable)
 
     def overwrite_crystal(self):
         self.load_abc_matrix()

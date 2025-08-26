@@ -115,6 +115,10 @@ class ReflectionsEditor(QObject):
         if self._burn_workflow is not None:
             self._burn_workflow.on_frame_changed()
 
+    def on_series_or_scan_changed(self):
+        if self._burn_workflow is not None:
+            self._burn_workflow.on_series_or_scan_changed()
+
     @property
     def style(self) -> ReflectionsStyle:
         return self.reflections_style_editor.style

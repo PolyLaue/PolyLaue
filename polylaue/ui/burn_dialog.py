@@ -13,6 +13,7 @@ class BurnDialog(QObject):
     overwrite_crystal = Signal()
     crystal_name_modified = Signal()
     load_crystal_name = Signal()
+    update_angular_shift_state = Signal()
     write_crystal_orientation = Signal()
     clear_reflections = Signal()
 
@@ -23,8 +24,9 @@ class BurnDialog(QObject):
 
         self.add_structure_options()
 
+        # Make this the default
+        self.set_crystal_orientation_to_hdf5_file()
         self.update_enable_states()
-
         self.setup_connections()
 
     def add_structure_options(self):
@@ -147,11 +149,12 @@ class BurnDialog(QObject):
 
     @property
     def apply_angular_shift(self) -> bool:
-        return self.ui.apply_angular_shift.isChecked()
+        w = self.ui.apply_angular_shift
+        return w.isEnabled() and w.isChecked()
 
     @apply_angular_shift.setter
     def apply_angular_shift(self, b: bool):
-        self.ui.apply_angularShift.setChecked(b)
+        self.ui.apply_angular_shift.setChecked(b)
 
     def on_activate_burn(self):
         self.emit_if_active()
@@ -165,6 +168,7 @@ class BurnDialog(QObject):
 
         # Load the crystal name
         self.load_crystal_name.emit()
+        self.update_angular_shift_state.emit()
 
     def on_crystal_name_edited(self):
         self.crystal_name_modified.emit()
@@ -173,6 +177,7 @@ class BurnDialog(QObject):
         # Deactivate the burn function
         self.deactivate_burn()
         self.update_enable_states()
+        self.update_angular_shift_state.emit()
 
     def on_overwrite_crystal_clicked(self):
         self.overwrite_crystal.emit()

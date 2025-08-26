@@ -87,6 +87,105 @@ class ExternalReflections(BaseReflections):
 
             f['/crystal_names'] = v
 
+    def angular_shifts_table(self, crystal_id: int) -> np.ndarray:
+        """Get the angular shifts table for a crystal ID
+
+        Row `i` of the table corresponds to the angular shift matrix which
+        transforms the crystal's ABC matrix to scan number `i + 1`.
+
+        An angular shift matrix is a flattened 3x3 rotation matrix that,
+        when applied to a specified crystal's ABC matrix, produces the
+        correctly rotated ABC matrix for the specified scan number.
+        """
+        path = f'/angular_shifts/{crystal_id}'
+        with h5py.File(self.filepath, 'r') as f:
+            if path not in f:
+                return np.empty((0, 9))
+
+            return f[path][()]
+
+    def set_angular_shifts_table(
+        self,
+        crystal_id: int,
+        angular_shifts: np.ndarray,
+    ):
+        """Set the angular shifts table for a crystal ID
+
+        Row `i` of the table corresponds to the angular shift matrix which
+        transforms the crystal's ABC matrix to scan number `i + 1`.
+
+        An angular shift matrix is a flattened 3x3 rotation matrix that,
+        when applied to a specified crystal's ABC matrix, produces the
+        correctly rotated ABC matrix for the specified scan number.
+        """
+        path = f'/angular_shifts/{crystal_id}'
+        with h5py.File(self.filepath, 'a') as f:
+            if path in f:
+                del f[path]
+
+            f[path] = angular_shifts
+
+    def angular_shift_matrix(
+        self,
+        crystal_id: int,
+        scan_number: int,
+    ) -> np.ndarray | None:
+        """Get the angular shift matrix for a crystal ID and scan number
+
+        An angular shift matrix is a flattened 3x3 rotation matrix that,
+        when applied to a specified crystal's ABC matrix, produces the
+        correctly rotated ABC matrix for the specified scan number.
+        """
+        # Rather than pulling the whole table out of the file,
+        # pull just the specific row that is needed.
+        idx = scan_number - 1
+        path = f'/angular_shifts/{crystal_id}'
+        with h5py.File(self.filepath, 'r') as f:
+            if path not in f:
+                # Doesn't exist
+                return None
+
+            dataset = f[path]
+            if idx >= len(dataset):
+                # Doesn't exist
+                return None
+
+            matrix = dataset[idx]
+
+        if np.isnan(matrix[0]):
+            # A row full of nans indicates an invalid ABC matrix
+            return None
+
+        return matrix
+
+    def set_angular_shift_matrix(
+        self,
+        crystal_id: int,
+        scan_number: int,
+        angular_shift: np.ndarray,
+    ):
+        """Set the angular shift matrix for a crystal ID and scan number
+
+        An angular shift matrix is a flattened 3x3 rotation matrix that,
+        when applied to a specified crystal's ABC matrix, produces the
+        correctly rotated ABC matrix for the specified scan number.
+        """
+        # First, get the table for this crystal ID
+        table = self.angular_shifts_table(crystal_id)
+        idx = scan_number - 1
+        if len(table) <= idx:
+            # Add nan (invalid) rows until the table is at least the right size
+            num_new_rows = idx + 1 - len(table)
+            table = np.vstack(
+                (
+                    table,
+                    np.full((num_new_rows, 9), np.nan),
+                )
+            )
+
+        table[idx] = angular_shift
+        self.set_angular_shifts_table(crystal_id, table)
+
     def reflections_table(
         self, row: int, column: int, scan_number: int
     ) -> np.ndarray | None:
