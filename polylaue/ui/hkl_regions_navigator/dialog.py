@@ -330,11 +330,11 @@ class HklRegionsNavigatorDialog(QDialog):
         self.remove_roi(id)
 
     def remove_roi(self, id: str):
-         self.model.remove_roi(id)
-         self.roi_items_manager.remove_roi_item(id)
-         self.view.selectionModel().clear()
+        self.model.remove_roi(id)
+        self.roi_items_manager.remove_roi_item(id)
+        self.view.selectionModel().clear()
 
-         self.sigRemoveRoiClicked.emit(id)
+        self.sigRemoveRoiClicked.emit(id)
 
     def remove_all_rois(self):
         for id in list(self.model.roi_manager.rois):

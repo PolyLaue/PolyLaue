@@ -28,7 +28,7 @@ def find_kwargs(
     return {
         'obs_xy': indexing_points,
         'energy_highest': 70,
-        'cell_parameters': [4.96, 4.96, 3.09, 90., 90., 120.],
+        'cell_parameters': [4.96, 4.96, 3.09, 90.0, 90.0, 120.0],
         'det_org': test_geometry['det_org'],
         'beam_dir': test_geometry['beam_dir'],
         'pix_dist': test_geometry['pix_dist'],
