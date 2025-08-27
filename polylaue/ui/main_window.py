@@ -482,6 +482,8 @@ class MainWindow(QObject):
             dialog.set_series(self.series)
             dialog.set_scan_number(self.scan_num)
 
+        self.reflections_editor.on_series_or_scan_changed()
+
     def on_hkls_changed(self):
         if hasattr(self, '_hkl_regions_navigator_dialog'):
             d = self._hkl_regions_navigator_dialog
@@ -766,6 +768,16 @@ class MainWindow(QObject):
         if not d.points:
             # No points, just return
             return
+
+        if d.indexing_selected or d.refinement_selected:
+            if len(d.points) < 2:
+                msg = (
+                    'For indexing or refinement, at least 2 points must '
+                    'be picked.'
+                )
+                QMessageBox.critical(self.ui, 'Not enough points', msg)
+                d.show()
+                return
 
         project = self.series.parent.parent
         project_dir = project.directory

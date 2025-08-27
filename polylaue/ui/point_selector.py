@@ -241,8 +241,7 @@ class PointSelectorDialog(QDialog):
         def on_accepted():
             # Add back in the original points
             self.point_selector.points = (
-                original_points +
-                self.point_selector.points
+                original_points + self.point_selector.points
             )
             self.point_selector.points_changed()
 

@@ -11,7 +11,7 @@ def track(
     beam_dir: np.ndarray,
     pix_dist: np.ndarray,
     ang_tol: float = 0.07,
-    ang_lim: float = 29.,
+    ang_lim: float = 29.0,
     res_lim: float = 0.3,
     ref_thr: int = 3,
 ) -> np.ndarray | None:

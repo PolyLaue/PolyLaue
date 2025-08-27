@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>746</width>
-    <height>314</height>
+    <height>356</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -303,6 +303,19 @@
      </property>
     </spacer>
    </item>
+   <item row="4" column="0">
+    <widget class="QCheckBox" name="apply_angular_shifts_from_first">
+     <property name="toolTip">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the angular shifts of the new crystal to match those from the first crystal.&lt;/p&gt;&lt;p&gt;You wouldn't enable this if you expect your crystals to have different angular shifts (for example, the sample bends such that one crystal has a different angular shift than another crystal).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="text">
+      <string>Apply angular shifts from first crystal?</string>
+     </property>
+     <property name="checked">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
   </layout>
  </widget>
  <customwidgets>
@@ -322,6 +335,7 @@
   <tabstop>angular_tolerance</tabstop>
   <tabstop>resolution_limit</tabstop>
   <tabstop>reflections_threshold</tabstop>
+  <tabstop>apply_angular_shifts_from_first</tabstop>
   <tabstop>conserve_memory</tabstop>
  </tabstops>
  <resources/>

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>460</width>
-    <height>540</height>
+    <height>548</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,10 +17,13 @@
    <item row="7" column="0">
     <widget class="QCheckBox" name="apply_angular_shift">
      <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Apply an angular shift to the ABC Matrix.&lt;/p&gt;&lt;p&gt;If checked, the file &amp;quot;ang_shifts.npy&amp;quot; must be present in the root level of the project directory. This file will be loaded, and the current scan number will be used to extract the angular shift from the array.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Apply angular shift to the ABC Matrix.&lt;/p&gt;&lt;p&gt;If checked, the selected crystal ID must have angular shifts for this scan number stored in the reflections HDF5 file. These angular shifts are typically generated using &amp;quot;Indexing&amp;quot; -&amp;gt; &amp;quot;Select Points&amp;quot; -&amp;gt; &amp;quot;Refinement&amp;quot;, to perform crystal orientation tracking.&lt;/p&gt;&lt;p&gt;If this checkbox is disabled, that indicates there are no angular shifts for this scan number in the reflections HDF5 file.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
      <property name="text">
       <string>Apply Angular Shift</string>
+     </property>
+     <property name="checked">
+      <bool>true</bool>
      </property>
     </widget>
    </item>
