@@ -44,6 +44,49 @@ class ExternalReflections(BaseReflections):
 
             f['/crystals'] = v
 
+    def crystal_scan_number(self, crystal_id: int) -> int:
+        """Get a crystal's scan number
+
+        Return the scan number that was used to create the crystal's
+        ABC matrix.
+
+        If no scan number is found, 0 is returned.
+        """
+        path = '/crystal_scan_numbers'
+        with h5py.File(self.filepath, 'r') as f:
+            if path not in f:
+                return 0
+
+            if len(f[path]) <= crystal_id:
+                return 0
+
+            return f[path][crystal_id]
+
+    def set_crystal_scan_number(self, crystal_id: int, scan_num: int):
+        """Set a crystal's scan number
+
+        Set the scan number that was used to create the crystal's
+        ABC matrix.
+        """
+        path = '/crystal_scan_numbers'
+        with h5py.File(self.filepath, 'a') as f:
+            old_table = np.empty((0,), dtype=int)
+            if path in f:
+                if crystal_id < len(f[path]):
+                    f[path][crystal_id] = scan_num
+                    return
+
+                old_table = f[path][()]
+                del f[path]
+
+            # Either the old table doesn't exist, or it doesn't
+            # have enough rows. Make a new one with enough rows.
+            new_table = np.zeros((crystal_id + 1,), dtype=int)
+            # Set the old values into the new table
+            new_table[: len(old_table)] = old_table
+            new_table[crystal_id] = scan_num
+            f[path] = new_table
+
     @property
     def crystal_names(self) -> np.ndarray:
         """An array of crystal names

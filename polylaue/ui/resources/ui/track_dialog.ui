@@ -188,15 +188,12 @@
     </widget>
    </item>
    <item row="5" column="0">
-    <widget class="QCheckBox" name="angular_shift_apply_all">
+    <widget class="QCheckBox" name="replace_abc_matrix">
      <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Whether to apply the same angular shift to all crystals for the selected scan number.&lt;/p&gt;&lt;p&gt;You wouldn't enable this if you expect your crystals to have different angular shifts (for example, the sample bends such that one crystal has a different angular shift than another crystal).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Instead of just recording the angular shift for this scan number, replace the ABC matrix in the crystal with the result of this tracking, and recompute all other angular shifts with respect to the new ABC matrix.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;This is beneficial if you believe this tracked scan number will produce a more accurate ABC matrix than the scan number where the ABC matrix was initially indexed.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
      <property name="text">
-      <string>Apply angular shift to all crystals?</string>
-     </property>
-     <property name="checked">
-      <bool>true</bool>
+      <string>Replace ABC Matrix?</string>
      </property>
     </widget>
    </item>
@@ -215,7 +212,7 @@
   <tabstop>angular_limit</tabstop>
   <tabstop>resolution_limit</tabstop>
   <tabstop>reflections_threshold</tabstop>
-  <tabstop>angular_shift_apply_all</tabstop>
+  <tabstop>replace_abc_matrix</tabstop>
   <tabstop>conserve_memory</tabstop>
  </tabstops>
  <resources/>
