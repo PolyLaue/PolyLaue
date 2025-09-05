@@ -137,6 +137,7 @@ class FindDialog:
         dialog = burn_workflow.burn_dialog
         dialog.set_crystal_orientation_to_hdf5_file()
         dialog.crystal_id = crystal_id
+        dialog.apply_angular_shift = False
 
         crystals_table = reflections.crystals_table
         if crystals_table.size == 0:

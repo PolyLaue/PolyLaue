@@ -246,7 +246,8 @@ class TrackDialog:
         dialog = burn_workflow.burn_dialog
         dialog.set_crystal_orientation_to_hdf5_file()
         dialog.crystal_id = self.selected_crystal_id
-        dialog.apply_angular_shift = True
+        dialog.apply_angular_shift = not self.replace_abc_matrix
+        dialog.angular_shift_from_another_crystal = False
 
         if new_burn:
             # Set the dmin to 0.5

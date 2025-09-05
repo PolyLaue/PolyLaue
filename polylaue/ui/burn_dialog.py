@@ -13,7 +13,7 @@ class BurnDialog(QObject):
     overwrite_crystal = Signal()
     crystal_name_modified = Signal()
     load_crystal_name = Signal()
-    update_angular_shift_state = Signal()
+    update_has_angular_shift = Signal()
     write_crystal_orientation = Signal()
     clear_reflections = Signal()
 
@@ -62,6 +62,12 @@ class BurnDialog(QObject):
 
         self.ui.apply_angular_shift.toggled.connect(
             self.on_apply_angular_shift_changed
+        )
+        self.ui.angular_shift_from_another_crystal.toggled.connect(
+            self.on_angular_shift_from_another_crystal_changed
+        )
+        self.ui.angular_shift_crystal_id.valueChanged.connect(
+            self.on_angular_shift_crystal_id_changed
         )
 
         self.ui.clear.clicked.connect(self.on_clear_clicked)
@@ -149,12 +155,27 @@ class BurnDialog(QObject):
 
     @property
     def apply_angular_shift(self) -> bool:
-        w = self.ui.apply_angular_shift
-        return w.isEnabled() and w.isChecked()
+        return self.ui.apply_angular_shift.isChecked()
 
     @apply_angular_shift.setter
     def apply_angular_shift(self, b: bool):
         self.ui.apply_angular_shift.setChecked(b)
+
+    @property
+    def angular_shift_from_another_crystal(self) -> bool:
+        return self.ui.angular_shift_from_another_crystal.isChecked()
+
+    @angular_shift_from_another_crystal.setter
+    def angular_shift_from_another_crystal(self, b: bool):
+        self.ui.angular_shift_from_another_crystal.setChecked(b)
+
+    @property
+    def angular_shift_crystal_id(self) -> int:
+        return self.ui.angular_shift_crystal_id.value()
+
+    @angular_shift_crystal_id.setter
+    def angular_shift_crystal_id(self, v: int):
+        self.ui.angular_shift_crystal_id.setValue(v)
 
     def on_activate_burn(self):
         self.emit_if_active()
@@ -168,7 +189,7 @@ class BurnDialog(QObject):
 
         # Load the crystal name
         self.load_crystal_name.emit()
-        self.update_angular_shift_state.emit()
+        self.update_has_angular_shift.emit()
 
     def on_crystal_name_edited(self):
         self.crystal_name_modified.emit()
@@ -177,7 +198,7 @@ class BurnDialog(QObject):
         # Deactivate the burn function
         self.deactivate_burn()
         self.update_enable_states()
-        self.update_angular_shift_state.emit()
+        self.update_has_angular_shift.emit()
 
     def on_overwrite_crystal_clicked(self):
         self.overwrite_crystal.emit()
@@ -217,7 +238,24 @@ class BurnDialog(QObject):
         self.emit_if_active()
 
     def on_apply_angular_shift_changed(self):
+        if not self.apply_angular_shift:
+            # Make sure the angular shift from another crystal is disabled
+            self.angular_shift_from_another_crystal = False
+
         self.emit_if_active()
+
+    def on_angular_shift_from_another_crystal_changed(self):
+        self.update_has_angular_shift.emit()
+        self.emit_if_active()
+
+    def on_angular_shift_crystal_id_changed(self):
+        self.update_has_angular_shift.emit()
+        self.emit_if_active()
+
+    def set_has_angular_shift(self, b: bool):
+        w = self.ui.has_angular_shift_label
+        result = 'Yes' if b else 'No'
+        w.setText(f'Has angular shift: {result}')
 
     def emit_if_active(self):
         if not self.burn_activated:
