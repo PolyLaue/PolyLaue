@@ -114,9 +114,9 @@ class BurnWorkflow(QObject):
                 angular_shift = self.angular_shift_matrix
                 if angular_shift is None:
                     msg = (
-                        '"Apply angular shift?" is checked, but crystal '
-                        f'"{crystal_id}" does not have an angular shift '
-                        f'matrix for scan number {self.scan_num}'
+                        '"Apply angular shift?" is checked, there is no '
+                        'usable angular shift matrix for the current '
+                        'settings and scan number {self.scan_num}'
                     )
                     print(msg)
                     title = 'Failed to apply angular shift'
