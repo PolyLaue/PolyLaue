@@ -39,6 +39,6 @@ def apply_angular_shift(
 
 def compute_angle(angular_shift: np.ndarray) -> float:
     # Compute angle of rotation caused by this angular shift matrix
-    # Result in RADIANS
+    # Result is in RADIANS
     w = R.from_matrix(angular_shift.reshape(3, -1)).as_quat()[3]
     return 2 * np.arccos(w)
