@@ -12,8 +12,14 @@ from PySide6.QtWidgets import (
 
 import numpy as np
 
-from polylaue.model.core import compute_angular_shift, track, track_py
+from polylaue.model.core import (
+    apply_angular_shift,
+    compute_angular_shift,
+    track,
+    track_py,
+)
 from polylaue.model.project import Project
+from polylaue.model.reflections.external import ExternalReflections
 from polylaue.model.section import Section
 from polylaue.ui.async_worker import AsyncWorker
 from polylaue.ui.point_selector import PointSelectorDialog
@@ -35,7 +41,6 @@ class TrackDialog:
         self.point_selector_dialog = point_selector_dialog
         self.reflections_editor = reflections_editor
 
-        self.update_visibility_states()
         self.load_settings()
         self.setup_connections()
 
@@ -47,18 +52,32 @@ class TrackDialog:
         return self.ui.show()
 
     def validate(self):
-        reflections = self.reflections_editor.reflections
-        crystals_table = reflections.crystals_table
+        crystal_id = self.selected_crystal_id
+        crystals_table = self.reflections.crystals_table
         num_crystals = len(crystals_table)
 
-        if self.selected_crystal_id >= num_crystals:
+        if crystal_id >= num_crystals:
             msg = (
-                f'Crystal ID "{self.selected_crystal_id}" is invalid '
+                f'Crystal ID "{crystal_id}" is invalid '
                 f'because the table contains "{num_crystals}" crystals'
             )
             print(msg, file=sys.stderr)
             QMessageBox.critical(None, 'Validation Error', msg)
             raise Exception(msg)
+
+        if self.replace_abc_matrix:
+            # Verify this crystal has a scan number set.
+            # That would only *not* be true for older reflections files
+            # that did not set this, or ones that are manually created.
+            if self.reflections.crystal_scan_number(crystal_id) == 0:
+                msg = (
+                    f'Crystal ID "{crystal_id}" does not have '
+                    'a valid scan number set, and cannot be replaced. '
+                    'Please uncheck "Replace ABC Matrix?"'
+                )
+                print(msg, file=sys.stderr)
+                QMessageBox.critical(None, 'Validation Error', msg)
+                raise Exception(msg)
 
     def on_apply(self):
         self.validate()
@@ -111,7 +130,14 @@ class TrackDialog:
             msg,
         )
 
-        self.save_angular_shift(abc_matrix)
+        if self.replace_abc_matrix:
+            # Replace the whole ABC matrix and recompute all
+            # angular shifts from it.
+            self.replace_crystal_abc_matrix(abc_matrix)
+        else:
+            # Just save the angular shift
+            self.save_angular_shift(abc_matrix)
+
         self.show_burn_dialog()
 
     @property
@@ -141,26 +167,68 @@ class TrackDialog:
     def run_track(self) -> TrackResults:
         return self.track_func(**self.track_kwargs)
 
+    def replace_crystal_abc_matrix(self, new_abc_matrix: np.ndarray):
+        # We have to replace the ABC matrix and recompute all angular shift
+        # matrices.
+        crystal_id = self.selected_crystal_id
+        reflections = self.reflections
+
+        # Store these and use them later. Ensure we have deep copies.
+        old_abc_matrix = self.selected_abc_matrix.copy()
+        old_ang_shifts = reflections.angular_shifts_table(crystal_id).copy()
+        old_scan_num = reflections.crystal_scan_number(crystal_id)
+
+        # Set the new ABC matrix to the crystals table
+        crystals_table = reflections.crystals_table
+        crystals_table[crystal_id] = new_abc_matrix
+        reflections.crystals_table = crystals_table
+
+        # Now update the ABC matrix scan number
+        reflections.set_crystal_scan_number(crystal_id, self.scan_num)
+
+        # Now update the angular shifts table.
+        # We will replace rows in the old angular shift table with the new ones
+        new_ang_shifts = reflections.angular_shifts_table(crystal_id)
+
+        for i, ang_shift in enumerate(old_ang_shifts):
+            if i == self.scan_num - 1:
+                # This should be all nans now
+                new_ang_shifts[i] = np.full((9,), np.nan)
+                continue
+
+            if np.isnan(ang_shift[0]):
+                # This one is invalid. Just skip it.
+                continue
+
+            # Compute the ABC matrix for this angular shift
+            this_abc_matrix = apply_angular_shift(old_abc_matrix, ang_shift)
+
+            # Now compute the angular shift between the new ABC matrix and
+            # that one
+            new_shift = compute_angular_shift(new_abc_matrix, this_abc_matrix)
+            new_ang_shifts[i] = new_shift
+
+        # Set the new angular shifts table
+        reflections.set_angular_shifts_table(crystal_id, new_ang_shifts)
+
+        # Now also set the angular shift to get back to the old matrix
+        new_shift = compute_angular_shift(new_abc_matrix, old_abc_matrix)
+        reflections.set_angular_shift_matrix(
+            crystal_id,
+            old_scan_num,
+            new_shift,
+        )
+
     def save_angular_shift(self, abc_matrix: np.ndarray):
         # Write the angular shift matrix for this crystal
         abc_matrix0 = self.selected_abc_matrix
         angular_shift = compute_angular_shift(abc_matrix0, abc_matrix)
 
-        reflections = self.reflections_editor.reflections
-
-        if self.angular_shift_apply_all:
-            # Apply this angular shift to all crystals
-            crystal_ids = list(range(reflections.num_crystals))
-        else:
-            # Just this one
-            crystal_ids = [self.selected_crystal_id]
-
-        for crystal_id in crystal_ids:
-            reflections.set_angular_shift_matrix(
-                crystal_id,
-                self.scan_num,
-                angular_shift,
-            )
+        self.reflections.set_angular_shift_matrix(
+            self.selected_crystal_id,
+            self.scan_num,
+            angular_shift,
+        )
 
     def show_burn_dialog(self):
         # Set up the burn() dialog and begin to burn
@@ -178,7 +246,8 @@ class TrackDialog:
         dialog = burn_workflow.burn_dialog
         dialog.set_crystal_orientation_to_hdf5_file()
         dialog.crystal_id = self.selected_crystal_id
-        dialog.apply_angular_shift = True
+        dialog.apply_angular_shift = not self.replace_abc_matrix
+        dialog.angular_shift_from_another_crystal = False
 
         if new_burn:
             # Set the dmin to 0.5
@@ -192,12 +261,6 @@ class TrackDialog:
             dialog.on_activate_burn()
         else:
             dialog.burn_activated = True
-
-    def update_visibility_states(self):
-        reflections = self.reflections_editor.reflections
-        visible = reflections is not None and reflections.num_crystals > 1
-        w = self.ui.angular_shift_apply_all
-        w.setVisible(visible)
 
     def load_settings(self):
         settings = QSettings()
@@ -215,7 +278,6 @@ class TrackDialog:
             'angular_limit',
             'resolution_limit',
             'reflections_threshold',
-            'angular_shift_apply_all',
             'conserve_memory',
         ]
 
@@ -242,9 +304,12 @@ class TrackDialog:
         return self.reflections_editor.frame_tracker.scan_num
 
     @property
+    def reflections(self) -> ExternalReflections:
+        return self.reflections_editor.reflections
+
+    @property
     def selected_abc_matrix(self) -> np.ndarray:
-        reflections = self.reflections_editor.reflections
-        crystals_table = reflections.crystals_table
+        crystals_table = self.reflections.crystals_table
         return crystals_table[self.selected_crystal_id]
 
     @property
@@ -255,8 +320,7 @@ class TrackDialog:
     def selected_crystal_id(self, v: int):
         # Verify that it is valid within the table. If not,
         # skip setting it.
-        reflections = self.reflections_editor.reflections
-        crystals_table = reflections.crystals_table
+        crystals_table = self.reflections.crystals_table
 
         if v < len(crystals_table):
             self.ui.crystal_id.setValue(v)
@@ -294,12 +358,12 @@ class TrackDialog:
         self.ui.reflections_threshold.setValue(v)
 
     @property
-    def angular_shift_apply_all(self) -> bool:
-        return self.ui.angular_shift_apply_all.isChecked()
+    def replace_abc_matrix(self) -> bool:
+        return self.ui.replace_abc_matrix.isChecked()
 
-    @angular_shift_apply_all.setter
-    def angular_shift_apply_all(self, b: bool):
-        self.ui.angular_shift_apply_all.setChecked(b)
+    @replace_abc_matrix.setter
+    def replace_abc_matrix(self, b: bool):
+        self.ui.replace_abc_matrix.setChecked(b)
 
     @property
     def conserve_memory(self) -> bool:

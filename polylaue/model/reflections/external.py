@@ -5,8 +5,9 @@ from collections.abc import Generator
 import h5py
 import numpy as np
 
-from polylaue.typing import PathLike
+from polylaue.model.core import compute_angle
 from polylaue.model.reflections.base import BaseReflections
+from polylaue.typing import PathLike
 
 
 class ExternalReflections(BaseReflections):
@@ -43,6 +44,49 @@ class ExternalReflections(BaseReflections):
                 del f['/crystals']
 
             f['/crystals'] = v
+
+    def crystal_scan_number(self, crystal_id: int) -> int:
+        """Get a crystal's scan number
+
+        Return the scan number that was used to create the crystal's
+        ABC matrix.
+
+        If no scan number is found, 0 is returned.
+        """
+        path = '/crystal_scan_numbers'
+        with h5py.File(self.filepath, 'r') as f:
+            if path not in f:
+                return 0
+
+            if len(f[path]) <= crystal_id:
+                return 0
+
+            return f[path][crystal_id]
+
+    def set_crystal_scan_number(self, crystal_id: int, scan_num: int):
+        """Set a crystal's scan number
+
+        Set the scan number that was used to create the crystal's
+        ABC matrix.
+        """
+        path = '/crystal_scan_numbers'
+        with h5py.File(self.filepath, 'a') as f:
+            old_table = np.empty((0,), dtype=int)
+            if path in f:
+                if crystal_id < len(f[path]):
+                    f[path][crystal_id] = scan_num
+                    return
+
+                old_table = f[path][()]
+                del f[path]
+
+            # Either the old table doesn't exist, or it doesn't
+            # have enough rows. Make a new one with enough rows.
+            new_table = np.zeros((crystal_id + 1,), dtype=int)
+            # Set the old values into the new table
+            new_table[: len(old_table)] = old_table
+            new_table[crystal_id] = scan_num
+            f[path] = new_table
 
     @property
     def crystal_names(self) -> np.ndarray:
@@ -102,7 +146,7 @@ class ExternalReflections(BaseReflections):
             if path not in f:
                 return np.empty((0, 9))
 
-            return f[path][()]
+            return f[path][:, :9]
 
     def set_angular_shifts_table(
         self,
@@ -118,12 +162,22 @@ class ExternalReflections(BaseReflections):
         when applied to a specified crystal's ABC matrix, produces the
         correctly rotated ABC matrix for the specified scan number.
         """
+        # Sneak in the computed angle in degrees in the 10th column
+        # We'll pretend that isn't here in the functions in this file,
+        # but it is useful for people looking at the HDF5 file itself.
+        full_array = np.zeros((len(angular_shifts), 10), dtype=float)
+        full_array[:, :9] = angular_shifts
+
+        for i, row in enumerate(angular_shifts):
+            full_array[i, 9] = np.round(np.degrees(compute_angle(row)), 2)
+
+        # We also store the angle in degrees in this table for convenience
         path = f'/angular_shifts/{crystal_id}'
         with h5py.File(self.filepath, 'a') as f:
             if path in f:
                 del f[path]
 
-            f[path] = angular_shifts
+            f[path] = full_array
 
     def angular_shift_matrix(
         self,
@@ -150,7 +204,7 @@ class ExternalReflections(BaseReflections):
                 # Doesn't exist
                 return None
 
-            matrix = dataset[idx]
+            matrix = dataset[idx, :9]
 
         if np.isnan(matrix[0]):
             # A row full of nans indicates an invalid ABC matrix

@@ -1,6 +1,7 @@
 # Copyright © 2024, UChicago Argonne, LLC. See "LICENSE" for full details.
 
 import numpy as np
+from scipy.spatial.transform import Rotation as R
 
 
 def compute_angular_shift(
@@ -34,3 +35,10 @@ def apply_angular_shift(
     a = abc_matrix.reshape(3, -1)
     ten = angular_shift.reshape(3, -1)
     return (a @ ten).flatten()
+
+
+def compute_angle(angular_shift: np.ndarray) -> float:
+    # Compute angle of rotation caused by this angular shift matrix
+    # Result is in RADIANS
+    w = R.from_matrix(angular_shift.reshape(3, -1)).as_quat()[3]
+    return 2 * np.arccos(w)

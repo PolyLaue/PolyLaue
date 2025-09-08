@@ -35,7 +35,6 @@ class FindDialog:
         self.reflections_editor = reflections_editor
         self.crystal_id = None
 
-        self.update_visibilities()
         self.load_settings()
         self.setup_connections()
 
@@ -138,6 +137,7 @@ class FindDialog:
         dialog = burn_workflow.burn_dialog
         dialog.set_crystal_orientation_to_hdf5_file()
         dialog.crystal_id = crystal_id
+        dialog.apply_angular_shift = False
 
         crystals_table = reflections.crystals_table
         if crystals_table.size == 0:
@@ -148,13 +148,7 @@ class FindDialog:
 
         crystals_table[crystal_id] = abc_matrix
         reflections.crystals_table = crystals_table
-
-        if (
-            self.first_crystal_has_angular_shifts
-            and self.apply_angular_shifts_from_first
-        ):
-            table = reflections.angular_shifts_table(0)
-            reflections.set_angular_shifts_table(crystal_id, table)
+        reflections.set_crystal_scan_number(crystal_id, self.scan_num)
 
         if new_burn:
             # Set the dmin to 0.5
@@ -168,10 +162,6 @@ class FindDialog:
             dialog.on_activate_burn()
         else:
             dialog.burn_activated = True
-
-    def update_visibilities(self):
-        w = self.ui.apply_angular_shifts_from_first
-        w.setVisible(self.first_crystal_has_angular_shifts)
 
     def load_settings(self):
         settings = QSettings()
@@ -188,7 +178,6 @@ class FindDialog:
             'angular_tolerance',
             'resolution_limit',
             'reflections_threshold',
-            'apply_angular_shifts_from_first',
             'conserve_memory',
         ]
 
@@ -211,16 +200,8 @@ class FindDialog:
         return self.reflections_editor.section
 
     @property
-    def first_crystal_has_angular_shifts(self) -> bool:
-        reflections = self.reflections_editor.reflections
-        if reflections is None or reflections.num_crystals == 0:
-            return False
-
-        table = reflections.angular_shifts_table(0)
-
-        # If there are any numbers that aren't nan, that indicates
-        # there are some angular shifts we can use.
-        return np.any(~np.isnan(table))
+    def scan_num(self) -> int:
+        return self.reflections_editor.frame_tracker.scan_num
 
     @property
     def cell_parameter_widgets(self) -> list[QWidget]:
@@ -259,14 +240,6 @@ class FindDialog:
     @reflections_threshold.setter
     def reflections_threshold(self, v: float):
         self.ui.reflections_threshold.setValue(v)
-
-    @property
-    def apply_angular_shifts_from_first(self) -> bool:
-        return self.ui.apply_angular_shifts_from_first.isChecked()
-
-    @apply_angular_shifts_from_first.setter
-    def apply_angular_shifts_from_first(self, b: bool):
-        return self.ui.apply_angular_shifts_from_first.setChecked(b)
 
     @property
     def conserve_memory(self) -> bool:

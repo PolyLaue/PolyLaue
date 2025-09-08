@@ -7,34 +7,57 @@
     <x>0</x>
     <y>0</y>
     <width>460</width>
-    <height>548</height>
+    <height>687</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Burn Reflections</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="7" column="0">
-    <widget class="QCheckBox" name="apply_angular_shift">
-     <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Apply angular shift to the ABC Matrix.&lt;/p&gt;&lt;p&gt;If checked, the selected crystal ID must have angular shifts for this scan number stored in the reflections HDF5 file. These angular shifts are typically generated using &amp;quot;Indexing&amp;quot; -&amp;gt; &amp;quot;Select Points&amp;quot; -&amp;gt; &amp;quot;Refinement&amp;quot;, to perform crystal orientation tracking.&lt;/p&gt;&lt;p&gt;If this checkbox is disabled, that indicates there are no angular shifts for this scan number in the reflections HDF5 file.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+   <item row="7" column="0" colspan="2">
+    <widget class="QGroupBox" name="angular_shift_group">
+     <property name="title">
+      <string>Angular Shift</string>
      </property>
-     <property name="text">
-      <string>Apply Angular Shift</string>
-     </property>
-     <property name="checked">
-      <bool>true</bool>
-     </property>
-    </widget>
-   </item>
-   <item row="2" column="0">
-    <widget class="QLabel" name="structure_type_label">
-     <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the structure type used when burning reflections.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-     </property>
-     <property name="text">
-      <string>Structure Type:</string>
-     </property>
+     <layout class="QGridLayout" name="gridLayout_5">
+      <item row="0" column="0">
+       <widget class="QCheckBox" name="apply_angular_shift">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Apply angular shift to the ABC Matrix.&lt;/p&gt;&lt;p&gt;If checked, the selected crystal ID must have angular shifts for this scan number stored in the reflections HDF5 file. These angular shifts are typically generated using &amp;quot;Indexing&amp;quot; -&amp;gt; &amp;quot;Select Points&amp;quot; -&amp;gt; &amp;quot;Refinement&amp;quot;, to perform crystal orientation tracking.&lt;/p&gt;&lt;p&gt;If this checkbox is disabled, that indicates there are no angular shifts for this scan number in the reflections HDF5 file.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+        <property name="text">
+         <string>Apply Angular Shift</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QCheckBox" name="angular_shift_from_another_crystal">
+        <property name="text">
+         <string>From another crystal?</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QSpinBox" name="angular_shift_crystal_id">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="maximum">
+         <number>10000000</number>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QLabel" name="has_angular_shift_label">
+        <property name="text">
+         <string>Has angular shift:</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
     </widget>
    </item>
    <item row="2" column="1">
@@ -44,67 +67,8 @@
      </property>
     </widget>
    </item>
-   <item row="1" column="0" colspan="2">
-    <spacer name="verticalSpacer">
-     <property name="orientation">
-      <enum>Qt::Vertical</enum>
-     </property>
-     <property name="sizeType">
-      <enum>QSizePolicy::Fixed</enum>
-     </property>
-     <property name="sizeHint" stdset="0">
-      <size>
-       <width>20</width>
-       <height>20</height>
-      </size>
-     </property>
-    </spacer>
-   </item>
-   <item row="0" column="0" colspan="2">
-    <layout class="QGridLayout" name="gridLayout_3">
-     <item row="0" column="1">
-      <widget class="QCheckBox" name="activate_burn">
-       <property name="toolTip">
-        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Activate the burn function, so that when the dmin slider or structure type is edited, burn is triggered.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;If the crystal ID changes, or the current frame changes, burn is automatically deactivated in order to prevent any accidental overwriting of previously burned reflections.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">Q</string>
-       </property>
-       <property name="text">
-        <string>Activate Burn</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="0">
-      <spacer name="horizontalSpacer">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>40</width>
-         <height>20</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-     <item row="0" column="2">
-      <spacer name="horizontalSpacer_2">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>40</width>
-         <height>20</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-    </layout>
-   </item>
    <item row="3" column="0" colspan="2">
-    <widget class="QGroupBox" name="groupBox_2">
+    <widget class="QGroupBox" name="crystal_group">
      <property name="title">
       <string>Crystal</string>
      </property>
@@ -191,7 +155,7 @@
     </widget>
    </item>
    <item row="6" column="0" colspan="2">
-    <widget class="QGroupBox" name="groupBox">
+    <widget class="QGroupBox" name="min_d_spacing_group">
      <property name="title">
       <string>Min d-spacing</string>
      </property>
@@ -278,6 +242,49 @@
      </layout>
     </widget>
    </item>
+   <item row="0" column="0" colspan="2">
+    <layout class="QGridLayout" name="gridLayout_3">
+     <item row="0" column="1">
+      <widget class="QCheckBox" name="activate_burn">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Activate the burn function, so that when the dmin slider or structure type is edited, burn is triggered.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;If the crystal ID changes, or the current frame changes, burn is automatically deactivated in order to prevent any accidental overwriting of previously burned reflections.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">Q</string>
+       </property>
+       <property name="text">
+        <string>Activate Burn</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="0">
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item row="0" column="2">
+      <spacer name="horizontalSpacer_2">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+    </layout>
+   </item>
    <item row="8" column="0" colspan="2">
     <widget class="QPushButton" name="clear">
      <property name="toolTip">
@@ -285,6 +292,32 @@
      </property>
      <property name="text">
       <string>Clear Reflections</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="0" colspan="2">
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeType">
+      <enum>QSizePolicy::Fixed</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>20</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item row="2" column="0">
+    <widget class="QLabel" name="structure_type_label">
+     <property name="toolTip">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the structure type used when burning reflections.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="text">
+      <string>Structure Type:</string>
      </property>
     </widget>
    </item>
@@ -309,8 +342,43 @@
   <tabstop>dmin_slider</tabstop>
   <tabstop>dmin_value</tabstop>
   <tabstop>apply_angular_shift</tabstop>
+  <tabstop>angular_shift_from_another_crystal</tabstop>
+  <tabstop>angular_shift_crystal_id</tabstop>
   <tabstop>clear</tabstop>
  </tabstops>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>apply_angular_shift</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>angular_shift_from_another_crystal</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>105</x>
+     <y>483</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>127</x>
+     <y>609</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>angular_shift_from_another_crystal</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>angular_shift_crystal_id</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>127</x>
+     <y>609</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>336</x>
+     <y>609</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>

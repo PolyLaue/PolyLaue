@@ -7,7 +7,11 @@ from PySide6.QtWidgets import QCheckBox, QMessageBox, QWidget
 
 import numpy as np
 
-from polylaue.model.core import apply_angular_shift, burn
+from polylaue.model.core import (
+    apply_angular_shift,
+    burn,
+    compute_angular_shift,
+)
 from polylaue.model.reflections.external import ExternalReflections
 from polylaue.model.section import Section
 from polylaue.ui.burn_dialog import BurnDialog
@@ -64,7 +68,7 @@ class BurnWorkflow(QObject):
             self.burn_dialog.deactivate_burn()
 
     def on_series_or_scan_changed(self):
-        self.update_angular_shift_state()
+        self.update_has_angular_shift()
 
     @property
     def project_dir_abc_matrix_path(self) -> Path:
@@ -110,9 +114,9 @@ class BurnWorkflow(QObject):
                 angular_shift = self.angular_shift_matrix
                 if angular_shift is None:
                     msg = (
-                        '"Apply angular shift?" is checked, but crystal '
-                        f'"{crystal_id}" does not have an angular shift '
-                        f'matrix for scan number {self.scan_num}'
+                        '"Apply angular shift?" is checked, there is no '
+                        'usable angular shift matrix for the current '
+                        'settings and scan number {self.scan_num}'
                     )
                     print(msg)
                     title = 'Failed to apply angular shift'
@@ -160,16 +164,14 @@ class BurnWorkflow(QObject):
         dialog.burn_triggered.connect(self.run_burn)
         dialog.crystal_name_modified.connect(self.write_crystal_name)
         dialog.load_crystal_name.connect(self.load_crystal_name)
-        dialog.update_angular_shift_state.connect(
-            self.update_angular_shift_state
-        )
+        dialog.update_has_angular_shift.connect(self.update_has_angular_shift)
         dialog.overwrite_crystal.connect(self.overwrite_crystal)
         dialog.write_crystal_orientation.connect(
             self.write_crystal_orientation
         )
         self.burn_dialog.clear_reflections.connect(self.clear_reflections)
         self.load_crystal_name()
-        self.update_angular_shift_state()
+        self.update_has_angular_shift()
         self.burn_dialog.ui.show()
 
     @property
@@ -182,8 +184,49 @@ class BurnWorkflow(QObject):
 
     @property
     def angular_shift_matrix(self) -> np.ndarray | None:
+        d = self.burn_dialog
+        reflections = self.reflections
         scan_num = self.scan_num
-        return self.reflections.angular_shift_matrix(self.crystal_id, scan_num)
+
+        if not d.angular_shift_from_another_crystal:
+            # This is the easy one. Just pull it from the table.
+            return reflections.angular_shift_matrix(self.crystal_id, scan_num)
+
+        # Check different ABC matrix scan numbers and do transformation
+        # if required.
+        crystal_id = d.angular_shift_crystal_id
+        ref_start_scan = reflections.crystal_scan_number(crystal_id)
+        this_start_scan = reflections.crystal_scan_number(self.crystal_id)
+
+        if ref_start_scan == this_start_scan:
+            # The two ABC matrices were made using the same scan number. We
+            # can just use the angular shift matrix as-is.
+            return reflections.angular_shift_matrix(crystal_id, scan_num)
+
+        # At this point, in order for this to work, there has to be
+        # angular shifts from the ref start scan to both this start scan
+        # and the target scan. We will create ABC matrices for each and
+        # then compute the angular shift matrix between them and return.
+        shift_to_this = reflections.angular_shift_matrix(
+            crystal_id,
+            this_start_scan,
+        )
+
+        shift_to_target = reflections.angular_shift_matrix(
+            crystal_id,
+            scan_num,
+        )
+
+        if shift_to_this is None or shift_to_target is None:
+            # Can't do it
+            return None
+
+        abc_matrix0 = reflections.crystals_table[crystal_id]
+        abc_matrix1 = apply_angular_shift(abc_matrix0, shift_to_this)
+        abc_matrix2 = apply_angular_shift(abc_matrix0, shift_to_target)
+
+        # The angular shift from matrix1 to matrix2 is what we need
+        return compute_angular_shift(abc_matrix1, abc_matrix2)
 
     @property
     def apply_angular_shift(self) -> bool:
@@ -305,17 +348,17 @@ class BurnWorkflow(QObject):
 
         self.burn_dialog.crystal_name = name
 
-    def update_angular_shift_state(self):
+    def update_has_angular_shift(self):
         dialog = self.burn_dialog
         if dialog is None:
             # Nothing to do...
             return
 
-        matrix = self.angular_shift_matrix
-        enable = (
-            dialog.crystal_orientation_is_from_hdf5_file and matrix is not None
+        has_angular_shift = (
+            dialog.crystal_orientation_is_from_hdf5_file
+            and self.angular_shift_matrix is not None
         )
-        dialog.ui.apply_angular_shift.setEnabled(enable)
+        dialog.set_has_angular_shift(has_angular_shift)
 
     def overwrite_crystal(self):
         self.load_abc_matrix()
