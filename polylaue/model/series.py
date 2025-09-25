@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from polylaue.model.editable import Editable, ParameterDescription
+from polylaue.model.io import get_file_creation_time
 from polylaue.model.scan import Scan
 from polylaue.model.serializable import ValidationError
 from polylaue.typing import PathLike
@@ -424,6 +425,25 @@ class Series(Editable):
     def deserialize(self, d: dict):
         self.invalidate()
         super().deserialize(d)
+
+    def relative_file_creation_time(
+        self, row: int, column: int, scan_number: int
+    ) -> float:
+        # Get the file creation time relative to the creation time
+        # of the very first file in the first series of this section.
+        # The number returned is in fractional seconds.
+        first_series = self.parent.series[0]
+        if not first_series.file_list:
+            # File list must be generated
+            first_series.self_validate()
+
+        first_path = first_series.dirpath / first_series.file_list[0]
+        t1 = get_file_creation_time(first_path)
+
+        this_path = self.filepath(row, column, scan_number)
+        t2 = get_file_creation_time(this_path)
+
+        return t2 - t1
 
     # Editable fields
     @classmethod

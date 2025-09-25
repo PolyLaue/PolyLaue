@@ -1,5 +1,6 @@
 # Copyright © 2024, UChicago Argonne, LLC. See "LICENSE" for full details.
 
+import datetime
 from functools import lru_cache, partial
 import logging
 from pathlib import Path
@@ -550,6 +551,24 @@ class MainWindow(QObject):
             )
 
         self.ui.info_label.setText(text)
+        self.update_time_label()
+
+    def update_time_label(self):
+        # This is the relative time of the creation of the currently viewed
+        # file with respect to the creation of the first file within this
+        # whole section.
+        rtime = self.series.relative_file_creation_time(
+            *self.scan_pos, self.scan_num)
+
+        # Round to milliseconds
+        rtime = round(rtime, 3)
+
+        rtime_str = str(datetime.timedelta(seconds=rtime))
+        if rtime_str.endswith('000'):
+            # Remove the trailing 3 zeros for microseconds
+            rtime_str = rtime_str[:-3]
+
+        self.ui.time_label.setText(f'Time: {rtime_str}')
 
     def set_icon(self, icon: QIcon):
         self.ui.setWindowIcon(icon)

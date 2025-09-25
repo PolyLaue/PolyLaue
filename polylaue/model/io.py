@@ -1,6 +1,7 @@
 # Copyright © 2024, UChicago Argonne, LLC. See "LICENSE" for full details.
 
 from pathlib import Path
+import platform
 import re
 from typing import Callable, Optional
 
@@ -81,6 +82,24 @@ def _fast_pil_to_array(im: ImageFile.ImageFile) -> np.ndarray:
         raise RuntimeError("encoder error %d in tobytes" % s)
 
     return data
+
+
+def get_file_creation_time(filepath: PathLike) -> float:
+    # This returns the file creation time as fractional seconds since
+    # the epoch.
+    filepath = Path(filepath)
+    stats = filepath.stat()
+
+    if platform.system() == 'Windows':
+        # Usually, st_ctime is the correct creation time on Windows
+        return stats.st_ctime
+
+    # Otherwise, use the birthtime if available
+    if hasattr(stats, 'st_birthtime'):
+        return stats.st_birthtime
+
+    # Fall back to modification time
+    return stats.st_mtime
 
 
 # The key for these custom readers is the regular expression
