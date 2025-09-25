@@ -212,10 +212,16 @@ class BurnWorkflow(QObject):
             this_start_scan,
         )
 
-        shift_to_target = reflections.angular_shift_matrix(
-            crystal_id,
-            scan_num,
-        )
+        if scan_num == reflections.crystal_scan_number(crystal_id):
+            # If the target scan number is the same as the reference
+            # starting scan, the shift to target is identity.
+            shift_to_target = np.eye(3).flatten()
+        else:
+            # There must be a shift from the reference to the target.
+            shift_to_target = reflections.angular_shift_matrix(
+                crystal_id,
+                scan_num,
+            )
 
         if shift_to_this is None or shift_to_target is None:
             # Can't do it
