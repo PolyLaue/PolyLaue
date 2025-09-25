@@ -563,10 +563,18 @@ class MainWindow(QObject):
         # Round to milliseconds
         rtime = round(rtime, 3)
 
-        rtime_str = str(datetime.timedelta(seconds=rtime))
-        if rtime_str.endswith('000'):
-            # Remove the trailing 3 zeros for microseconds
-            rtime_str = rtime_str[:-3]
+        td = datetime.timedelta(seconds=rtime)
+
+        seconds = td.seconds
+        hours = td.days * 24 + seconds // 3600
+        minutes = (seconds % 3600) // 60
+        remaining_seconds = seconds % 60
+        milliseconds = td.microseconds // 1000
+
+        rtime_str = f'{hours:02}h:{minutes:02}m:{remaining_seconds:02}'
+        if milliseconds != 0:
+            rtime_str += f'.{milliseconds:03}'
+        rtime_str += 's'
 
         self.ui.time_label.setText(f'Time: {rtime_str}')
 
