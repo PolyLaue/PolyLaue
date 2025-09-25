@@ -557,6 +557,10 @@ class MainWindow(QObject):
         # This is the relative time of the creation of the currently viewed
         # file with respect to the creation of the first file within this
         # whole section.
+        if self.series is None:
+            self.ui.time_label.setText('')
+            return
+
         rtime = self.series.relative_file_creation_time(
             *self.scan_pos, self.scan_num)
 
@@ -576,7 +580,7 @@ class MainWindow(QObject):
             rtime_str += f'.{milliseconds:03}'
         rtime_str += 's'
 
-        self.ui.time_label.setText(f'Time: {rtime_str}')
+        self.ui.time_label.setText(rtime_str)
 
     def set_icon(self, icon: QIcon):
         self.ui.setWindowIcon(icon)
