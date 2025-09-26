@@ -46,17 +46,46 @@ class Series(Editable):
         description='Description',
         dirpath: PathLike = '.',
         scans: list[Scan] | None = None,
-        scan_start_number: int = 1,
-        scan_shape: tuple[int, int] = (21, 21),
-        skip_frames: int = 10,
+        scan_start_number: int | None = None,
+        scan_shape: tuple[int, int] | None = None,
+        skip_frames: int | None = None,
         background_image_path: PathLike | None = None,
         file_prefix: str | None = None,
     ):
         super().__init__()
 
         if scans is None:
-            # Default to 3 scans
-            scans = [Scan(self) for _ in range(3)]
+            # Use the same number of scans as the last series, if possible.
+            if parent.series:
+                scans = [
+                    Scan(self) for _ in range(parent.series[-1].num_scans)
+                ]
+            else:
+                # Default to 1 scan
+                scans = [Scan(self)]
+
+        if scan_start_number is None:
+            # Try to default to the next valid scan number in this section.
+            # Otherwise, default to 1.
+            if parent.series:
+                scan_start_number = parent.series[-1].scan_range_tuple[1] + 1
+            else:
+                scan_start_number = 1
+
+        if scan_shape is None:
+            # Copy the scan shape from the most recent scan, if one is
+            # available. Otherwise, default to (21, 21).
+            if parent.series:
+                scan_shape = parent.series[-1].scan_shape
+            else:
+                scan_shape = (21, 21)
+
+        if skip_frames is None:
+            # Copy from the most recent scan, if one is available.
+            if parent.series:
+                skip_frames = parent.series[-1].skip_frames
+            else:
+                skip_frames = 10
 
         self.name = name
         self.description = description
