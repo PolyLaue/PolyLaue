@@ -2,8 +2,8 @@
 
 import logging
 
-from PySide6.QtCore import QEvent, QPointF, Qt, Signal
-from PySide6.QtWidgets import QInputDialog
+from PySide6.QtCore import QEvent, QPointF, QSettings, Qt, Signal
+from PySide6.QtWidgets import QInputDialog, QMessageBox
 
 from polylaue.model.reflections.base import BaseReflections
 from polylaue.ui.reflections_style import ReflectionsStyle
@@ -64,6 +64,15 @@ class PolyLaueImageView(pg.ImageView):
         )
         self.addItem(artist)
         self.reflection_status_message = ''
+
+        self.saturation_check_markers = pg.ScatterPlotItem(
+            pxMode=True,
+            symbol='t',
+            pen=pg.mkPen(0, 1, width=1),
+            brush=None,
+            size=5,
+        )
+        self.addItem(self.saturation_check_markers)
 
         # Add additional context menu actions
         self.add_additional_context_menu_actions()
@@ -462,6 +471,9 @@ class PolyLaueImageView(pg.ImageView):
         action = menu.addAction('set as background')
         action.triggered.connect(set_image_to_be_background)
 
+        action = menu.addAction('perform saturation check')
+        action.triggered.connect(self.perform_saturation_check)
+
     def add_additional_cmap_menu_actions(self):
         """Add a 'reverse' action to the pyqtgraph colormap menu
 
@@ -520,3 +532,61 @@ class PolyLaueImageView(pg.ImageView):
         menu.addSeparator()
         action = menu.addAction('auto level')
         action.triggered.connect(auto_level)
+
+    def perform_saturation_check(self):
+        settings = QSettings()
+        # Re-use the last saturation level the user selected
+        saturation_level = int(settings.value('last_saturation_level', 60000))
+
+        saturation_level, accepted = QInputDialog.getInt(
+            self,
+            'Saturation Level',
+            'Select the saturation level to use for the check',
+            value=saturation_level,
+        )
+        if not accepted:
+            # User canceled
+            return
+
+        # Save this saturation level so it will be showed next time
+        settings.setValue('last_saturation_level', saturation_level)
+
+        # Now perform the saturation check
+        saturated_coords = np.argwhere(self.image_data > saturation_level)
+        num_saturated = saturated_coords.size
+        if num_saturated == 0:
+            QMessageBox.information(
+                None,
+                'Saturation Check',
+                f'No pixels above "{saturation_level}" in value were found!',
+            )
+            return
+
+        # Draw markers around saturated pixels
+        coords = saturated_coords.astype(float) + 0.5
+        coords = np.atleast_2d(coords)[:, [1, 0]]
+        self.saturation_check_markers.setData(*coords.T)
+
+        prev_levels = self.getLevels()
+
+        # Set the levels to highlight the saturated region
+        self.setLevels(saturation_level, saturation_level)
+
+        def clear():
+            # Restore the previous levels
+            self.setLevels(*prev_levels)
+            # Remove the markers.
+            self.saturation_check_markers.clear()
+
+        msg_box = QMessageBox(self)
+        msg_box.setIcon(QMessageBox.Critical)
+        msg_box.setWindowTitle('Saturation Warning')
+        msg_box.setText(
+            f'Data contains "{num_saturated}" pixels '
+            f'above "{saturation_level}" in value.\n\n'
+            'Exit this dialog to restore colormap levels '
+            'and clear the saturation markers.',
+        )
+        msg_box.setWindowModality(Qt.NonModal)
+        msg_box.finished.connect(clear)
+        msg_box.show()
