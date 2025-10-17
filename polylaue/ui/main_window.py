@@ -236,7 +236,9 @@ class MainWindow(QObject):
         series = section.series[series_path[2]]
 
         # Load the series
-        self.load_series(series)
+        if not self.load_series(series):
+            # Failed to load the series. Don't proceed any further...
+            return
 
         # Set the scan number and scan position
         self.scan_num = scan_num
@@ -295,18 +297,28 @@ class MainWindow(QObject):
         else:
             self.scan_num = 1
 
-    def load_series(self, series: Series, reset_settings: bool = True):
+    def load_series(self, series: Series, reset_settings: bool = True) -> bool:
         """Load the series located in the directory.
 
         This will also reset the current image settings and scan position.
+
+        Returns `True` if the series loaded successfully, or `False` if not.
         """
         prev_project = self.project
         prev_section = self.section
+        prev_series = self.series
 
         self.series = series
-
-        # Identify the image loader we will use for the series
-        self.identify_image_loader()
+        try:
+            # Identify the image loader we will use for the series
+            self.identify_image_loader()
+        except Exception as e:
+            msg = f'Failed to load series with error:\n\n{e}'
+            print(msg, file=sys.stderr)
+            QMessageBox.critical(self.ui, 'Failed to load series', msg)
+            # Restore the previous series
+            self.series = prev_series
+            return False
 
         if reset_settings:
             # Reset scan position
@@ -327,9 +339,11 @@ class MainWindow(QObject):
             # Trigger functions for when the section changes
             self.on_section_changed()
 
+        return True
+
     def identify_image_loader(self):
-        self.image_loader_func = None
         if self.series is None:
+            self.image_loader_func = None
             return
 
         if not self.series.file_list:
@@ -366,7 +380,9 @@ class MainWindow(QObject):
         if series is self.series:
             # Reload the series
             prev_scan_number = self.scan_num
-            self.load_series(series)
+            if not self.load_series(series):
+                # Failed to load the series. Don't proceed.
+                return
 
             # Set the scan number
             self.scan_num = prev_scan_number
@@ -377,7 +393,9 @@ class MainWindow(QObject):
         series = scan.parent
 
         # Load the series
-        self.load_series(series)
+        if not self.load_series(series):
+            # failed to load the series. Don't proceed.
+            return
 
         # Hide the project navigator dialog
         self._project_navigator_dialog.hide()
@@ -415,10 +433,19 @@ class MainWindow(QObject):
             # Just return - can't do anything
             return
 
+        prev_scan_num = self.scan_num
         self.scan_num = new_scan_idx
+        try:
+            # Load this series without resetting the settings
+            if not self.load_series(new_series, reset_settings=False):
+                # Failed to load the series. Do not proceed.
+                self.scan_num = prev_scan_num
+                return
+        except Exception:
+            # Restore the previous scan number and re-raise
+            self.scan_num = prev_scan_num
+            raise
 
-        # Load this series without resetting the settings
-        self.load_series(new_series, reset_settings=False)
         self.scan_num = new_scan_idx
         self.on_series_or_scan_changed()
         self.on_frame_changed()
@@ -562,7 +589,8 @@ class MainWindow(QObject):
             return
 
         rtime = self.series.relative_file_creation_time(
-            *self.scan_pos, self.scan_num)
+            *self.scan_pos, self.scan_num
+        )
 
         # Round to milliseconds
         rtime = round(rtime, 3)
