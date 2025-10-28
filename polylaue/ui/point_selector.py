@@ -81,7 +81,7 @@ class PointSelector(QObject):
         return f'{x}, {y}'
 
     def mouse_clicked(self, event):
-        pos = self.image_view.view.mapSceneToView(event.pos())
+        pos = self.image_view.view.mapSceneToView(event.scenePos())
         pos = np.round(pos.toTuple(), 3)
 
         if event.button() == MouseButton.RightButton:
