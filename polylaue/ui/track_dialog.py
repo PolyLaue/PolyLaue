@@ -80,6 +80,27 @@ class TrackDialog:
                 raise Exception(msg)
 
     def on_apply(self):
+        if (
+            self.is_tracking_original_abc_matrix
+            and not self.replace_abc_matrix
+        ):
+            # If we are tracking the original ABC matrix, we must replace
+            # the matrix with a new one. Verify with the user that they
+            # wish to do this, and then proceed if so.
+            title = 'Tracking Original Scan Number'
+            msg = (
+                'You are running "Track Orientation" on the original scan '
+                'number that was used to generate the ABC matrix. '
+                'You must replace the original ABC matrix if you proceed.\n\n'
+                'Proceed anyways?'
+            )
+            if QMessageBox.question(self.ui, title, msg) == QMessageBox.No:
+                # Abort
+                return
+
+            # Force a replacement on the ABC matrix
+            self.replace_abc_matrix = True
+
         self.validate()
 
         progress = QProgressDialog(
@@ -139,6 +160,12 @@ class TrackDialog:
             self.save_angular_shift(abc_matrix)
 
         self.show_burn_dialog()
+
+    @property
+    def is_tracking_original_abc_matrix(self) -> bool:
+        crystal_id = self.selected_crystal_id
+        scan_num = self.scan_num
+        return scan_num == self.reflections.crystal_scan_number(crystal_id)
 
     @property
     def points(self) -> np.ndarray:
@@ -211,13 +238,14 @@ class TrackDialog:
         # Set the new angular shifts table
         reflections.set_angular_shifts_table(crystal_id, new_ang_shifts)
 
-        # Now also set the angular shift to get back to the old matrix
-        new_shift = compute_angular_shift(new_abc_matrix, old_abc_matrix)
-        reflections.set_angular_shift_matrix(
-            crystal_id,
-            old_scan_num,
-            new_shift,
-        )
+        if self.scan_num != old_scan_num:
+            # Now also set the angular shift to get back to the old matrix
+            new_shift = compute_angular_shift(new_abc_matrix, old_abc_matrix)
+            reflections.set_angular_shift_matrix(
+                crystal_id,
+                old_scan_num,
+                new_shift,
+            )
 
     def save_angular_shift(self, abc_matrix: np.ndarray):
         # Write the angular shift matrix for this crystal
