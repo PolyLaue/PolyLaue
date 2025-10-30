@@ -14,6 +14,7 @@ import numpy as np
 
 from polylaue.model.core import (
     apply_angular_shift,
+    compute_angle,
     compute_angular_shift,
     track,
     track_py,
@@ -144,7 +145,8 @@ class TrackDialog:
 
         self.save_settings()
 
-        msg = f'Angular shift is: {angular_shift:.2f}°'
+        msg = self.create_track_success_message(abc_matrix, angular_shift)
+
         QMessageBox.information(
             None,
             'Track Succeeded',
@@ -194,6 +196,41 @@ class TrackDialog:
     def run_track(self) -> TrackResults:
         return self.track_func(**self.track_kwargs)
 
+    def create_track_success_message(
+        self, new_abc_matrix: np.ndarray, angular_shift: float
+    ) -> str:
+        root_scan_num = self.reflections.crystal_scan_number(
+            self.selected_crystal_id
+        )
+
+        nearest_scan_num = None
+        if self.use_nearest_abc_matrix:
+            nearest_scan_num = self.nearest_tracked_scan_number
+
+        if nearest_scan_num is None:
+            root_ang_shift = angular_shift
+        else:
+            root_abc_matrix = self.original_abc_matrix
+            root_ang_shift = np.degrees(
+                compute_angle(
+                    compute_angular_shift(root_abc_matrix, new_abc_matrix)
+                )
+            )
+
+        msg = ''
+        if nearest_scan_num is not None:
+            msg += (
+                'Angular shift from the starting ABC matrix (scan number '
+                f'{nearest_scan_num}) is: {angular_shift:.2f}°\n\n'
+            )
+
+        msg += (
+            'Angular shift from the original ABC matrix (scan number '
+            f'{root_scan_num}) is: {root_ang_shift:.2f}°'
+        )
+
+        return msg
+
     def replace_crystal_abc_matrix(self, new_abc_matrix: np.ndarray):
         # We have to replace the ABC matrix and recompute all angular shift
         # matrices.
@@ -201,7 +238,7 @@ class TrackDialog:
         reflections = self.reflections
 
         # Store these and use them later. Ensure we have deep copies.
-        old_abc_matrix = self.selected_abc_matrix.copy()
+        old_abc_matrix = self.original_abc_matrix.copy()
         old_ang_shifts = reflections.angular_shifts_table(crystal_id).copy()
         old_scan_num = reflections.crystal_scan_number(crystal_id)
 
@@ -249,7 +286,7 @@ class TrackDialog:
 
     def save_angular_shift(self, abc_matrix: np.ndarray):
         # Write the angular shift matrix for this crystal
-        abc_matrix0 = self.selected_abc_matrix
+        abc_matrix0 = self.original_abc_matrix
         angular_shift = compute_angular_shift(abc_matrix0, abc_matrix)
 
         self.reflections.set_angular_shift_matrix(
@@ -306,6 +343,7 @@ class TrackDialog:
             'angular_limit',
             'resolution_limit',
             'reflections_threshold',
+            'use_nearest_abc_matrix',
             'conserve_memory',
         ]
 
@@ -336,9 +374,66 @@ class TrackDialog:
         return self.reflections_editor.reflections
 
     @property
-    def selected_abc_matrix(self) -> np.ndarray:
+    def original_abc_matrix(self) -> np.ndarray:
         crystals_table = self.reflections.crystals_table
         return crystals_table[self.selected_crystal_id]
+
+    @property
+    def selected_abc_matrix(self) -> np.ndarray:
+        if self.use_nearest_abc_matrix:
+            return self.nearest_abc_matrix
+        else:
+            return self.original_abc_matrix
+
+    @property
+    def nearest_tracked_scan_number(self) -> int | None:
+        scan_num = self.scan_num
+        crystal_id = self.selected_crystal_id
+        ang_shifts = self.reflections.angular_shifts_table(crystal_id)
+        if ang_shifts is None:
+            return None
+
+        scan_num_idx = scan_num - 1
+        ang_shift_is_valid = ~np.isnan(ang_shifts[:, 0])
+
+        # Pad it up to the scan number minus 1
+        padding_needed = scan_num - 1 - ang_shift_is_valid.size
+        if padding_needed > 0:
+            ang_shift_is_valid = np.hstack(
+                (
+                    ang_shift_is_valid,
+                    np.zeros(padding_needed, dtype=bool),
+                )
+            )
+
+        # Reverse the below ordering so we try the nearest first
+        below_r = ang_shift_is_valid[:scan_num_idx][::-1]
+        above = ang_shift_is_valid[scan_num_idx + 1 :]
+        max_len = max(len(below_r), len(above))
+
+        i = 0
+        while i < max_len:
+            if i < len(below_r) and below_r[i]:
+                return scan_num - i - 1
+            if i < len(above) and above[i]:
+                return scan_num + i + 1
+
+            i += 1
+
+        return None
+
+    @property
+    def nearest_abc_matrix(self) -> np.ndarray:
+        orig_mat = self.original_abc_matrix
+        nearest = self.nearest_tracked_scan_number
+        if nearest is None:
+            # The actual nearest one is the original one
+            return orig_mat
+
+        reflections = self.reflections
+        crystal_id = self.selected_crystal_id
+        ang_shift = reflections.angular_shift_matrix(crystal_id, nearest)
+        return apply_angular_shift(orig_mat, ang_shift)
 
     @property
     def selected_crystal_id(self) -> int:
@@ -384,6 +479,14 @@ class TrackDialog:
     @reflections_threshold.setter
     def reflections_threshold(self, v: float):
         self.ui.reflections_threshold.setValue(v)
+
+    @property
+    def use_nearest_abc_matrix(self) -> bool:
+        return self.ui.use_nearest_abc_matrix.isChecked()
+
+    @use_nearest_abc_matrix.setter
+    def use_nearest_abc_matrix(self, b: bool):
+        self.ui.use_nearest_abc_matrix.setChecked(b)
 
     @property
     def replace_abc_matrix(self) -> bool:
