@@ -387,6 +387,12 @@ class TrackDialog:
 
     @property
     def nearest_tracked_scan_number(self) -> int | None:
+        if self.is_tracking_original_abc_matrix:
+            # If we are tracking the original ABC matrix, the nearest
+            # scan number must be the original one.
+            # Return `None` to force the original to be used everywhere.
+            return None
+
         scan_num = self.scan_num
         crystal_id = self.selected_crystal_id
         ang_shifts = self.reflections.angular_shifts_table(crystal_id)
