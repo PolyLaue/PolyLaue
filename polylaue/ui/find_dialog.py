@@ -28,8 +28,9 @@ class FindDialog:
         self,
         point_selector_dialog: PointSelectorDialog,
         reflections_editor: ReflectionsEditor,
+        parent: QWidget | None = None,
     ):
-        self.ui = UiLoader().load_file('find_dialog.ui')
+        self.ui = UiLoader().load_file('find_dialog.ui', parent)
 
         self.point_selector_dialog = point_selector_dialog
         self.reflections_editor = reflections_editor

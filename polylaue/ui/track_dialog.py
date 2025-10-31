@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (
     QDialogButtonBox,
     QMessageBox,
     QProgressDialog,
+    QWidget,
 )
 
 import numpy as np
@@ -36,8 +37,9 @@ class TrackDialog:
         self,
         point_selector_dialog: PointSelectorDialog,
         reflections_editor: ReflectionsEditor,
+        parent: QWidget | None = None,
     ):
-        self.ui = UiLoader().load_file('track_dialog.ui')
+        self.ui = UiLoader().load_file('track_dialog.ui', parent)
 
         self.point_selector_dialog = point_selector_dialog
         self.reflections_editor = reflections_editor
