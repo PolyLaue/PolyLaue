@@ -553,7 +553,7 @@ class PolyLaueImageView(pg.ImageView):
 
         # Now perform the saturation check
         saturated_coords = np.argwhere(self.image_data > saturation_level)
-        num_saturated = saturated_coords.size
+        num_saturated = len(saturated_coords)
         if num_saturated == 0:
             QMessageBox.information(
                 None,
