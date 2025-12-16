@@ -89,7 +89,8 @@ class ReflectionsEditor(QObject):
         self._section = v
         self.load_reflections()
 
-        if self._burn_workflow is not None:
+        workflow = self._burn_workflow
+        if workflow is not None and workflow.burn_dialog_is_visible():
             # Restart the burn workflow
             self.start_burn()
 

@@ -48,6 +48,12 @@ class BurnWorkflow(QObject):
 
         self.show_burn_dialog()
 
+    def burn_dialog_is_visible(self) -> bool:
+        if self.burn_dialog is None:
+            return False
+
+        return self.burn_dialog.ui.isVisible()
+
     def validate(self):
         if self.project.geometry_path is None:
             msg = (
