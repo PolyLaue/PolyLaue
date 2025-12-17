@@ -74,6 +74,8 @@ class PolyLaueImageView(pg.ImageView):
         )
         self.addItem(self.saturation_check_markers)
 
+        self.apply_default_settings()
+
         # Add additional context menu actions
         self.add_additional_context_menu_actions()
 
@@ -82,6 +84,9 @@ class PolyLaueImageView(pg.ImageView):
     def setup_connections(self):
         self.reflection_artist.sigHovered.connect(self.on_reflection_hovered)
         self.scene.sigMouseMoved.connect(self.on_mouse_move)
+
+    def apply_default_settings(self):
+        self.cmap_serialized = self.default_cmap_settings
 
     def auto_level_colors(self):
         # These levels appear to work well for the data we have
@@ -159,6 +164,19 @@ class PolyLaueImageView(pg.ImageView):
             color=np.array(v['color']) * 255,
         )
         gradient.setColorMap(cmap)
+
+    @property
+    def default_cmap_settings(self) -> dict[str, list]:
+        # The default cmap is currently: thermal reversed
+        return {
+            'pos': [0.0, 0.33340000000000003, 0.6667000000000001, 1.0],
+            'color': [
+                [1.0, 1.0, 1.0, 1.0],
+                [1.0, 0.8627451062202454, 0.0, 1.0],
+                [0.7254902124404907, 0.0, 0.0, 1.0],
+                [0.0, 0.0, 0.0, 1.0],
+            ],
+        }
 
     @property
     def cmap_levels(self) -> tuple[float, float]:
