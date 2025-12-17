@@ -26,7 +26,8 @@ class Project(Editable):
         directory: PathLike = '',
         description: str = '',
         energy_range: tuple[float, float] = (5, 70),
-        frame_shape: tuple[int, int] = (2048, 2048),
+        # The frame shape here defaults to the Pilatus settings at HPCAT
+        frame_shape: tuple[int, int] = (981, 1043),
         white_beam_shift: float = 0.01,
     ):
         super().__init__()
