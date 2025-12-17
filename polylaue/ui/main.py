@@ -18,8 +18,14 @@ def main():
     # For now, the only argument parsing we do is assume that
     # the series right after the script is to be loaded...
     load_series = None
-    if len(sys.argv) > 1:
-        load_series = sys.argv[1]
+    i = 1
+    while i < len(sys.argv):
+        # Find the first argument that doesn't start with '-'
+        if not sys.argv[i].startswith('-'):
+            load_series = sys.argv[i]
+            break
+
+        i += 1
 
     # Kill the program when ctrl-c is used
     signal.signal(signal.SIGINT, signal.SIG_DFL)
