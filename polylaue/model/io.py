@@ -91,8 +91,11 @@ def get_file_creation_time(filepath: PathLike) -> float:
     stats = filepath.stat()
 
     if platform.system() == 'Windows':
-        # Usually, st_ctime is the correct creation time on Windows
-        return stats.st_ctime
+        # ctime does not work well on Windows because it is changed when
+        # the file is copied.
+        # The contents of the files PolyLaue works with will amost never
+        # be modified, so using mtime is usually correct.
+        return stats.st_mtime
 
     # Otherwise, use the birthtime if available
     if hasattr(stats, 'st_birthtime'):
