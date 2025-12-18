@@ -276,6 +276,10 @@ class ProjectNavigatorView(QTableView):
 
     def on_navigation_bar_button_clicked(self, i: int):
         # Truncate the path based upon the index the user clicked
+        if i >= len(self.model.path):
+            # The user clicked on the current one
+            return
+
         previous_row = self.model.path[i]
         self.model.set_path(self.model.path[:i])
         self.on_path_modified()
