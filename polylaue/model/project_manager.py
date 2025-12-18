@@ -1,4 +1,4 @@
-# Copyright © 2024, UChicago Argonne, LLC. See "LICENSE" for full details.
+# Copyright © 2025, UChicago Argonne, LLC. See "LICENSE" for full details.
 
 from polylaue.model.project import Project
 from polylaue.model.serializable import Serializable
