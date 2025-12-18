@@ -1,5 +1,7 @@
 # Copyright © 2025, UChicago Argonne, LLC. See "LICENSE" for full details.
 
+import sys
+
 
 class Serializable:
     """The Serializable class is a class that can be serialized to a dict
@@ -27,8 +29,11 @@ class Serializable:
         # Set all of the settings from the dict
         for k, v in d.items():
             if k not in self._attrs_to_serialize:
-                msg = f'Unknown attribute provided to deserializer: {k}'
-                raise Exception(msg)
+                msg = (
+                    'WARNING: skipping over unknown attribute provided '
+                    f'to deserializer: {k}'
+                )
+                print(msg, file=sys.stderr)
 
             setattr(self, k, v)
 
