@@ -131,6 +131,48 @@ class ExternalReflections(BaseReflections):
 
             f['/crystal_names'] = v
 
+    def delete_crystal(self, crystal_id: int):
+        """Delete a crystal from the table
+
+        This will also delete all places where the crystal is used,
+        such as reflections that used the crystal, angular shifts, etc.
+
+        Currently, only deleting the final crystal ID from the table
+        is supported. This is because we will need to do automatic
+        renumber of crystal IDs if we delete a different one. We can
+        add that if needed.
+        """
+        if crystal_id != self.num_crystals - 1:
+            msg = (
+                'Currently, only deleting the newest crystal is supported'
+            )
+            raise NotImplementedError(msg)
+
+        # Delete it from the crystals table
+        self.crystals_table = self.crystals_table[:crystal_id]
+
+        # Remove the scan number, if present
+        path = '/crystal_scan_numbers'
+        with h5py.File(self.filepath, 'a') as f:
+            if path in f and crystal_id < len(f[path]):
+                old_scan_nums = f[path][()]
+                del f[path]
+                f[path] = old_scan_nums[:crystal_id]
+
+        # Remove the name, if present
+        if crystal_id < len(self.crystal_names):
+            self.crystal_names = self.crystal_names[:crystal_id]
+
+        # Remove the angular shifts table, if present
+        path = f'/angular_shifts/{crystal_id}'
+        with h5py.File(self.filepath, 'a') as f:
+            if path in f:
+                del f[path]
+
+        # Now remove all entries in the reflections table that used
+        # this crystal ID.
+        self.remove_reflections_using_crystal_id(crystal_id)
+
     def angular_shifts_table(self, crystal_id: int) -> np.ndarray:
         """Get the angular shifts table for a crystal ID
 
@@ -280,6 +322,25 @@ class ExternalReflections(BaseReflections):
                 group = parent
                 parent = group.parent
                 del f[group.name]
+
+    def remove_reflections_using_crystal_id(self, crystal_id: int):
+        """Remove all reflections that used a crystal ID
+
+        This iterates over every reflections table in the file and
+        removes all reflections that used the specified crystal ID
+        """
+        with h5py.File(self.filepath, 'a') as f:
+            for scan_num in f['/predictions'].keys():
+                for i in f[f'/predictions/{scan_num}'].keys():
+                    for j in f[f'/predictions/{scan_num}/{i}'].keys():
+                        path = f'/predictions/{scan_num}/{i}/{j}'
+                        table = f[path][()]
+                        del f[path]
+                        f[path] = np.delete(
+                            table,
+                            np.where(table[:, 9].astype(int) == crystal_id)[0],
+                            axis=0,
+                        )
 
     def path_exists(self, row: int, column: int, scan_number: int) -> bool:
         path = self._reflections_table_path(row, column, scan_number)

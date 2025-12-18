@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>746</width>
-    <height>356</height>
+    <height>393</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -20,32 +20,13 @@
    <string>Find Orientation</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="1" column="1">
-    <widget class="ScientificDoubleSpinBox" name="angular_tolerance">
+   <item row="3" column="0">
+    <widget class="QLabel" name="reflections_threshold_label">
      <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Default: 0.07°&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-     </property>
-     <property name="suffix">
-      <string>°</string>
-     </property>
-     <property name="decimals">
-      <number>8</number>
-     </property>
-     <property name="maximum">
-      <double>100000.000000000000000</double>
-     </property>
-     <property name="value">
-      <double>0.070000000000000</double>
-     </property>
-    </widget>
-   </item>
-   <item row="4" column="1">
-    <widget class="QCheckBox" name="conserve_memory">
-     <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If checked, a different version of the internal function will be utilized that uses less RAM, but also runs a little slower.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The minimum number of indexed reflections to assume the indexing routine was successful.&lt;br/&gt;&lt;/p&gt;&lt;p&gt;Default: 3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
      <property name="text">
-      <string>Conserve Memory</string>
+      <string>Reflections Threshold:</string>
      </property>
     </widget>
    </item>
@@ -56,6 +37,26 @@
      </property>
      <property name="text">
       <string>Resolution Limit:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="1">
+    <widget class="QSpinBox" name="reflections_threshold">
+     <property name="toolTip">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The minimum number of indexed reflections to assume the indexing routine was successful.&lt;br/&gt;&lt;/p&gt;&lt;p&gt;Default: 3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="maximum">
+      <number>100000</number>
+     </property>
+     <property name="value">
+      <number>3</number>
+     </property>
+    </widget>
+   </item>
+   <item row="7" column="0" colspan="2">
+    <widget class="QDialogButtonBox" name="button_box">
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Apply|QDialogButtonBox::Close</set>
      </property>
     </widget>
    </item>
@@ -88,27 +89,13 @@
      </property>
     </widget>
    </item>
-   <item row="6" column="0" colspan="2">
-    <widget class="QDialogButtonBox" name="button_box">
-     <property name="standardButtons">
-      <set>QDialogButtonBox::Apply|QDialogButtonBox::Close</set>
-     </property>
-    </widget>
-   </item>
-   <item row="5" column="0" colspan="2">
-    <widget class="QLabel" name="note_label">
-     <property name="text">
-      <string>Note: you may still manually add or remove points while this dialog is open.</string>
-     </property>
-    </widget>
-   </item>
-   <item row="3" column="0">
-    <widget class="QLabel" name="reflections_threshold_label">
+   <item row="4" column="1">
+    <widget class="QCheckBox" name="conserve_memory">
      <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The minimum number of indexed reflections to assume the indexing routine was successful.&lt;br/&gt;&lt;/p&gt;&lt;p&gt;Default: 3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If checked, a different version of the internal function will be utilized that uses less RAM, but also runs a little slower.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
      <property name="text">
-      <string>Reflections Threshold:</string>
+      <string>Conserve Memory</string>
      </property>
     </widget>
    </item>
@@ -277,20 +264,33 @@
      </layout>
     </widget>
    </item>
-   <item row="3" column="1">
-    <widget class="QSpinBox" name="reflections_threshold">
+   <item row="1" column="1">
+    <widget class="ScientificDoubleSpinBox" name="angular_tolerance">
      <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The minimum number of indexed reflections to assume the indexing routine was successful.&lt;br/&gt;&lt;/p&gt;&lt;p&gt;Default: 3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Default: 0.07°&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="suffix">
+      <string>°</string>
+     </property>
+     <property name="decimals">
+      <number>8</number>
      </property>
      <property name="maximum">
-      <number>100000</number>
+      <double>100000.000000000000000</double>
      </property>
      <property name="value">
-      <number>3</number>
+      <double>0.070000000000000</double>
      </property>
     </widget>
    </item>
-   <item row="7" column="0" colspan="2">
+   <item row="5" column="0" colspan="2">
+    <widget class="QLabel" name="note_label">
+     <property name="text">
+      <string>Note: you may still manually add or remove points while this dialog is open.</string>
+     </property>
+    </widget>
+   </item>
+   <item row="8" column="0" colspan="2">
     <spacer name="verticalSpacer">
      <property name="orientation">
       <enum>Qt::Vertical</enum>
@@ -302,6 +302,16 @@
       </size>
      </property>
     </spacer>
+   </item>
+   <item row="6" column="0" colspan="2">
+    <widget class="QPushButton" name="delete_crystal">
+     <property name="toolTip">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Delete the crystal that was created by this dialog. This ensures the crystal is completely removed from all tables.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="text">
+      <string>Clear Crystal</string>
+     </property>
+    </widget>
    </item>
   </layout>
  </widget>
@@ -323,6 +333,7 @@
   <tabstop>resolution_limit</tabstop>
   <tabstop>reflections_threshold</tabstop>
   <tabstop>conserve_memory</tabstop>
+  <tabstop>delete_crystal</tabstop>
  </tabstops>
  <resources/>
  <connections>

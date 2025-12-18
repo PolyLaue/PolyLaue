@@ -36,12 +36,18 @@ class FindDialog:
         self.reflections_editor = reflections_editor
         self.crystal_id = None
 
+        self.update_enable_states()
+
         self.load_settings()
         self.setup_connections()
 
     def setup_connections(self):
         apply_button = self.ui.button_box.button(QDialogButtonBox.Apply)
         apply_button.clicked.connect(self.on_apply)
+        self.ui.delete_crystal.clicked.connect(self.on_delete_crystal)
+
+    def update_enable_states(self):
+        self.ui.delete_crystal.setEnabled(self.crystal_id is not None)
 
     def show(self):
         return self.ui.show()
@@ -168,6 +174,8 @@ class FindDialog:
         reflections.crystals_table = crystals_table
         reflections.set_crystal_scan_number(crystal_id, self.scan_num)
 
+        self.update_enable_states()
+
         if new_burn:
             # Set the dmin to 0.5
             dialog.dmin = 0.5
@@ -180,6 +188,22 @@ class FindDialog:
             dialog.on_activate_burn()
         else:
             dialog.burn_activated = True
+
+    def on_delete_crystal(self):
+        if self.crystal_id is None:
+            return
+
+        reflections = self.reflections_editor.reflections
+        if reflections is None:
+            return
+
+        reflections.delete_crystal(self.crystal_id)
+
+        # Reset reflections editor and predictions
+        self.reflections_editor.load_reflections()
+
+        self.crystal_id = None
+        self.update_enable_states()
 
     def load_settings(self):
         settings = QSettings()
