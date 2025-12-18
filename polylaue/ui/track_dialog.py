@@ -54,10 +54,21 @@ class TrackDialog:
     def show(self):
         return self.ui.show()
 
-    def validate(self):
+    def validate(self) -> bool:
         crystal_id = self.selected_crystal_id
         crystals_table = self.reflections.crystals_table
         num_crystals = len(crystals_table)
+
+        min_res = self.project.min_tracking_resolution
+        if self.resolution_limit < min_res:
+            msg = (
+                f'The resolution limit "{self.resolution_limit}" is smaller '
+                'than the minimum allowed value defined in this '
+                f'project\'s settings: "{min_res}"'
+            )
+            print(msg, file=sys.stderr)
+            QMessageBox.critical(None, 'Validation Error', msg)
+            return False
 
         if crystal_id >= num_crystals:
             msg = (
@@ -66,7 +77,7 @@ class TrackDialog:
             )
             print(msg, file=sys.stderr)
             QMessageBox.critical(None, 'Validation Error', msg)
-            raise Exception(msg)
+            return False
 
         if self.replace_abc_matrix:
             # Verify this crystal has a scan number set.
@@ -80,7 +91,9 @@ class TrackDialog:
                 )
                 print(msg, file=sys.stderr)
                 QMessageBox.critical(None, 'Validation Error', msg)
-                raise Exception(msg)
+                return False
+
+        return True
 
     def on_apply(self):
         if (
@@ -104,7 +117,8 @@ class TrackDialog:
             # Force a replacement on the ABC matrix
             self.replace_abc_matrix = True
 
-        self.validate()
+        if not self.validate():
+            return
 
         progress = QProgressDialog(
             'Running track. Please wait...', '', 0, 0, self.ui

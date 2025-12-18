@@ -46,7 +46,24 @@ class FindDialog:
     def show(self):
         return self.ui.show()
 
+    def validate(self) -> bool:
+        min_res = self.project.min_find_resolution
+        if self.resolution_limit < min_res:
+            msg = (
+                f'The resolution limit "{self.resolution_limit}" is smaller '
+                'than the minimum allowed value defined in this '
+                f'project\'s settings: "{min_res}"'
+            )
+            print(msg, file=sys.stderr)
+            QMessageBox.critical(None, 'Validation Error', msg)
+            return False
+
+        return True
+
     def on_apply(self):
+        if not self.validate():
+            return
+
         progress = QProgressDialog(
             'Running find. Please wait...', '', 0, 0, self.ui
         )

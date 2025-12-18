@@ -29,6 +29,8 @@ class Project(Editable):
         # The frame shape here defaults to the Pilatus settings at HPCAT
         frame_shape: tuple[int, int] = (981, 1043),
         white_beam_shift: float = 0.01,
+        min_find_resolution: float = 0,
+        min_tracking_resolution: float = 0,
     ):
         super().__init__()
 
@@ -43,6 +45,8 @@ class Project(Editable):
         self.energy_range = energy_range
         self.frame_shape = frame_shape
         self.white_beam_shift = white_beam_shift
+        self.min_find_resolution = min_find_resolution
+        self.min_tracking_resolution = min_tracking_resolution
 
     @property
     def num_sections(self):
@@ -128,6 +132,8 @@ class Project(Editable):
         'frame_shape',
         'energy_range',
         'white_beam_shift',
+        'min_find_resolution',
+        'min_tracking_resolution',
     ]
 
     @property
@@ -207,6 +213,34 @@ class Project(Editable):
                     'is necessary for predicting reflections.\n\n'
                     'The file will be copied into the project directory as '
                     '"geometry.npz".'
+                ),
+            },
+            'min_find_resolution': {
+                'type': 'float',
+                'label': 'Minimum Find Resolution Limit',
+                'min': 0,
+                'max': float('inf'),
+                'tooltip': (
+                    'The minimum resolution limit (Å) allowed when performing '
+                    'find.\n\nThis setting is intended to prevent '
+                    'users from accidentally choosing a resolution limit '
+                    'that is too low, which then may cause the algorithm '
+                    'to run forever.\n\nThis resolution can be different from '
+                    'project to project.'
+                ),
+            },
+            'min_tracking_resolution': {
+                'type': 'float',
+                'label': 'Minimum Tracking Resolution Limit',
+                'min': 0,
+                'max': float('inf'),
+                'tooltip': (
+                    'The minimum resolution limit (Å) allowed when performing '
+                    'tracking.\n\nThis setting is intended to prevent '
+                    'users from accidentally choosing a resolution limit '
+                    'that is too low, which then may cause the algorithm '
+                    'to run forever.\n\nThis resolution can be different from '
+                    'project to project.'
                 ),
             },
         }
