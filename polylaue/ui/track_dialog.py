@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
 )
 
 import numpy as np
+import pyqtgraph as pg
 
 from polylaue.model.core import (
     apply_angular_shift,
@@ -35,24 +36,66 @@ class TrackDialog:
 
     def __init__(
         self,
-        point_selector_dialog: PointSelectorDialog,
+        image_view: pg.ImageView,
         reflections_editor: ReflectionsEditor,
         parent: QWidget | None = None,
     ):
         self.ui = UiLoader().load_file('track_dialog.ui', parent)
 
-        self.point_selector_dialog = point_selector_dialog
+        # We use an "always hidden" point selector dialog so we
+        # don't have to repeat point selector logic.
+        self.point_selector_dialog = PointSelectorDialog(
+            image_view,
+            window_title='Select Points',
+            always_hidden=True,
+            parent=self.ui,
+        )
         self.reflections_editor = reflections_editor
 
         self.load_settings()
         self.setup_connections()
 
     def setup_connections(self):
+        self.ui.auto_pick_points.clicked.connect(self.auto_pick_points)
+        self.ui.clear_points.clicked.connect(self.clear_points)
+
+        self.point_selector_dialog.point_selector.points_modified.connect(
+            self.on_points_modified
+        )
+
+        self.point_selector_dialog.auto_pick_points_finished.connect(
+            self.on_auto_pick_points_finished
+        )
+
         apply_button = self.ui.button_box.button(QDialogButtonBox.Apply)
         apply_button.clicked.connect(self.on_apply)
 
+        self.ui.finished.connect(self.on_dialog_finished)
+
+    def on_dialog_finished(self):
+        self.point_selector_dialog.disconnect()
+
     def show(self):
+        # Resize according to vertical size hint
+        self.ui.resize(self.ui.width(), self.ui.sizeHint().height())
         return self.ui.show()
+
+    def auto_pick_points(self):
+        self.point_selector_dialog.start_auto_picker()
+        self.ui.hide()
+
+    def on_auto_pick_points_finished(self):
+        self.ui.show()
+
+    def clear_points(self):
+        self.point_selector_dialog.clear_points()
+
+    def on_points_modified(self):
+        self.update_num_points_label()
+
+    def update_num_points_label(self):
+        num_points = len(self.points)
+        self.ui.num_points_label.setText(f'Number of points: {num_points}')
 
     def validate(self) -> bool:
         crystal_id = self.selected_crystal_id

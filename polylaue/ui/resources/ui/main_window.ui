@@ -89,6 +89,9 @@
     <property name="title">
      <string>Indexing</string>
     </property>
+    <addaction name="action_indexing_find"/>
+    <addaction name="action_indexing_track"/>
+    <addaction name="separator"/>
     <addaction name="action_select_indexing_points"/>
    </widget>
    <widget class="QMenu" name="menu_settings">
@@ -165,6 +168,16 @@
    </property>
    <property name="toolTip">
     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If enabled, the application will automatically watch for new scan data for the currently viewed series. When enough new files are created in the current series' data folder to complete a new scan, the new scan will automatically be added to the currently viewed series, and the current scan number automatically changed to the new scan number.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+   </property>
+  </action>
+  <action name="action_indexing_find">
+   <property name="text">
+    <string>Find</string>
+   </property>
+  </action>
+  <action name="action_indexing_track">
+   <property name="text">
+    <string>Track</string>
    </property>
   </action>
  </widget>

@@ -7,11 +7,11 @@
     <x>0</x>
     <y>0</y>
     <width>746</width>
-    <height>393</height>
+    <height>599</height>
    </rect>
   </property>
   <property name="sizePolicy">
-   <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+   <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
     <horstretch>0</horstretch>
     <verstretch>0</verstretch>
    </sizepolicy>
@@ -20,86 +20,174 @@
    <string>Find Orientation</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="3" column="0">
-    <widget class="QLabel" name="reflections_threshold_label">
+   <item row="0" column="0" colspan="2">
+    <widget class="QGroupBox" name="points_group">
+     <property name="title">
+      <string>Points</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_3">
+      <item row="0" column="0">
+       <widget class="QLabel" name="points_label">
+        <property name="text">
+         <string>Left-click to add points, right-click to remove points</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QPushButton" name="auto_pick_points">
+        <property name="text">
+         <string>Auto-pick Points</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="num_points_label">
+        <property name="text">
+         <string>Number of points: 0</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QPushButton" name="clear_points">
+        <property name="text">
+         <string>Clear Points</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="5" column="0" colspan="2">
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>0</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item row="3" column="0" colspan="2">
+    <widget class="QPushButton" name="delete_crystal">
      <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The minimum number of indexed reflections to assume the indexing routine was successful.&lt;br/&gt;&lt;/p&gt;&lt;p&gt;Default: 3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Delete the crystal that was created by this dialog. This ensures the crystal is completely removed from all tables.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
      <property name="text">
-      <string>Reflections Threshold:</string>
+      <string>Clear Crystal</string>
      </property>
     </widget>
    </item>
-   <item row="2" column="0">
-    <widget class="QLabel" name="resolution_limit_label">
-     <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Default: 0.4 Å&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-     </property>
-     <property name="text">
-      <string>Resolution Limit:</string>
-     </property>
-    </widget>
-   </item>
-   <item row="3" column="1">
-    <widget class="QSpinBox" name="reflections_threshold">
-     <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The minimum number of indexed reflections to assume the indexing routine was successful.&lt;br/&gt;&lt;/p&gt;&lt;p&gt;Default: 3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-     </property>
-     <property name="maximum">
-      <number>100000</number>
-     </property>
-     <property name="value">
-      <number>3</number>
-     </property>
-    </widget>
-   </item>
-   <item row="7" column="0" colspan="2">
+   <item row="4" column="0" colspan="2">
     <widget class="QDialogButtonBox" name="button_box">
      <property name="standardButtons">
       <set>QDialogButtonBox::Apply|QDialogButtonBox::Close</set>
      </property>
     </widget>
    </item>
-   <item row="2" column="1">
-    <widget class="ScientificDoubleSpinBox" name="resolution_limit">
-     <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Default: 0.4 Å&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+   <item row="2" column="0" colspan="2">
+    <widget class="QGroupBox" name="groupBox">
+     <property name="title">
+      <string>Find Parameters</string>
      </property>
-     <property name="suffix">
-      <string> Å</string>
-     </property>
-     <property name="decimals">
-      <number>8</number>
-     </property>
-     <property name="maximum">
-      <double>1000000.000000000000000</double>
-     </property>
-     <property name="value">
-      <double>0.700000000000000</double>
-     </property>
+     <layout class="QGridLayout" name="gridLayout_4">
+      <item row="0" column="0">
+       <widget class="QLabel" name="angular_tolerance_label">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Default: 0.07°&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+        <property name="text">
+         <string>Angular Tolerance:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="ScientificDoubleSpinBox" name="angular_tolerance">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Default: 0.07°&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+        <property name="suffix">
+         <string>°</string>
+        </property>
+        <property name="decimals">
+         <number>8</number>
+        </property>
+        <property name="maximum">
+         <double>100000.000000000000000</double>
+        </property>
+        <property name="value">
+         <double>0.070000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="resolution_limit_label">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Default: 0.4 Å&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+        <property name="text">
+         <string>Resolution Limit:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="ScientificDoubleSpinBox" name="resolution_limit">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Default: 0.4 Å&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+        <property name="suffix">
+         <string> Å</string>
+        </property>
+        <property name="decimals">
+         <number>8</number>
+        </property>
+        <property name="maximum">
+         <double>1000000.000000000000000</double>
+        </property>
+        <property name="value">
+         <double>0.700000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="reflections_threshold_label">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The minimum number of indexed reflections to assume the indexing routine was successful.&lt;br/&gt;&lt;/p&gt;&lt;p&gt;Default: 3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+        <property name="text">
+         <string>Reflections Threshold:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QSpinBox" name="reflections_threshold">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The minimum number of indexed reflections to assume the indexing routine was successful.&lt;br/&gt;&lt;/p&gt;&lt;p&gt;Default: 3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+        <property name="maximum">
+         <number>100000</number>
+        </property>
+        <property name="value">
+         <number>3</number>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QCheckBox" name="conserve_memory">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If checked, a different version of the internal function will be utilized that uses less RAM, but also runs a little slower.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+        <property name="text">
+         <string>Conserve Memory</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
     </widget>
    </item>
-   <item row="1" column="0">
-    <widget class="QLabel" name="angular_tolerance_label">
-     <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Default: 0.07°&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-     </property>
-     <property name="text">
-      <string>Angular Tolerance:</string>
-     </property>
-    </widget>
-   </item>
-   <item row="4" column="1">
-    <widget class="QCheckBox" name="conserve_memory">
-     <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If checked, a different version of the internal function will be utilized that uses less RAM, but also runs a little slower.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-     </property>
-     <property name="text">
-      <string>Conserve Memory</string>
-     </property>
-    </widget>
-   </item>
-   <item row="0" column="0" colspan="2">
+   <item row="1" column="0" colspan="2">
     <widget class="QGroupBox" name="cell_parameters_group">
      <property name="title">
       <string>Cell Parameters</string>
@@ -264,55 +352,6 @@
      </layout>
     </widget>
    </item>
-   <item row="1" column="1">
-    <widget class="ScientificDoubleSpinBox" name="angular_tolerance">
-     <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Default: 0.07°&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-     </property>
-     <property name="suffix">
-      <string>°</string>
-     </property>
-     <property name="decimals">
-      <number>8</number>
-     </property>
-     <property name="maximum">
-      <double>100000.000000000000000</double>
-     </property>
-     <property name="value">
-      <double>0.070000000000000</double>
-     </property>
-    </widget>
-   </item>
-   <item row="5" column="0" colspan="2">
-    <widget class="QLabel" name="note_label">
-     <property name="text">
-      <string>Note: you may still manually add or remove points while this dialog is open.</string>
-     </property>
-    </widget>
-   </item>
-   <item row="8" column="0" colspan="2">
-    <spacer name="verticalSpacer">
-     <property name="orientation">
-      <enum>Qt::Vertical</enum>
-     </property>
-     <property name="sizeHint" stdset="0">
-      <size>
-       <width>20</width>
-       <height>0</height>
-      </size>
-     </property>
-    </spacer>
-   </item>
-   <item row="6" column="0" colspan="2">
-    <widget class="QPushButton" name="delete_crystal">
-     <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Delete the crystal that was created by this dialog. This ensures the crystal is completely removed from all tables.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-     </property>
-     <property name="text">
-      <string>Clear Crystal</string>
-     </property>
-    </widget>
-   </item>
   </layout>
  </widget>
  <customwidgets>
@@ -323,16 +362,14 @@
   </customwidget>
  </customwidgets>
  <tabstops>
+  <tabstop>auto_pick_points</tabstop>
+  <tabstop>clear_points</tabstop>
   <tabstop>a</tabstop>
   <tabstop>b</tabstop>
   <tabstop>c</tabstop>
   <tabstop>alpha</tabstop>
   <tabstop>beta</tabstop>
   <tabstop>gamma</tabstop>
-  <tabstop>angular_tolerance</tabstop>
-  <tabstop>resolution_limit</tabstop>
-  <tabstop>reflections_threshold</tabstop>
-  <tabstop>conserve_memory</tabstop>
   <tabstop>delete_crystal</tabstop>
  </tabstops>
  <resources/>

@@ -107,6 +107,10 @@ class PointSelector(QObject):
         self.points.pop(closest_idx)
         self.points_changed()
 
+    def clear_points(self):
+        self.points.clear()
+        self.points_changed()
+
     def points_changed(self):
         """This function should be called whenever the points have changed"""
         self.update_scatter_plot()
@@ -121,13 +125,24 @@ class PointSelector(QObject):
 
 
 class PointSelectorDialog(QDialog):
-    def __init__(self, image_view, window_title='Select Points', parent=None):
+
+    auto_pick_points_finished = Signal()
+
+    def __init__(
+        self,
+        image_view: pg.ImageView,
+        window_title: str = 'Select Points',
+        always_hidden: bool = False,
+        parent=None,
+    ):
         super().__init__(parent=parent)
         keep_dialog_on_top(self)
 
         self.point_selector = PointSelector(image_view)
 
         self.setWindowTitle(window_title)
+
+        self.always_hidden = always_hidden
 
         layout = QVBoxLayout(self)
         self.setLayout(layout)
@@ -199,6 +214,16 @@ class PointSelectorDialog(QDialog):
         num_points = len(self.points)
         self.num_points_label.setText(f'Number of points: {num_points}')
 
+    def clear_points(self):
+        self.point_selector.clear_points()
+
+    def show(self):
+        if self.always_hidden:
+            # Ignore it
+            return
+
+        return super().show()
+
     def on_rejected(self):
         self.disconnect()
 
@@ -213,7 +238,7 @@ class PointSelectorDialog(QDialog):
     def image_view(self) -> pg.ImageView:
         return self.point_selector.image_view
 
-    def start_auto_picker(self):
+    def start_auto_picker(self) -> bool:
         if getattr(self, '_auto_point_picker', None):
             self._auto_point_picker.ui.hide()
             del self._auto_point_picker
@@ -228,7 +253,7 @@ class PointSelectorDialog(QDialog):
             )
             if QMessageBox.question(self, title, msg) == QMessageBox.No:
                 # Abort
-                return
+                return False
 
         dialog = PointAutoPicker(self.image_view, self)
 
@@ -251,6 +276,7 @@ class PointSelectorDialog(QDialog):
 
         def on_finished():
             self.show()
+            self.auto_pick_points_finished.emit()
 
         dialog.ui.accepted.connect(on_accepted)
         dialog.ui.rejected.connect(on_rejected)
@@ -261,3 +287,4 @@ class PointSelectorDialog(QDialog):
         dialog.show()
 
         self._auto_point_picker = dialog
+        return True

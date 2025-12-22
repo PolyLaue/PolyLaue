@@ -111,6 +111,12 @@ class MainWindow(QObject):
         self.ui.action_overlays_reflections.triggered.connect(
             self.open_reflections_editor
         )
+        self.ui.action_indexing_find.triggered.connect(
+            self.begin_indexing_find
+        )
+        self.ui.action_indexing_track.triggered.connect(
+            self.begin_indexing_track
+        )
         self.ui.action_select_indexing_points.triggered.connect(
             self.begin_select_indexing_points
         )
@@ -802,6 +808,16 @@ class MainWindow(QObject):
         new_style = self.reflections_editor.style
         self.image_view.reflections_style = new_style
 
+    def begin_indexing_find(self):
+        dialog = FindDialog(self.image_view, self.reflections_editor, self.ui)
+        dialog.show()
+        self._find_dialog = dialog
+
+    def begin_indexing_track(self):
+        dialog = TrackDialog(self.image_view, self.reflections_editor, self.ui)
+        dialog.show()
+        self._track_dialog = dialog
+
     def begin_select_indexing_points(self):
         if self.series is None:
             msg = 'A series must be loaded to select indexing points'
@@ -894,21 +910,8 @@ class MainWindow(QObject):
                 if cb.isChecked():
                     settings.setValue(skip_message_key, True)
 
-        if d.indexing_selected:
-            dialog = FindDialog(d, self.reflections_editor, self.ui)
-            dialog.show()
-            # Hide the points when the dialog is closed
-            dialog.ui.rejected.connect(d.disconnect)
-            self._find_dialog = dialog
-        elif d.refinement_selected:
-            dialog = TrackDialog(d, self.reflections_editor, self.ui)
-            dialog.show()
-            # Hide the points when the dialog is closed
-            dialog.ui.rejected.connect(d.disconnect)
-            self._track_dialog = dialog
-        else:
-            # Hide the points
-            d.disconnect()
+        # Hide the points
+        d.disconnect()
 
     def on_roi_remove_clicked(self, id: str):
         if id in self.region_mapping_dialogs:
