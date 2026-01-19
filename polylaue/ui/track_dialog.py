@@ -52,6 +52,9 @@ class TrackDialog:
         )
         self.reflections_editor = reflections_editor
 
+        # The ABC matrix found from tracking within this scan
+        self.track_within_this_scan_abc_matrix = None
+
         self.load_settings()
         self.setup_connections()
 
@@ -122,6 +125,73 @@ class TrackDialog:
             QMessageBox.critical(None, 'Validation Error', msg)
             return False
 
+        if self.track_within_this_scan:
+            # Verify we can compute an ABC matrix for this scan
+            if self.this_scan_abc_matrix is None:
+                # We can't do this. Raise an error.
+                msg = (
+                    'Failed to compute ABC matrix for this scan number, '
+                    f'"{self.scan_num}." There is no angular shift yet '
+                    'computed for this scan number. So we cannot track '
+                    'within this scan.'
+                )
+                print(msg, file=sys.stderr)
+                QMessageBox.critical(None, 'Validation Error', msg)
+                return False
+
+            # Control whether the below message needs to be displayed
+            display_changes_msg = False
+            title = 'Settings Changes'
+            msg = (
+                'Tracking within this scan is enabled, so some settings will '
+                'be turned off automatically. Details are below.'
+            )
+            if self.use_nearest_abc_matrix:
+                # Force "Use nearest tracked scan" to be off
+                msg += (
+                    '\n\nCannot use nearest ABC matrix when tracking '
+                    'within a single scan. This will be disabled '
+                    'automatically.'
+                )
+                self.use_nearest_abc_matrix = False
+                display_changes_msg = True
+
+            if self.replace_abc_matrix:
+                # Force "Replace ABC Matrix" to be off
+                msg += (
+                    '\n\nCannot replace ABC matrix when tracking '
+                    'within a single scan. This will be disabled '
+                    'automatically.'
+                )
+                self.replace_abc_matrix = False
+                display_changes_msg = True
+
+            if display_changes_msg:
+                print(msg, file=sys.stderr)
+                QMessageBox.information(None, 'Settings Update', msg)
+        elif (
+            # We know track_within_this_scan is NOT set here,
+            # since this is an "elif" block.
+            self.is_tracking_original_abc_matrix
+            and not self.replace_abc_matrix
+        ):
+            # If we are tracking the original ABC matrix, we must replace
+            # the matrix with a new one. Verify with the user that they
+            # wish to do this, and then proceed if so.
+            title = 'Tracking Original Scan Number'
+            msg = (
+                'You are running "Track Orientation" on the original scan '
+                'number that was used to generate the ABC matrix. '
+                'You must replace the original ABC matrix if you proceed.\n\n'
+                'Proceed anyways?'
+            )
+            if QMessageBox.question(self.ui, title, msg) == QMessageBox.No:
+                # Abort
+                return False
+
+            # Force a replacement on the ABC matrix
+            self.replace_abc_matrix = True
+
         if self.replace_abc_matrix:
             # Verify this crystal has a scan number set.
             # That would only *not* be true for older reflections files
@@ -139,27 +209,6 @@ class TrackDialog:
         return True
 
     def on_apply(self):
-        if (
-            self.is_tracking_original_abc_matrix
-            and not self.replace_abc_matrix
-        ):
-            # If we are tracking the original ABC matrix, we must replace
-            # the matrix with a new one. Verify with the user that they
-            # wish to do this, and then proceed if so.
-            title = 'Tracking Original Scan Number'
-            msg = (
-                'You are running "Track Orientation" on the original scan '
-                'number that was used to generate the ABC matrix. '
-                'You must replace the original ABC matrix if you proceed.\n\n'
-                'Proceed anyways?'
-            )
-            if QMessageBox.question(self.ui, title, msg) == QMessageBox.No:
-                # Abort
-                return
-
-            # Force a replacement on the ABC matrix
-            self.replace_abc_matrix = True
-
         if not self.validate():
             return
 
@@ -212,13 +261,18 @@ class TrackDialog:
             msg,
         )
 
-        if self.replace_abc_matrix:
-            # Replace the whole ABC matrix and recompute all
-            # angular shifts from it.
-            self.replace_crystal_abc_matrix(abc_matrix)
+        if self.track_within_this_scan:
+            # If we are tracking within a scan, we won't be replacing/saving
+            # the ABC matrix or angular shifts.
+            self.track_within_this_scan_abc_matrix = abc_matrix
         else:
-            # Just save the angular shift
-            self.save_angular_shift(abc_matrix)
+            if self.replace_abc_matrix:
+                # Replace the whole ABC matrix and recompute all
+                # angular shifts from it.
+                self.replace_crystal_abc_matrix(abc_matrix)
+            else:
+                # Just save the angular shift
+                self.save_angular_shift(abc_matrix)
 
         self.show_burn_dialog()
 
@@ -287,6 +341,14 @@ class TrackDialog:
             'Angular shift from the original ABC matrix (scan number '
             f'{root_scan_num}) is: {root_ang_shift:.2f}°'
         )
+
+        if self.track_within_this_scan:
+            msg += (
+                '\n\nTracking within this scan was enabled, so the '
+                'angular shift matrix will not be saved to the HDF5 file. '
+                'The burned reflections will be displayed, however, '
+                'after this dialog is closed.'
+            )
 
         return msg
 
@@ -370,12 +432,20 @@ class TrackDialog:
         dialog = burn_workflow.burn_dialog
         dialog.set_crystal_orientation_to_hdf5_file()
         dialog.crystal_id = self.selected_crystal_id
-        dialog.apply_angular_shift = not self.replace_abc_matrix
+        dialog.apply_angular_shift = (
+            not self.replace_abc_matrix and not self.track_within_this_scan
+        )
         dialog.angular_shift_from_another_crystal = False
 
         if new_burn:
             # Set the dmin to 0.5
             dialog.dmin = 0.5
+
+        if self.track_within_this_scan:
+            dialog.custom_internal_abc_matrix = (
+                self.track_within_this_scan_abc_matrix
+            )
+            dialog.use_custom_internal_abc_matrix = True
 
         if not dialog.ui.isVisible():
             dialog.ui.show()
@@ -439,7 +509,9 @@ class TrackDialog:
 
     @property
     def selected_abc_matrix(self) -> np.ndarray:
-        if self.use_nearest_abc_matrix:
+        if self.track_within_this_scan:
+            return self.this_scan_abc_matrix
+        elif self.use_nearest_abc_matrix:
             return self.nearest_abc_matrix
         else:
             return self.original_abc_matrix
@@ -486,6 +558,23 @@ class TrackDialog:
             i += 1
 
         return None
+
+    @property
+    def this_scan_abc_matrix(self) -> np.ndarray | None:
+        # Get the ABC matrix for this scan
+        orig_mat = self.original_abc_matrix
+        if self.is_tracking_original_abc_matrix:
+            # The original ABC matrix is the one on this scan
+            return orig_mat
+
+        # Apply angular shift to get this scan's ABC matrix
+        reflections = self.reflections
+        crystal_id = self.selected_crystal_id
+        ang_shift = reflections.angular_shift_matrix(crystal_id, self.scan_num)
+        if ang_shift is None:
+            return None
+
+        return apply_angular_shift(orig_mat, ang_shift)
 
     @property
     def nearest_abc_matrix(self) -> np.ndarray:
@@ -544,6 +633,14 @@ class TrackDialog:
     @reflections_threshold.setter
     def reflections_threshold(self, v: float):
         self.ui.reflections_threshold.setValue(v)
+
+    @property
+    def track_within_this_scan(self) -> bool:
+        return self.ui.track_within_this_scan.isChecked()
+
+    @track_within_this_scan.setter
+    def track_within_this_scan(self, b: bool):
+        self.ui.track_within_this_scan.setChecked(b)
 
     @property
     def use_nearest_abc_matrix(self) -> bool:

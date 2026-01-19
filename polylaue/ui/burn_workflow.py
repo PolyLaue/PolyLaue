@@ -82,6 +82,11 @@ class BurnWorkflow(QObject):
 
     def load_abc_matrix(self):
         self.abc_matrix = None
+
+        if self.burn_dialog.use_custom_internal_abc_matrix:
+            self.abc_matrix = self.burn_dialog.custom_internal_abc_matrix
+            return
+
         crystal_id = self.crystal_id
         if self.burn_dialog.crystal_orientation_is_from_project_dir:
             path = self.project_dir_abc_matrix_path

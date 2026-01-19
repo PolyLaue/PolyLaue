@@ -24,6 +24,8 @@ class BurnDialog(QObject):
 
         self.add_structure_options()
 
+        self._custom_internal_abc_matrix = None
+
         # Make this the default
         self.set_crystal_orientation_to_hdf5_file()
         self.update_enable_states()
@@ -69,12 +71,27 @@ class BurnDialog(QObject):
         self.ui.angular_shift_crystal_id.valueChanged.connect(
             self.on_angular_shift_crystal_id_changed
         )
+        self.ui.use_custom_internal_abc_matrix.toggled.connect(
+            self.on_use_custom_internal_abc_matrix_toggled
+        )
 
         self.ui.clear.clicked.connect(self.on_clear_clicked)
 
     def update_enable_states(self):
-        enable = not self.crystal_orientation_is_from_hdf5_file
+        using_custom_matrix = self.use_custom_internal_abc_matrix
+
+        self.ui.crystal_orientation_label.setEnabled(not using_custom_matrix)
+        self.ui.crystal_orientation.setEnabled(not using_custom_matrix)
+
+        enable = (
+            not self.crystal_orientation_is_from_hdf5_file
+            and not using_custom_matrix
+        )
         self.ui.overwrite_crystal.setEnabled(enable)
+
+        self.ui.write_crystal_orientation.setEnabled(not using_custom_matrix)
+
+        self.ui.angular_shift_group.setEnabled(not using_custom_matrix)
 
     def activate_burn(self):
         self.burn_activated = True
@@ -177,6 +194,51 @@ class BurnDialog(QObject):
     def angular_shift_crystal_id(self, v: int):
         self.ui.angular_shift_crystal_id.setValue(v)
 
+    @property
+    def use_custom_internal_abc_matrix(self) -> bool:
+        return self.ui.use_custom_internal_abc_matrix.isChecked()
+
+    @use_custom_internal_abc_matrix.setter
+    def use_custom_internal_abc_matrix(self, b: bool):
+        self.ui.use_custom_internal_abc_matrix.setChecked(b)
+
+    @property
+    def custom_internal_abc_matrix(self) -> np.ndarray | None:
+        """Set the custom internal ABC matrix
+
+        This allows us to burn reflections using a custom ABC matrix that
+        is not stored/computed from the reflections file.
+
+        We utilize this currently for tracking within a single scan, where
+        we want to see reflections that correspond to the bending of a
+        crystal, but we don't want to store them on disk.
+        """
+        return self._custom_internal_abc_matrix
+
+    @custom_internal_abc_matrix.setter
+    def custom_internal_abc_matrix(self, abc_matrix: np.ndarray | None):
+        """Set the custom internal ABC matrix
+
+        This allows us to burn reflections using a custom ABC matrix that
+        is not stored/computed from the reflections file.
+
+        We utilize this currently for tracking within a single scan, where
+        we want to see reflections that correspond to the bending of a
+        crystal, but we don't want to store them on disk.
+        """
+        self._custom_internal_abc_matrix = abc_matrix
+
+        enable = abc_matrix is not None
+        w = self.ui.use_custom_internal_abc_matrix
+        w.setEnabled(enable)
+        if not enable:
+            w.setChecked(False)
+
+        self.ui.use_custom_internal_abc_matrix.setToolTip(
+            'Use a custom internal ABC matrix. '
+            f'The current one is:\n\n{abc_matrix}'
+        )
+
     def on_activate_burn(self):
         self.emit_if_active()
 
@@ -250,6 +312,10 @@ class BurnDialog(QObject):
 
     def on_angular_shift_crystal_id_changed(self):
         self.update_has_angular_shift.emit()
+        self.emit_if_active()
+
+    def on_use_custom_internal_abc_matrix_toggled(self):
+        self.update_enable_states()
         self.emit_if_active()
 
     def set_has_angular_shift(self, b: bool):
