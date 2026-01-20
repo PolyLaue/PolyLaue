@@ -127,9 +127,7 @@ class RegionItemsManager(QObject):
 
         return True
 
-    def on_mouse_moved(
-        self, target: pg.GraphicsScene, event: QGraphicsSceneMouseEvent
-    ):
+    def on_mouse_moved(self, target: pg.GraphicsScene, event: QGraphicsSceneMouseEvent):
         if not self._pressed or self.current_roi_id is None:
             return False
 
@@ -169,9 +167,7 @@ class RegionItemsManager(QObject):
 
         roi = self.roi_manager.get_roi(id)
 
-        if np.array_equal(pos, roi['position']) and np.array_equal(
-            size, roi['size']
-        ):
+        if np.array_equal(pos, roi['position']) and np.array_equal(size, roi['size']):
             return
 
         self.roi_model.refresh_roi(id, pos, size)
@@ -249,9 +245,7 @@ class RegionsNavigatorDialog(QDialog):
         self.view = RegionsNavigatorView(self)
         self.view.setModel(self.model)
 
-        self.roi_items_manager = RegionItemsManager(
-            image_view, roi_manager, self.model
-        )
+        self.roi_items_manager = RegionItemsManager(image_view, roi_manager, self.model)
         self.roi_items_manager.show_items(True)
 
         self.setLayout(QVBoxLayout())
@@ -286,13 +280,9 @@ class RegionsNavigatorDialog(QDialog):
         self.show_button.clicked.connect(self.on_show_clicked)
         self.remove_button.clicked.connect(self.on_remove_clicked)
         self.display_button.clicked.connect(self.on_display_clicked)
-        self.roi_items_manager.sigActiveROIChanged.connect(
-            self.on_active_roi_changed
-        )
+        self.roi_items_manager.sigActiveROIChanged.connect(self.on_active_roi_changed)
         self.roi_items_manager.sigROIModified.connect(self.sigRoiModified)
-        self.view.selectionModel().selectionChanged.connect(
-            self.on_selection_changed
-        )
+        self.view.selectionModel().selectionChanged.connect(self.on_selection_changed)
 
     def on_close(self, *_args):
         # Disable interactive add when the dialog is closed
@@ -370,9 +360,7 @@ class RegionsNavigatorDialog(QDialog):
         )
         self.view.selectionModel().select(index, flags)
 
-    def on_selection_changed(
-        self, current: QItemSelection, previous: QItemSelection
-    ):
+    def on_selection_changed(self, current: QItemSelection, previous: QItemSelection):
         # Reset color of previously selected roi, if any
         roi_item = self.roi_items_manager.roi_items.get(self.selected_roi_id)
         if roi_item is not None:
@@ -382,9 +370,7 @@ class RegionsNavigatorDialog(QDialog):
         if current.count() > 0:
             index = current.indexes()[0]
             self.selected_roi_id = self.roi_manager.index_to_id(index.row())
-            roi_item = self.roi_items_manager.roi_items.get(
-                self.selected_roi_id
-            )
+            roi_item = self.roi_items_manager.roi_items.get(self.selected_roi_id)
             self.remove_button.setEnabled(True)
             self.display_button.setEnabled(True)
 

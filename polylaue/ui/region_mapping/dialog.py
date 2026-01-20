@@ -195,14 +195,10 @@ class RegionMappingDialog(QDialog):
             "position": np.array((0, 0)),
             "size": np.array((1, 1)),
         }
-        self._domain_roi_item = pg.RectROI(
-            (0, 0), (1, 1), **DEFAULT_ROI_ITEM_ARGS
-        )
+        self._domain_roi_item = pg.RectROI((0, 0), (1, 1), **DEFAULT_ROI_ITEM_ARGS)
         self._domain_roi_item.pen.setColor(Qt.red)
         self._domain_roi_item.pen.setWidth(2)
-        self._domain_roi_item.sigRegionChanged.connect(
-            self._on_update_domain_region
-        )
+        self._domain_roi_item.sigRegionChanged.connect(self._on_update_domain_region)
         self._domain_roi_item.sigRegionChangeFinished.connect(
             self._on_update_domain_region_finished
         )
@@ -211,9 +207,7 @@ class RegionMappingDialog(QDialog):
             "position": np.array((0, 0)),
             "size": np.array((1, 1)),
         }
-        self._highlight_roi_item = pg.RectROI(
-            (0, 0), (1, 1), **DEFAULT_ROI_ITEM_ARGS
-        )
+        self._highlight_roi_item = pg.RectROI((0, 0), (1, 1), **DEFAULT_ROI_ITEM_ARGS)
         self._highlight_roi_item.pen.setColor(Qt.green)
         self._highlight_roi_item.pen.setWidth(2)
         self._highlight_roi_item.sigRegionChanged.connect(
@@ -228,13 +222,9 @@ class RegionMappingDialog(QDialog):
         # however the click event still doesn't make it through for whatever reason.
         # Workaround: explicitly enable clicking on the ROI item and then pass the event
         # to the callback we intended originally
-        self._domain_roi_item.setAcceptedMouseButtons(
-            Qt.MouseButton.LeftButton
-        )
+        self._domain_roi_item.setAcceptedMouseButtons(Qt.MouseButton.LeftButton)
         self._domain_roi_item.sigClicked.connect(self.on_roi_click)
-        self._highlight_roi_item.setAcceptedMouseButtons(
-            Qt.MouseButton.LeftButton
-        )
+        self._highlight_roi_item.setAcceptedMouseButtons(Qt.MouseButton.LeftButton)
         self._highlight_roi_item.sigClicked.connect(self.on_roi_click)
 
         self._update_window_title()
@@ -308,9 +298,7 @@ class RegionMappingDialog(QDialog):
         self.linked_histogram_item = histogramItem
 
         if self.linked_histogram_item:
-            self.linked_histogram_item.sigLevelsChanged.connect(
-                self.on_levels_changed
-            )
+            self.linked_histogram_item.sigLevelsChanged.connect(self.on_levels_changed)
             self.linked_histogram_item.sigLookupTableChanged.connect(
                 self.on_lookup_table_changed
             )
@@ -498,8 +486,8 @@ class RegionMappingDialog(QDialog):
         # We can't use pyqtgraph internal snapping because it can't have different snapping
         # values for x and y.
         # So we must snap and override the posizion/size of the widget at each interaction
-        snapped_pos, snapped_size, new_roi_position, new_roi_size = (
-            self._snap_to_grid(pos, size, self.roi_size_ij)
+        snapped_pos, snapped_size, new_roi_position, new_roi_size = self._snap_to_grid(
+            pos, size, self.roi_size_ij
         )
 
         snapped_pos_xy = ij_to_xy(snapped_pos)
@@ -523,9 +511,7 @@ class RegionMappingDialog(QDialog):
     def _on_update_highlight_region_finished(self):
         # Make the handles snap to the grid once we finish interacting with the widget
         item_size = self._highlight_roi_item.size()
-        self._highlight_roi_item.getHandles()[0].setPos(
-            item_size[0], item_size[1]
-        )
+        self._highlight_roi_item.getHandles()[0].setPos(item_size[0], item_size[1])
 
     def _on_update_domain_region(self):
         pos_xy = np.array(self._domain_roi_item.pos())
@@ -537,8 +523,8 @@ class RegionMappingDialog(QDialog):
         # We can't use pyqtgraph internal snapping because it can't have different snapping
         # values for x and y.
         # So we must snap and override the posizion/size of the widget at each interaction
-        snapped_pos, snapped_size, new_roi_position, new_roi_size = (
-            self._snap_to_grid(pos, size, self.roi_size_ij)
+        snapped_pos, snapped_size, new_roi_position, new_roi_size = self._snap_to_grid(
+            pos, size, self.roi_size_ij
         )
 
         snapped_pos_xy = ij_to_xy(snapped_pos)
@@ -562,9 +548,7 @@ class RegionMappingDialog(QDialog):
     def _on_update_domain_region_finished(self):
         # Make the handles snap to the grid once we finish interacting with the widget
         item_size = self._domain_roi_item.size()
-        self._domain_roi_item.getHandles()[0].setPos(
-            item_size[0], item_size[1]
-        )
+        self._domain_roi_item.getHandles()[0].setPos(item_size[0], item_size[1])
 
     @staticmethod
     def _snap_to_grid(pos: np.ndarray, size: np.ndarray, grid: np.ndarray):
@@ -578,9 +562,9 @@ class RegionMappingDialog(QDialog):
 
     @staticmethod
     def _rois_are_same(roi0, roi1) -> bool:
-        return np.array_equal(
-            roi0["position"], roi1["position"]
-        ) and np.array_equal(roi0["size"], roi1["size"])
+        return np.array_equal(roi0["position"], roi1["position"]) and np.array_equal(
+            roi0["size"], roi1["size"]
+        )
 
     def set_highlight_roi(self, roi):
         if not self._rois_are_same(roi, self._highlight_roi):

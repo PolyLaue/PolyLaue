@@ -14,9 +14,7 @@ from polylaue.ui.project_navigator.dialog import ProjectNavigatorDialog
 # Kill the program when ctrl-c is used
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-example_json_path = (
-    Path(__file__).parent / '../test_project_manager.json'
-).resolve()
+example_json_path = (Path(__file__).parent / '../test_project_manager.json').resolve()
 
 with open(example_json_path, 'r') as rf:
     serialized = json.load(rf)

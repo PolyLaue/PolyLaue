@@ -48,9 +48,7 @@ class BurnDialog(QObject):
             self.on_crystal_orientation_changed
         )
 
-        self.ui.overwrite_crystal.clicked.connect(
-            self.on_overwrite_crystal_clicked
-        )
+        self.ui.overwrite_crystal.clicked.connect(self.on_overwrite_crystal_clicked)
 
         self.ui.write_crystal_orientation.clicked.connect(
             self.on_write_crystal_orientation_clicked
@@ -62,9 +60,7 @@ class BurnDialog(QObject):
 
         self.ui.dmin_value.valueChanged.connect(self.on_dmin_value_changed)
 
-        self.ui.apply_angular_shift.toggled.connect(
-            self.on_apply_angular_shift_changed
-        )
+        self.ui.apply_angular_shift.toggled.connect(self.on_apply_angular_shift_changed)
         self.ui.angular_shift_from_another_crystal.toggled.connect(
             self.on_angular_shift_from_another_crystal_changed
         )
@@ -84,8 +80,7 @@ class BurnDialog(QObject):
         self.ui.crystal_orientation.setEnabled(not using_custom_matrix)
 
         enable = (
-            not self.crystal_orientation_is_from_hdf5_file
-            and not using_custom_matrix
+            not self.crystal_orientation_is_from_hdf5_file and not using_custom_matrix
         )
         self.ui.overwrite_crystal.setEnabled(enable)
 
@@ -235,8 +230,7 @@ class BurnDialog(QObject):
             w.setChecked(False)
 
         self.ui.use_custom_internal_abc_matrix.setToolTip(
-            'Use a custom internal ABC matrix. '
-            f'The current one is:\n\n{abc_matrix}'
+            'Use a custom internal ABC matrix. ' f'The current one is:\n\n{abc_matrix}'
         )
 
     def on_activate_burn(self):
@@ -286,9 +280,7 @@ class BurnDialog(QObject):
     def on_dmin_slider_changed(self):
         # Remap the slider value to our dmin value
         self.dmin = (
-            (self.slider_max - self.slider_value)
-            * self.max_dmin
-            / self.slider_max
+            (self.slider_max - self.slider_value) * self.max_dmin / self.slider_max
         )
 
     def on_dmin_value_changed(self):

@@ -119,10 +119,7 @@ class ExternalReflections(BaseReflections):
         utf-16 or utf32, so we have to force the numpy arrays to us `S`.
         """
         if not np.issubdtype(v.dtype, 'S'):
-            msg = (
-                'Crystal names array must have a dtype of "S", '
-                f'not "{v.dtype}"'
-            )
+            msg = 'Crystal names array must have a dtype of "S", ' f'not "{v.dtype}"'
             raise ValueError(msg)
 
         with h5py.File(self.filepath, 'a') as f:
@@ -143,9 +140,7 @@ class ExternalReflections(BaseReflections):
         add that if needed.
         """
         if crystal_id != self.num_crystals - 1:
-            msg = (
-                'Currently, only deleting the newest crystal is supported'
-            )
+            msg = 'Currently, only deleting the newest crystal is supported'
             raise NotImplementedError(msg)
 
         # Delete it from the crystals table
@@ -316,9 +311,7 @@ class ExternalReflections(BaseReflections):
                 parent = f[path].parent
                 del f[path]
 
-            while (
-                parent is not None and len(parent) == 0 and parent.name != '/'
-            ):
+            while parent is not None and len(parent) == 0 and parent.name != '/':
                 group = parent
                 parent = group.parent
                 del f[group.name]
@@ -367,7 +360,5 @@ class ExternalReflections(BaseReflections):
                 for row in scan[column].keys():
                     yield (int(row) - 1, int(column) - 1)
 
-    def _reflections_table_path(
-        self, row: int, column: int, scan_number: int
-    ) -> str:
+    def _reflections_table_path(self, row: int, column: int, scan_number: int) -> str:
         return f'/predictions/{scan_number}/{column + 1}/{row + 1}'

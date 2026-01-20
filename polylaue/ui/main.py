@@ -47,9 +47,7 @@ def main():
 
     app = QApplication(sys.argv)
 
-    data = resource_loader.read_binary(
-        polylaue.resources.icons, 'polylaue.ico'
-    )
+    data = resource_loader.read_binary(polylaue.resources.icons, 'polylaue.ico')
     pixmap = QPixmap()
     pixmap.loadFromData(data, 'ico')
     icon = QIcon(pixmap)

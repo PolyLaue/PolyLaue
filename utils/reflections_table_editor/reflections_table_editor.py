@@ -91,9 +91,7 @@ class ReflectionsTableEditor:
                 parent = f[path].parent
                 del f[path]
 
-            while (
-                parent is not None and len(parent) == 0 and parent.name != '/'
-            ):
+            while parent is not None and len(parent) == 0 and parent.name != '/':
                 group = parent
                 parent = group.parent
                 del f[group.name]

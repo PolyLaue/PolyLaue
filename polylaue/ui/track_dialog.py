@@ -212,9 +212,7 @@ class TrackDialog:
         if not self.validate():
             return
 
-        progress = QProgressDialog(
-            'Running track. Please wait...', '', 0, 0, self.ui
-        )
+        progress = QProgressDialog('Running track. Please wait...', '', 0, 0, self.ui)
         progress.setCancelButton(None)
         # No close button in the corner
         flags = progress.windowFlags()
@@ -312,9 +310,7 @@ class TrackDialog:
     def create_track_success_message(
         self, new_abc_matrix: np.ndarray, angular_shift: float
     ) -> str:
-        root_scan_num = self.reflections.crystal_scan_number(
-            self.selected_crystal_id
-        )
+        root_scan_num = self.reflections.crystal_scan_number(self.selected_crystal_id)
 
         nearest_scan_num = None
         if self.use_nearest_abc_matrix:
@@ -325,9 +321,7 @@ class TrackDialog:
         else:
             root_abc_matrix = self.original_abc_matrix
             root_ang_shift = np.degrees(
-                compute_angle(
-                    compute_angular_shift(root_abc_matrix, new_abc_matrix)
-                )
+                compute_angle(compute_angular_shift(root_abc_matrix, new_abc_matrix))
             )
 
         msg = ''
@@ -442,9 +436,7 @@ class TrackDialog:
             dialog.dmin = 0.5
 
         if self.track_within_this_scan:
-            dialog.custom_internal_abc_matrix = (
-                self.track_within_this_scan_abc_matrix
-            )
+            dialog.custom_internal_abc_matrix = self.track_within_this_scan_abc_matrix
             dialog.use_custom_internal_abc_matrix = True
 
         if not dialog.ui.isVisible():

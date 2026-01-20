@@ -33,18 +33,12 @@ class PointAutoPicker(QObject):
         self.ui.threshold_slider_max.valueChanged.connect(
             self.on_threshold_slider_range_modified
         )
-        self.ui.threshold_slider.valueChanged.connect(
-            self.on_threshold_slider_modified
-        )
+        self.ui.threshold_slider.valueChanged.connect(self.on_threshold_slider_modified)
         self.ui.threshold.valueChanged.connect(self.on_threshold_modified)
-        self.ui.max_threshold.valueChanged.connect(
-            self.on_max_threshold_modified
-        )
+        self.ui.max_threshold.valueChanged.connect(self.on_max_threshold_modified)
         self.ui.min_area.valueChanged.connect(self.on_min_area_modified)
 
-        self.ui.dilation_radius.valueChanged.connect(
-            self.on_dilation_radius_modified
-        )
+        self.ui.dilation_radius.valueChanged.connect(self.on_dilation_radius_modified)
         self.ui.accepted.connect(self.on_accepted)
 
     def run_auto_pick(self):

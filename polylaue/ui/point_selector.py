@@ -51,8 +51,8 @@ class PointSelector(QObject):
         self.setup_connections()
 
     def setup_connections(self):
-        self._mouse_click_connection = (
-            self.image_view.scene.sigMouseClicked.connect(self.mouse_clicked)
+        self._mouse_click_connection = self.image_view.scene.sigMouseClicked.connect(
+            self.mouse_clicked
         )
 
     def disconnect(self):
@@ -147,9 +147,7 @@ class PointSelectorDialog(QDialog):
         layout = QVBoxLayout(self)
         self.setLayout(layout)
 
-        label = QLabel(
-            'Left-click to add points, right-click to remove points'
-        )
+        label = QLabel('Left-click to add points, right-click to remove points')
         layout.addWidget(label)
         layout.setAlignment(label, Qt.AlignHCenter)
 
@@ -265,9 +263,7 @@ class PointSelectorDialog(QDialog):
 
         def on_accepted():
             # Add back in the original points
-            self.point_selector.points = (
-                original_points + self.point_selector.points
-            )
+            self.point_selector.points = original_points + self.point_selector.points
             self.point_selector.points_changed()
 
         def on_rejected():

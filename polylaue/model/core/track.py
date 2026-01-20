@@ -38,11 +38,7 @@ def track(
     abc_ang = np.degrees(np.arccos(abc_ang))
     print('alpha=, beta=, gamma=:', abc_ang)
     print('Unit cell volume, Angstroms**3:', round(float(abc_vol), 2))
-    d_min = (
-        0.4246
-        * 29.2
-        / (2.0 * float(energy_highest) * np.sin(float(pix_dist[2])))
-    )
+    d_min = 0.4246 * 29.2 / (2.0 * float(energy_highest) * np.sin(float(pix_dist[2])))
     print(' ')
     print(
         '... Detector opening resolution limit d/n >',
@@ -52,13 +48,9 @@ def track(
     if d_min < float(res_lim):
         d_min = float(res_lim)
         print(' ')
-        print(
-            '... Sample resolution limit d/n >', round(d_min, 4), 'Angstroms'
-        )
+        print('... Sample resolution limit d/n >', round(d_min, 4), 'Angstroms')
     print(' ')
-    hkl_max_flo = np.sqrt(np.sum(np.square(abc_dir), axis=1)) / np.float64(
-        d_min
-    )
+    hkl_max_flo = np.sqrt(np.sum(np.square(abc_dir), axis=1)) / np.float64(d_min)
     hkl_max = hkl_max_flo.astype(np.int64) + np.int64(1)
     print('h,k,l maximal:', hkl_max)
     max_h = hkl_max[0]
@@ -148,8 +140,7 @@ def track(
     hkl_vec = np.expand_dims(t2, axis=1) + hkl_vec
     hkl_vec = np.reshape(hkl_vec, ((s1 * s2), 3))
     vec_sel = np.nonzero(
-        np.sum((obs_vec * hkl_vec), axis=1)
-        > np.cos(np.radians(np.float64(ang_lim)))
+        np.sum((obs_vec * hkl_vec), axis=1) > np.cos(np.radians(np.float64(ang_lim)))
     )
     hkl_vec = hkl_vec[vec_sel[0], :]
     obs_vec = obs_vec[vec_sel[0], :]
@@ -226,9 +217,7 @@ def track(
     obs_sec = obs_sec[vec_sel[0], :]
     hkl_pri = hkl_pri[vec_sel[0], :]
     hkl_sec = hkl_sec[vec_sel[0], :]
-    print(
-        'Combinations of primary and secondary vectors:', np.shape(hkl_sec)[0]
-    )
+    print('Combinations of primary and secondary vectors:', np.shape(hkl_sec)[0])
     print('J. Appl. Phys., Vol. 86, No. 9, 1 November 1999, 5249-5255')
     hkl_axi1 = hkl_pri
     obs_axi1 = obs_pri
@@ -351,11 +340,7 @@ def track_py(
     abc_ang = np.degrees(np.arccos(abc_ang))
     print('alpha=, beta=, gamma=:', abc_ang)
     print('Unit cell volume, Angstroms**3:', round(float(abc_vol), 2))
-    d_min = (
-        0.4246
-        * 29.2
-        / (2.0 * float(energy_highest) * np.sin(float(pix_dist[2])))
-    )
+    d_min = 0.4246 * 29.2 / (2.0 * float(energy_highest) * np.sin(float(pix_dist[2])))
     print(' ')
     print(
         '... Detector opening resolution limit d/n >',
@@ -365,13 +350,9 @@ def track_py(
     if d_min < float(res_lim):
         d_min = float(res_lim)
         print(' ')
-        print(
-            '... Sample resolution limit d/n >', round(d_min, 4), 'Angstroms'
-        )
+        print('... Sample resolution limit d/n >', round(d_min, 4), 'Angstroms')
     print(' ')
-    hkl_max_flo = np.sqrt(np.sum(np.square(abc_dir), axis=1)) / np.float64(
-        d_min
-    )
+    hkl_max_flo = np.sqrt(np.sum(np.square(abc_dir), axis=1)) / np.float64(d_min)
     hkl_max = hkl_max_flo.astype(np.int64) + np.int64(1)
     print('h,k,l maximal:', hkl_max)
     max_h = hkl_max[0]
@@ -461,8 +442,7 @@ def track_py(
     hkl_vec = np.expand_dims(t2, axis=1) + hkl_vec
     hkl_vec = np.reshape(hkl_vec, ((s1 * s2), 3))
     vec_sel = np.nonzero(
-        np.sum((obs_vec * hkl_vec), axis=1)
-        > np.cos(np.radians(np.float64(ang_lim)))
+        np.sum((obs_vec * hkl_vec), axis=1) > np.cos(np.radians(np.float64(ang_lim)))
     )
     hkl_vec = hkl_vec[vec_sel[0], :]
     obs_vec = obs_vec[vec_sel[0], :]
@@ -508,12 +488,8 @@ def track_py(
             obs_sec = obs_vec[np.int64(j), :]
             t1 = np.sum(hkl_pri * hkl_sec)
             t2 = np.sum(obs_pri * obs_sec)
-            if float(np.absolute(t1)) < np.cos(
-                float(20.0) * np.pi / float(180.0)
-            ):
-                if float(np.absolute(t2)) < np.cos(
-                    float(20.0) * np.pi / float(180.0)
-                ):
+            if float(np.absolute(t1)) < np.cos(float(20.0) * np.pi / float(180.0)):
+                if float(np.absolute(t2)) < np.cos(float(20.0) * np.pi / float(180.0)):
                     t1 = np.degrees(np.arccos(t1))
                     t2 = np.degrees(np.arccos(t2))
                     if float(np.absolute(t1 - t2)) < float(ang_tol):
@@ -521,13 +497,9 @@ def track_py(
                         hkl_axi1 = hkl_pri
                         obs_axi1 = obs_pri
                         hkl_axi2 = np.cross(hkl_axi1, hkl_sec)
-                        hkl_axi2 = hkl_axi2 / np.sqrt(
-                            np.sum(np.square(hkl_axi2))
-                        )
+                        hkl_axi2 = hkl_axi2 / np.sqrt(np.sum(np.square(hkl_axi2)))
                         obs_axi2 = np.cross(obs_axi1, obs_sec)
-                        obs_axi2 = obs_axi2 / np.sqrt(
-                            np.sum(np.square(obs_axi2))
-                        )
+                        obs_axi2 = obs_axi2 / np.sqrt(np.sum(np.square(obs_axi2)))
                         hkl_axi3 = np.cross(hkl_axi1, hkl_axi2)
                         obs_axi3 = np.cross(obs_axi1, obs_axi2)
                         hkl_mat = np.hstack(
@@ -565,9 +537,7 @@ def track_py(
                                 np.sqrt(np.sum(np.square(shkl_vec2), axis=1)),
                                 axis=1,
                             )
-                            ang = float(
-                                np.min(np.sum((shkl_vec1 * shkl_vec2), axis=1))
-                            )
+                            ang = float(np.min(np.sum((shkl_vec1 * shkl_vec2), axis=1)))
                             ang = np.acos(ang) * 180.0 / np.pi
                             if ang < float(ang_lim):
                                 n_foun = int(np.shape(obs_fou)[0])

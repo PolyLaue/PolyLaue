@@ -24,9 +24,7 @@ class PredictionMatcherDialog(QDialog):
         self.reflections_array = reflections_array
         self.crystal_id = crystal_id
 
-        self.setWindowTitle(
-            f'Find Matching Reflections for Crystal ID "{crystal_id}"'
-        )
+        self.setWindowTitle(f'Find Matching Reflections for Crystal ID "{crystal_id}"')
 
         layout = QVBoxLayout(self)
         self.setLayout(layout)
@@ -64,14 +62,10 @@ class PredictionMatcherDialog(QDialog):
         col = frame_tracker.scan_pos_y
 
         # Add the crystal ID to our array
-        reflections_array = np.insert(
-            self.reflections_array, 9, crystal_id, axis=1
-        )
+        reflections_array = np.insert(self.reflections_array, 9, crystal_id, axis=1)
 
         # Get the reflections table
-        current_table = external_reflections.reflections_table(
-            row, col, scan_num
-        )
+        current_table = external_reflections.reflections_table(row, col, scan_num)
         if current_table is not None:
             # Remove all rows that match our crystal id
             array = np.delete(

@@ -113,9 +113,7 @@ class FindDialog:
         if not self.validate():
             return
 
-        progress = QProgressDialog(
-            'Running find. Please wait...', '', 0, 0, self.ui
-        )
+        progress = QProgressDialog('Running find. Please wait...', '', 0, 0, self.ui)
         progress.setCancelButton(None)
         # No close button in the corner
         flags = progress.windowFlags()

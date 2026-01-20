@@ -24,9 +24,7 @@ class UiLoader(QUiLoader, QSingleton):
         for item in register_list:
             self.registerCustomWidget(item)
 
-    def load_file(
-        self, filename: PathLike, parent: QWidget | None = None
-    ) -> QWidget:
+    def load_file(self, filename: PathLike, parent: QWidget | None = None) -> QWidget:
         """Load a UI file and return the widget
 
         Returns a widget created from the UI file.
@@ -44,9 +42,7 @@ class UiLoader(QUiLoader, QSingleton):
         self.process_ui(ui)
         return ui
 
-    def load_bytes(
-        self, data: bytes, parent: QWidget | None = None
-    ) -> QWidget:
+    def load_bytes(self, data: bytes, parent: QWidget | None = None) -> QWidget:
         """Load a UI file from a string and return the widget"""
         buf = QBuffer(QByteArray(data))
         ui = self.load(buf, parent)

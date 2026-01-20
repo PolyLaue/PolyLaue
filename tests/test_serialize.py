@@ -13,17 +13,13 @@ def test_deserialize(test_project_manager_serialized):
         serialized_project = serialized['projects_serialized'][i]
         assert project.name == serialized_project['name']
         assert project.description == serialized_project['description']
-        assert len(project.sections) == len(
-            serialized_project['sections_serialized']
-        )
+        assert len(project.sections) == len(serialized_project['sections_serialized'])
 
         for j, section in enumerate(project.sections):
             serialized_section = serialized_project['sections_serialized'][j]
             assert section.name == serialized_section['name']
             assert section.description == serialized_section['description']
-            assert len(section.series) == len(
-                serialized_section['series_serialized']
-            )
+            assert len(section.series) == len(serialized_section['series_serialized'])
             for k, series in enumerate(section.series):
                 serialized_series = serialized_section['series_serialized'][k]
                 assert series.name == serialized_series['name']

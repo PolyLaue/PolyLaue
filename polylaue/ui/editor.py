@@ -248,9 +248,7 @@ class TupleField(Field):
         )
 
         n = description.get('length', 2)
-        self._fields = tuple(
-            element_field_class(description) for i in range(n)
-        )
+        self._fields = tuple(element_field_class(description) for i in range(n))
 
         super().__init__(description)
 
@@ -313,9 +311,7 @@ class Editor:
         for row, field in enumerate(fields.values()):
             required = field.description.get('required', True)
             label = QLabel()
-            label.setText(
-                field.description['label'] + ('*' if required else '')
-            )
+            label.setText(field.description['label'] + ('*' if required else ''))
             label.setToolTip(field.description.get('tooltip', ''))
             layout.addWidget(label, row, 0)
             layout.addWidget(field.widget, row, 1)

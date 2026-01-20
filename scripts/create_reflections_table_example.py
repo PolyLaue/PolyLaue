@@ -3,7 +3,6 @@
 import h5py
 import numpy as np
 
-
 table_of_reflections = np.array(
     [
         # Columns are (in order):

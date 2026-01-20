@@ -19,7 +19,6 @@ from polylaue.model.hkl_provider import HklProvider, InvalidHklError, HKL
 from polylaue.model.roi_manager import HklROIManager
 from polylaue.typing import WorldPoint
 
-
 ID_COL = 0
 CRYSTAL_COL = 1
 H_COL = 2
@@ -97,9 +96,7 @@ class RegionsNavigatorModel(QAbstractTableModel):
 
             if col in (CRYSTAL_COL, H_COL, K_COL, L_COL):
                 try:
-                    self.hkl_provider.get_hkl_center(
-                        roi['crystal_id'], roi['hkl']
-                    )
+                    self.hkl_provider.get_hkl_center(roi['crystal_id'], roi['hkl'])
                 except InvalidHklError:
                     return QBrush(Qt.GlobalColor.red)
 
@@ -143,9 +140,7 @@ class RegionsNavigatorModel(QAbstractTableModel):
             new_size = np.array(new_size)
 
             try:
-                center = self.hkl_provider.get_hkl_center(
-                    new_crystal_id, new_hkl
-                )
+                center = self.hkl_provider.get_hkl_center(new_crystal_id, new_hkl)
                 new_position = center - new_size // 2
             except InvalidHklError:
                 new_position = np.array([OUT_OF_BOUNDS, OUT_OF_BOUNDS])
@@ -166,9 +161,7 @@ class RegionsNavigatorModel(QAbstractTableModel):
     def rowCount(self, parent: Optional[QModelIndex] = None) -> int:
         return self.roi_manager.size()
 
-    def insertRows(
-        self, row: int, count: int, parent: Optional[QModelIndex] = None
-    ):
+    def insertRows(self, row: int, count: int, parent: Optional[QModelIndex] = None):
         if parent is None:
             parent = QModelIndex()
 

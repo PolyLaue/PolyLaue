@@ -13,7 +13,6 @@ from PySide6.QtCore import (
 from polylaue.model.roi_manager import ROIManager
 from polylaue.typing import WorldPoint
 
-
 ID_COL = 0
 POS_X_COL = 1
 POS_Y_COL = 2
@@ -30,9 +29,7 @@ COL_HEADERS = {
 
 
 class RegionsNavigatorModel(QAbstractTableModel):
-    def __init__(
-        self, roi_manager: ROIManager, parent: Optional[QObject] = None
-    ):
+    def __init__(self, roi_manager: ROIManager, parent: Optional[QObject] = None):
         super().__init__(parent)
 
         self.roi_manager = roi_manager
@@ -108,9 +105,7 @@ class RegionsNavigatorModel(QAbstractTableModel):
     def rowCount(self, parent: Optional[QModelIndex] = None) -> int:
         return self.roi_manager.size()
 
-    def insertRows(
-        self, row: int, count: int, parent: Optional[QModelIndex] = None
-    ):
+    def insertRows(self, row: int, count: int, parent: Optional[QModelIndex] = None):
         if parent is None:
             parent = QModelIndex()
 

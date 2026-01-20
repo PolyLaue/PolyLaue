@@ -91,9 +91,7 @@ def default_number_validator(
         )
 
 
-def default_path_validator(
-    name: str, value, description: ParameterDescription, *args
-):
+def default_path_validator(name: str, value, description: ParameterDescription, *args):
     required = description.get('required', True)
 
     if not required and (
@@ -130,9 +128,7 @@ DEFAULT_SCALAR_VALIDATORS: dict[ParameterType, ParameterValidator] = {
 }
 
 
-def default_tuple_validator(
-    name: str, value, description: ParameterDescription, *args
-):
+def default_tuple_validator(name: str, value, description: ParameterDescription, *args):
     valid = isinstance(value, tuple)
     valid = valid and len(value) == description.get('length', 2)
 
@@ -191,8 +187,6 @@ class Editable(Serializable):
             validator = self.custom_validators.get(k)
 
             if validator is None:
-                validator = DEFAULT_VALIDATORS.get(
-                    description['type'], noop_validator
-                )
+                validator = DEFAULT_VALIDATORS.get(description['type'], noop_validator)
 
             validator(k, value, description, params, self)

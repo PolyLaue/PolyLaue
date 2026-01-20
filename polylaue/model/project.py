@@ -117,8 +117,7 @@ class Project(Editable):
         path = self.geometry_path
         if path is None:
             raise RuntimeError(
-                'Geometry file does not exist: '
-                f'{self.expected_geometry_file_path}'
+                'Geometry file does not exist: ' f'{self.expected_geometry_file_path}'
             )
 
         return load_geometry_file(path)

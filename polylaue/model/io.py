@@ -27,17 +27,13 @@ def identify_loader_function(
     return load_file_with_fabio
 
 
-def load_image_file(
-    path: PathLike, bounds: Optional[Bounds] = None
-) -> np.ndarray:
+def load_image_file(path: PathLike, bounds: Optional[Bounds] = None) -> np.ndarray:
     # Automatically identify the file type and load it
     func = identify_loader_function(path)
     return func(path, bounds)
 
 
-def load_tif_file(
-    path: PathLike, bounds: Optional[Bounds] = None
-) -> np.ndarray:
+def load_tif_file(path: PathLike, bounds: Optional[Bounds] = None) -> np.ndarray:
     # Open with Pillow
     pil_img = Image.open(path)
 
@@ -51,9 +47,7 @@ def load_tif_file(
     return img
 
 
-def load_file_with_fabio(
-    path: PathLike, bounds: Optional[Bounds] = None
-) -> np.ndarray:
+def load_file_with_fabio(path: PathLike, bounds: Optional[Bounds] = None) -> np.ndarray:
     with fabio.open(path) as img:
         if bounds is not None:
             return img.data[bounds[0] : bounds[1], bounds[2] : bounds[3]]

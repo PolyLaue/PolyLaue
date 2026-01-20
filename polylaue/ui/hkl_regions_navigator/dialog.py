@@ -35,7 +35,6 @@ from polylaue.ui.hkl_regions_navigator.model import (
 from polylaue.ui.hkl_regions_navigator.view import RegionsNavigatorView
 from polylaue.ui.utils.keep_dialog_on_top import keep_dialog_on_top
 
-
 DEFAULT_ROI_ITEM_ARGS = {
     'scaleSnap': True,
     'translateSnap': True,
@@ -289,13 +288,9 @@ class HklRegionsNavigatorDialog(QDialog):
         self.show_button.clicked.connect(self.on_show_clicked)
         self.remove_button.clicked.connect(self.on_remove_clicked)
         self.display_button.clicked.connect(self.on_display_clicked)
-        self.roi_items_manager.sigActiveROIChanged.connect(
-            self.on_active_roi_changed
-        )
+        self.roi_items_manager.sigActiveROIChanged.connect(self.on_active_roi_changed)
         self.roi_items_manager.sigROIModified.connect(self.sigRoiModified)
-        self.view.selectionModel().selectionChanged.connect(
-            self.on_selection_changed
-        )
+        self.view.selectionModel().selectionChanged.connect(self.on_selection_changed)
 
     def on_close(self, *_args):
         pass
@@ -358,9 +353,7 @@ class HklRegionsNavigatorDialog(QDialog):
         )
         self.view.selectionModel().select(index, flags)
 
-    def on_selection_changed(
-        self, current: QItemSelection, previous: QItemSelection
-    ):
+    def on_selection_changed(self, current: QItemSelection, previous: QItemSelection):
         # Reset color of previously selected roi, if any
         roi_item = self.roi_items_manager.roi_items.get(self.selected_roi_id)
         if roi_item is not None:
@@ -370,9 +363,7 @@ class HklRegionsNavigatorDialog(QDialog):
         if current.count() > 0:
             index = current.indexes()[0]
             self.selected_roi_id = self.roi_manager.index_to_id(index.row())
-            roi_item = self.roi_items_manager.roi_items.get(
-                self.selected_roi_id
-            )
+            roi_item = self.roi_items_manager.roi_items.get(self.selected_roi_id)
             self.remove_button.setEnabled(True)
             self.display_button.setEnabled(True)
 

@@ -9,9 +9,7 @@ Number = int | float
 
 
 class CustomGridItem(pg.GraphicsObject):
-    def __init__(
-        self, x_ticks=None, y_ticks=None, x_limits=None, y_limits=None
-    ):
+    def __init__(self, x_ticks=None, y_ticks=None, x_limits=None, y_limits=None):
         pg.GraphicsObject.__init__(self)
 
         if x_ticks is None:
@@ -103,9 +101,7 @@ class CustomGridItem(pg.GraphicsObject):
                 x0 = self.x_ticks[i]
                 x1 = self.x_ticks[i + 1]
                 x = (x1 + x0) / 2
-                p.drawText(
-                    QtCore.QPointF(x, self.y_limits[0] - padding), str(i + 1)
-                )
+                p.drawText(QtCore.QPointF(x, self.y_limits[0] - padding), str(i + 1))
                 p.drawText(
                     QtCore.QPointF(x, self.y_limits[1] + padding + fontsize),
                     str(i + 1),
@@ -119,9 +115,7 @@ class CustomGridItem(pg.GraphicsObject):
                     QtCore.QPointF(self.x_limits[0] - padding - fontsize, y),
                     str(i + 1),
                 )
-                p.drawText(
-                    QtCore.QPointF(self.x_limits[1] + padding, y), str(i + 1)
-                )
+                p.drawText(QtCore.QPointF(self.x_limits[1] + padding, y), str(i + 1))
 
         # Highlight current cell in the grid
         if (

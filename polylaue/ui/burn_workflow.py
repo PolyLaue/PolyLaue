@@ -138,9 +138,7 @@ class BurnWorkflow(QObject):
 
             self.abc_matrix = abc_matrix
         else:
-            msg = (
-                f'Crystal Orientation: {self.burn_dialog.crystal_orientation}'
-            )
+            msg = f'Crystal Orientation: {self.burn_dialog.crystal_orientation}'
             raise NotImplementedError(msg)
 
     def set_abc_matrix_to_crystals_table_if_missing(self):
@@ -177,9 +175,7 @@ class BurnWorkflow(QObject):
         dialog.load_crystal_name.connect(self.load_crystal_name)
         dialog.update_has_angular_shift.connect(self.update_has_angular_shift)
         dialog.overwrite_crystal.connect(self.overwrite_crystal)
-        dialog.write_crystal_orientation.connect(
-            self.write_crystal_orientation
-        )
+        dialog.write_crystal_orientation.connect(self.write_crystal_orientation)
         self.burn_dialog.clear_reflections.connect(self.clear_reflections)
         self.load_crystal_name()
         self.update_has_angular_shift()
