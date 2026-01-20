@@ -1,4 +1,4 @@
-# Copyright © 2025, UChicago Argonne, LLC. See "LICENSE" for full details.
+# Copyright © 2026, UChicago Argonne, LLC. See "LICENSE" for full details.
 
 """Utility script to add copyright notice to all source files.
 
@@ -10,8 +10,8 @@ This script is intended to be ran from the root level of the repository.
 
 from pathlib import Path
 
-old_copyright_text = '# Copyright © 2024, UChicago Argonne, LLC. See "LICENSE" for full details.\n'
-copyright_text = '# Copyright © 2025, UChicago Argonne, LLC. See "LICENSE" for full details.\n'  # noqa
+old_copyright_text = '# Copyright © 2025, UChicago Argonne, LLC. See "LICENSE" for full details.\n'
+copyright_text = '# Copyright © 2026, UChicago Argonne, LLC. See "LICENSE" for full details.\n'  # noqa
 
 num_files_edited = 0
 for filename in Path('.').rglob('*.py'):
