@@ -1,4 +1,4 @@
-# Copyright © 2025, UChicago Argonne, LLC. See "LICENSE" for full details.
+# Copyright © 2026, UChicago Argonne, LLC. See "LICENSE" for full details.
 
 import numpy as np
 
@@ -57,11 +57,7 @@ def find(
     abc_ang = np.degrees(np.arccos(abc_ang))
     print('alpha=, beta=, gamma=:', abc_ang)
     print('Unit cell volume, Angstroms**3:', round(float(abc_vol), 2))
-    d_min = (
-        0.4246
-        * 29.2
-        / (2.0 * float(energy_highest) * np.sin(float(pix_dist[2])))
-    )
+    d_min = 0.4246 * 29.2 / (2.0 * float(energy_highest) * np.sin(float(pix_dist[2])))
     print(' ')
     print(
         '... Detector opening resolution limit d/n >',
@@ -71,13 +67,9 @@ def find(
     if d_min < float(res_lim):
         d_min = float(res_lim)
         print(' ')
-        print(
-            '... Sample resolution limit d/n >', round(d_min, 4), 'Angstroms'
-        )
+        print('... Sample resolution limit d/n >', round(d_min, 4), 'Angstroms')
     print(' ')
-    hkl_max_flo = np.sqrt(np.sum(np.square(abc_dir), axis=1)) / np.float64(
-        d_min
-    )
+    hkl_max_flo = np.sqrt(np.sum(np.square(abc_dir), axis=1)) / np.float64(d_min)
     hkl_max = hkl_max_flo.astype(np.int64) + np.int64(1)
     print('h,k,l maximal:', hkl_max)
     max_h = hkl_max[0]
@@ -206,15 +198,9 @@ def find(
             obs_axi2 = obs_axi2 / np.sqrt(np.sum(np.square(obs_axi2)))
             hkl_axi3 = np.cross(hkl_axi1, hkl_axi2)
             obs_axi3 = np.cross(obs_axi1, obs_axi2)
-            hkl_x = np.sum(
-                (np.expand_dims(hkl_axi1, axis=1) * hkl_vec), axis=2
-            )
-            hkl_y = np.sum(
-                (np.expand_dims(hkl_axi2, axis=1) * hkl_vec), axis=2
-            )
-            hkl_z = np.sum(
-                (np.expand_dims(hkl_axi3, axis=1) * hkl_vec), axis=2
-            )
+            hkl_x = np.sum((np.expand_dims(hkl_axi1, axis=1) * hkl_vec), axis=2)
+            hkl_y = np.sum((np.expand_dims(hkl_axi2, axis=1) * hkl_vec), axis=2)
+            hkl_z = np.sum((np.expand_dims(hkl_axi3, axis=1) * hkl_vec), axis=2)
             obs_x = np.sum((obs_axi1 * obs_vec), axis=1)
             obs_y = np.sum((obs_axi2 * obs_vec), axis=1)
             obs_z = np.sum((obs_axi3 * obs_vec), axis=1)
@@ -349,11 +335,7 @@ def find_py(
     abc_ang = np.degrees(np.arccos(abc_ang))
     print('alpha=, beta=, gamma=:', abc_ang)
     print('Unit cell volume, Angstroms**3:', round(float(abc_vol), 2))
-    d_min = (
-        0.4246
-        * 29.2
-        / (2.0 * float(energy_highest) * np.sin(float(pix_dist[2])))
-    )
+    d_min = 0.4246 * 29.2 / (2.0 * float(energy_highest) * np.sin(float(pix_dist[2])))
     print(' ')
     print(
         '... Detector opening resolution limit d/n >',
@@ -363,13 +345,9 @@ def find_py(
     if d_min < float(res_lim):
         d_min = float(res_lim)
         print(' ')
-        print(
-            '... Sample resolution limit d/n >', round(d_min, 4), 'Angstroms'
-        )
+        print('... Sample resolution limit d/n >', round(d_min, 4), 'Angstroms')
     print(' ')
-    hkl_max_flo = np.sqrt(np.sum(np.square(abc_dir), axis=1)) / np.float64(
-        d_min
-    )
+    hkl_max_flo = np.sqrt(np.sum(np.square(abc_dir), axis=1)) / np.float64(d_min)
     hkl_max = hkl_max_flo.astype(np.int64) + np.int64(1)
     print('h,k,l maximal:', hkl_max)
     max_h = hkl_max[0]
@@ -485,13 +463,9 @@ def find_py(
                             hkl_axi1 = hkl_pri
                             obs_axi1 = obs_pri
                             hkl_axi2 = np.cross(hkl_axi1, hkl_sec)
-                            hkl_axi2 = hkl_axi2 / np.sqrt(
-                                np.sum(np.square(hkl_axi2))
-                            )
+                            hkl_axi2 = hkl_axi2 / np.sqrt(np.sum(np.square(hkl_axi2)))
                             obs_axi2 = np.cross(obs_axi1, obs_sec)
-                            obs_axi2 = obs_axi2 / np.sqrt(
-                                np.sum(np.square(obs_axi2))
-                            )
+                            obs_axi2 = obs_axi2 / np.sqrt(np.sum(np.square(obs_axi2)))
                             hkl_axi3 = np.cross(hkl_axi1, hkl_axi2)
                             obs_axi3 = np.cross(obs_axi1, obs_axi2)
                             hkl_mat = np.hstack(
@@ -514,9 +488,7 @@ def find_py(
                                 (np.expand_dims(obs_com, axis=1) * hkl_com),
                                 axis=2,
                             ) > np.cos(np.radians(np.float64(ang_tol)))
-                            com_sel = np.zeros(
-                                np.shape(vec_sel), dtype=np.int64
-                            )
+                            com_sel = np.zeros(np.shape(vec_sel), dtype=np.int64)
                             com_sel[vec_sel] = np.int64(1)
                             obs_fou = int(np.sum(com_sel))
                             if ref_thr < obs_fou:
@@ -530,10 +502,7 @@ def find_py(
                                 n_mult = n_mult + 1
             if n_foun > ref_thr:
                 print('Combinations of primary and secondary vectors:', n_psc)
-                print(
-                    'J. Appl. Phys., Vol. 86, No. 9, '
-                    '1 November 1999, 5249-5255'
-                )
+                print('J. Appl. Phys., Vol. 86, No. 9, ' '1 November 1999, 5249-5255')
                 print(' ')
                 print('Indexed reflections:', n_foun)
                 print(

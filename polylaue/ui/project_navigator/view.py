@@ -1,4 +1,4 @@
-# Copyright © 2025, UChicago Argonne, LLC. See "LICENSE" for full details.
+# Copyright © 2026, UChicago Argonne, LLC. See "LICENSE" for full details.
 
 from PySide6.QtCore import (
     QAbstractItemModel,
@@ -21,7 +21,6 @@ from PySide6.QtWidgets import (
 from polylaue.model.scan import Scan
 from polylaue.model.series import Series
 from polylaue.ui.project_navigator.navigation_bar import NavigationBar
-
 
 # A few shortcuts to enums
 EditTrigger = QTableView.EditTrigger
@@ -338,9 +337,7 @@ class ProjectNavigatorView(QTableView):
 
     def edit_directory_path(self, index: QModelIndex):
         current_dir = index.data()
-        path = QFileDialog.getExistingDirectory(
-            self, 'Select Directory', current_dir
-        )
+        path = QFileDialog.getExistingDirectory(self, 'Select Directory', current_dir)
         if not path:
             return
 

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>698</width>
-    <height>544</height>
+    <height>593</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -39,16 +39,6 @@
       <string>Track Parameters</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_3">
-      <item row="0" column="0">
-       <widget class="QLabel" name="crystal_id_label">
-        <property name="toolTip">
-         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The crystal ID to use as a starting point. The ABC matrix for this crystal will be automatically rotated to determine the best orientation.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-        </property>
-        <property name="text">
-         <string>Crystal ID:</string>
-        </property>
-       </widget>
-      </item>
       <item row="0" column="1">
        <widget class="QSpinBox" name="crystal_id">
         <property name="toolTip">
@@ -59,71 +49,39 @@
         </property>
        </widget>
       </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="angular_tolerance_label">
+      <item row="4" column="1">
+       <widget class="QSpinBox" name="reflections_threshold">
         <property name="toolTip">
-         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Default: 0.07°&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-        </property>
-        <property name="text">
-         <string>Angular Tolerance:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="1">
-       <widget class="ScientificDoubleSpinBox" name="angular_tolerance">
-        <property name="toolTip">
-         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Default: 0.07°&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-        </property>
-        <property name="suffix">
-         <string>°</string>
-        </property>
-        <property name="decimals">
-         <number>8</number>
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The minimum number of indexed reflections to assume the indexing routine was successful.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;Default: 3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
         </property>
         <property name="maximum">
-         <double>100000.000000000000000</double>
+         <number>100000</number>
         </property>
         <property name="value">
-         <double>0.070000000000000</double>
+         <number>3</number>
         </property>
        </widget>
       </item>
-      <item row="2" column="0">
-       <widget class="QLabel" name="angular_limit_label">
+      <item row="4" column="0">
+       <widget class="QLabel" name="reflections_threshold_label">
         <property name="toolTip">
-         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Default: 29°&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The minimum number of indexed reflections to assume the indexing routine was successful.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;Default: 3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
         </property>
         <property name="text">
-         <string>Angular Limit:</string>
+         <string>Reflections Threshold:</string>
         </property>
        </widget>
       </item>
-      <item row="2" column="1">
-       <widget class="ScientificDoubleSpinBox" name="angular_limit">
+      <item row="6" column="0" colspan="2">
+       <widget class="QCheckBox" name="use_nearest_abc_matrix">
         <property name="toolTip">
-         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Default: 29°&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-        </property>
-        <property name="suffix">
-         <string>°</string>
-        </property>
-        <property name="decimals">
-         <number>8</number>
-        </property>
-        <property name="maximum">
-         <double>1000000.000000000000000</double>
-        </property>
-        <property name="value">
-         <double>5.000000000000000</double>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="0">
-       <widget class="QLabel" name="resolution_limit_label">
-        <property name="toolTip">
-         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Default: 0.4 Å&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Use the ABC matrix from nearest tracked scan number as the reference matrix for tracking the orientation.&lt;br/&gt;&lt;/p&gt;&lt;p&gt;For example, if a crystal was indexed at scan number 1 (which means its ABC matrix is stored for that scan number), and tracking has already been performed for scan number 2 (which means an angular shift matrix has been computed from scan number 1 to scan number 2), and you are now performing tracking for scan number 3, then checking this box means that you would start with the ABC matrix from scan number 2, which will likely have a smaller angular shift to scan number 3 than scan number 1 would. Not checking the box means that you would start with the ABC matrix from scan number 1.&lt;br/&gt;&lt;/p&gt;&lt;p&gt;This typically means you can set a smaller angular limit, which is more performant and is also necessary in some cases (for example, angular limits above 30 degrees are not allowed).&lt;br/&gt;&lt;/p&gt;&lt;p&gt;Note: in the case of a tie in &amp;quot;nearness&amp;quot;, the smaller scan number is preferred. For example, if you are tracking for scan number 3, and tracking has already been performed for both scan number 2 and scan number 4, then scan number 2 would be chosen rather than scan number 4 since it is smaller.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;If tracking has not been performed on any other scan numbers, then the original ABC matrix will be used.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
         </property>
         <property name="text">
-         <string>Resolution Limit:</string>
+         <string>Use nearest tracked scan for reference ABC matrix</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
         </property>
        </widget>
       </item>
@@ -146,59 +104,111 @@
         </property>
        </widget>
       </item>
-      <item row="4" column="0">
-       <widget class="QLabel" name="reflections_threshold_label">
+      <item row="2" column="1">
+       <widget class="ScientificDoubleSpinBox" name="angular_limit">
         <property name="toolTip">
-         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The minimum number of indexed reflections to assume the indexing routine was successful.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;Default: 3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Default: 29°&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
         </property>
-        <property name="text">
-         <string>Reflections Threshold:</string>
+        <property name="suffix">
+         <string>°</string>
         </property>
-       </widget>
-      </item>
-      <item row="4" column="1">
-       <widget class="QSpinBox" name="reflections_threshold">
-        <property name="toolTip">
-         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The minimum number of indexed reflections to assume the indexing routine was successful.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;Default: 3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        <property name="decimals">
+         <number>8</number>
         </property>
         <property name="maximum">
-         <number>100000</number>
+         <double>1000000.000000000000000</double>
         </property>
         <property name="value">
-         <number>3</number>
+         <double>5.000000000000000</double>
         </property>
        </widget>
       </item>
-      <item row="5" column="0" colspan="2">
-       <widget class="QCheckBox" name="use_nearest_abc_matrix">
-        <property name="toolTip">
-         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Use the ABC matrix from nearest tracked scan number as the reference matrix for tracking the orientation.&lt;br/&gt;&lt;/p&gt;&lt;p&gt;For example, if a crystal was indexed at scan number 1 (which means its ABC matrix is stored for that scan number), and tracking has already been performed for scan number 2 (which means an angular shift matrix has been computed from scan number 1 to scan number 2), and you are now performing tracking for scan number 3, then checking this box means that you would start with the ABC matrix from scan number 2, which will likely have a smaller angular shift to scan number 3 than scan number 1 would. Not checking the box means that you would start with the ABC matrix from scan number 1.&lt;br/&gt;&lt;/p&gt;&lt;p&gt;This typically means you can set a smaller angular limit, which is more performant and is also necessary in some cases (for example, angular limits above 30 degrees are not allowed).&lt;br/&gt;&lt;/p&gt;&lt;p&gt;Note: in the case of a tie in &amp;quot;nearness&amp;quot;, the smaller scan number is preferred. For example, if you are tracking for scan number 3, and tracking has already been performed for both scan number 2 and scan number 4, then scan number 2 would be chosen rather than scan number 4 since it is smaller.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;If tracking has not been performed on any other scan numbers, then the original ABC matrix will be used.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-        </property>
-        <property name="text">
-         <string>Use nearest tracked scan for reference ABC matrix?</string>
-        </property>
-        <property name="checked">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item row="6" column="0">
+      <item row="7" column="0">
        <widget class="QCheckBox" name="replace_abc_matrix">
         <property name="toolTip">
          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Instead of just recording the angular shift for this scan number, replace the ABC matrix in the crystal with the result of this tracking, and recompute all other angular shifts with respect to the new ABC matrix.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;This is beneficial if you believe this tracked scan number will produce a more accurate ABC matrix than the scan number where the ABC matrix was initially indexed.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
         </property>
         <property name="text">
-         <string>Replace ABC Matrix?</string>
+         <string>Replace ABC Matrix</string>
         </property>
        </widget>
       </item>
-      <item row="6" column="1">
+      <item row="7" column="1">
        <widget class="QCheckBox" name="conserve_memory">
         <property name="toolTip">
          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If checked, a different version of the internal function will be utilized that uses less RAM, but also runs a little slower.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
         </property>
         <property name="text">
          <string>Conserve Memory</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="crystal_id_label">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The crystal ID to use as a starting point. The ABC matrix for this crystal will be automatically rotated to determine the best orientation.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+        <property name="text">
+         <string>Crystal ID:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="resolution_limit_label">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Default: 0.4 Å&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+        <property name="text">
+         <string>Resolution Limit:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="ScientificDoubleSpinBox" name="angular_tolerance">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Default: 0.07°&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+        <property name="suffix">
+         <string>°</string>
+        </property>
+        <property name="decimals">
+         <number>8</number>
+        </property>
+        <property name="maximum">
+         <double>100000.000000000000000</double>
+        </property>
+        <property name="value">
+         <double>0.070000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="angular_tolerance_label">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Default: 0.07°&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+        <property name="text">
+         <string>Angular Tolerance:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="angular_limit_label">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Default: 29°&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+        <property name="text">
+         <string>Angular Limit:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="8" column="0">
+       <widget class="QCheckBox" name="track_within_this_scan">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Track a crystal's orientation changes within this scan.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;This feature is for measuring properties such as crystal bending, where different scan positions on the same scan number have different orientations for the same crystal.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;If checked, tracking will be performed starting from the ABC matrix for this selected crystal and scan number, and the resulting angular shift will be displayed for information purposes only (no settings such as angular shift tables will be overwritten). That angular shift shows, for example, how much the crystal is bending within the sample.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;To use this setting, the ABC matrix (orientation matrix) of the selected crystal for the currently viewed scan number must already be computable (i. e., either &amp;quot;Find&amp;quot; was used to identify the ABC matrix for this scan number, or &amp;quot;Track&amp;quot; was used to identify the angular shift for this scan number).&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;Some of the other settings are invalid if this is checked, such as &amp;quot;Use nearest tracked scan for reference ABC matrix&amp;quot; and &amp;quot;Replace ABC Matrix&amp;quot;. If those are also checked, a warning will be printed at runtime and they will be disabled automatically.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+        <property name="text">
+         <string>Track within this scan</string>
         </property>
        </widget>
       </item>
@@ -258,6 +268,19 @@
    <header>scientificspinbox.py</header>
   </customwidget>
  </customwidgets>
+ <tabstops>
+  <tabstop>auto_pick_points</tabstop>
+  <tabstop>clear_points</tabstop>
+  <tabstop>crystal_id</tabstop>
+  <tabstop>angular_tolerance</tabstop>
+  <tabstop>angular_limit</tabstop>
+  <tabstop>resolution_limit</tabstop>
+  <tabstop>reflections_threshold</tabstop>
+  <tabstop>use_nearest_abc_matrix</tabstop>
+  <tabstop>replace_abc_matrix</tabstop>
+  <tabstop>conserve_memory</tabstop>
+  <tabstop>track_within_this_scan</tabstop>
+ </tabstops>
  <resources/>
  <connections>
   <connection>

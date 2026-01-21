@@ -1,4 +1,4 @@
-# Copyright © 2025, UChicago Argonne, LLC. See "LICENSE" for full details.
+# Copyright © 2026, UChicago Argonne, LLC. See "LICENSE" for full details.
 
 from pathlib import Path
 
@@ -82,6 +82,11 @@ class BurnWorkflow(QObject):
 
     def load_abc_matrix(self):
         self.abc_matrix = None
+
+        if self.burn_dialog.use_custom_internal_abc_matrix:
+            self.abc_matrix = self.burn_dialog.custom_internal_abc_matrix
+            return
+
         crystal_id = self.crystal_id
         if self.burn_dialog.crystal_orientation_is_from_project_dir:
             path = self.project_dir_abc_matrix_path
@@ -133,9 +138,7 @@ class BurnWorkflow(QObject):
 
             self.abc_matrix = abc_matrix
         else:
-            msg = (
-                f'Crystal Orientation: {self.burn_dialog.crystal_orientation}'
-            )
+            msg = f'Crystal Orientation: {self.burn_dialog.crystal_orientation}'
             raise NotImplementedError(msg)
 
     def set_abc_matrix_to_crystals_table_if_missing(self):
@@ -172,9 +175,7 @@ class BurnWorkflow(QObject):
         dialog.load_crystal_name.connect(self.load_crystal_name)
         dialog.update_has_angular_shift.connect(self.update_has_angular_shift)
         dialog.overwrite_crystal.connect(self.overwrite_crystal)
-        dialog.write_crystal_orientation.connect(
-            self.write_crystal_orientation
-        )
+        dialog.write_crystal_orientation.connect(self.write_crystal_orientation)
         self.burn_dialog.clear_reflections.connect(self.clear_reflections)
         self.load_crystal_name()
         self.update_has_angular_shift()

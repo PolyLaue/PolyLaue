@@ -1,4 +1,4 @@
-# Copyright © 2025, UChicago Argonne, LLC. See "LICENSE" for full details.
+# Copyright © 2026, UChicago Argonne, LLC. See "LICENSE" for full details.
 
 import datetime
 from functools import lru_cache, partial
@@ -46,7 +46,6 @@ from polylaue.ui.region_mapping.dialog import RegionMappingDialog
 from polylaue.ui.regions_navigator.dialog import RegionsNavigatorDialog
 from polylaue.ui.track_dialog import TrackDialog
 from polylaue.ui.utils.ui_loader import UiLoader
-
 
 logger = logging.getLogger(__name__)
 
@@ -111,12 +110,8 @@ class MainWindow(QObject):
         self.ui.action_overlays_reflections.triggered.connect(
             self.open_reflections_editor
         )
-        self.ui.action_indexing_find.triggered.connect(
-            self.begin_indexing_find
-        )
-        self.ui.action_indexing_track.triggered.connect(
-            self.begin_indexing_track
-        )
+        self.ui.action_indexing_find.triggered.connect(self.begin_indexing_find)
+        self.ui.action_indexing_track.triggered.connect(self.begin_indexing_track)
         self.ui.action_select_indexing_points.triggered.connect(
             self.begin_select_indexing_points
         )
@@ -135,9 +130,7 @@ class MainWindow(QObject):
         )
 
         self.image_view.shift_scan_number.connect(self.on_shift_scan_number)
-        self.image_view.shift_scan_position.connect(
-            self.on_shift_scan_position
-        )
+        self.image_view.shift_scan_position.connect(self.on_shift_scan_position)
         self.image_view.mouse_move_message.connect(self.on_mouse_move_message)
         self.image_view.set_image_to_series_background.connect(
             self.set_current_image_to_series_background
@@ -146,9 +139,7 @@ class MainWindow(QObject):
             self.set_current_image_to_section_background
         )
 
-        self.reflections_editor.reflections_changed.connect(
-            self.on_reflections_changed
-        )
+        self.reflections_editor.reflections_changed.connect(self.on_reflections_changed)
         self.reflections_editor.prediction_matcher_triggered.connect(
             self.begin_prediction_matcher
         )
@@ -194,9 +185,7 @@ class MainWindow(QObject):
             'apply_background_subtraction', 'true'
         ) in ('true', True)
 
-        self.image_view.settings_serialized = settings.value(
-            'image_view_settings', {}
-        )
+        self.image_view.settings_serialized = settings.value('image_view_settings', {})
 
     @property
     def current_series_path(self) -> list[int] | None:
@@ -368,9 +357,7 @@ class MainWindow(QObject):
         if not hasattr(self, '_project_navigator_dialog'):
             d = ProjectNavigatorDialog(self.project_manager, self.ui)
             d.model.data_modified.connect(self.save_project_manager)
-            d.view.series_modified.connect(
-                self.on_project_navigator_series_modified
-            )
+            d.view.series_modified.connect(self.on_project_navigator_series_modified)
             d.view.open_scan.connect(self.on_project_navigator_open_scan)
             self._project_navigator_dialog = d
 
@@ -528,9 +515,7 @@ class MainWindow(QObject):
             dialog.set_stale(True)
 
     def load_current_image(self):
-        filepath, img = self.open_image(
-            self.series, self.scan_num, self.scan_pos
-        )
+        filepath, img = self.open_image(self.series, self.scan_num, self.scan_pos)
         self.ui.setWindowTitle(filepath.name)
         self.image_view.setImage(
             img, autoRange=False, autoLevels=False, autoHistogramRange=False
@@ -551,9 +536,7 @@ class MainWindow(QObject):
             and series.background_image_path_str is not None
         ):
             # This function will cache the background
-            background = _load_background_image(
-                series.background_image_path_str
-            )
+            background = _load_background_image(series.background_image_path_str)
 
             if bounds is not None:
                 background = background[
@@ -594,9 +577,7 @@ class MainWindow(QObject):
             self.ui.time_label.setText('')
             return
 
-        rtime = self.series.relative_file_creation_time(
-            *self.scan_pos, self.scan_num
-        )
+        rtime = self.series.relative_file_creation_time(*self.scan_pos, self.scan_num)
 
         # Round to milliseconds
         rtime = round(rtime, 3)
@@ -797,9 +778,7 @@ class MainWindow(QObject):
             self._prediction_matcher_dialog.hide()
             self._prediction_matcher_dialog = None
 
-        d = PredictionMatcherDialog(
-            self.image_view, array, crystal_id, self.ui
-        )
+        d = PredictionMatcherDialog(self.image_view, array, crystal_id, self.ui)
         d.run()
 
         self._prediction_matcher_dialog = d
@@ -846,10 +825,7 @@ class MainWindow(QObject):
 
         if d.indexing_selected or d.refinement_selected:
             if len(d.points) < 2:
-                msg = (
-                    'For indexing or refinement, at least 2 points must '
-                    'be picked.'
-                )
+                msg = 'For indexing or refinement, at least 2 points must ' 'be picked.'
                 QMessageBox.critical(self.ui, 'Not enough points', msg)
                 d.show()
                 return
@@ -859,9 +835,7 @@ class MainWindow(QObject):
 
         filename = d.filename
         select_file_manually = (
-            filename is None
-            or not project_dir
-            or not Path(project_dir).exists()
+            filename is None or not project_dir or not Path(project_dir).exists()
         )
         if select_file_manually:
             if not project_dir or not Path(project_dir).exists():
@@ -976,16 +950,10 @@ class MainWindow(QObject):
             dialog.change_scan_position.connect(self.on_change_scan_position)
             dialog.shift_scan_number.connect(self.on_shift_scan_number)
             dialog.shift_scan_position.connect(self.on_shift_scan_position)
-            dialog.sigMappingDomainChanged.connect(
-                self.on_mapping_domain_changed
-            )
-            dialog.sigMappingHighlightChanged.connect(
-                self.on_mapping_highlight_changed
-            )
+            dialog.sigMappingDomainChanged.connect(self.on_mapping_domain_changed)
+            dialog.sigMappingHighlightChanged.connect(self.on_mapping_highlight_changed)
             dialog.sigShowDomainChanged.connect(self.on_show_domain_changed)
-            dialog.sigShowHighlightChanged.connect(
-                self.on_show_highlight_changed
-            )
+            dialog.sigShowHighlightChanged.connect(self.on_show_highlight_changed)
 
             self.region_mapping_dialogs[id] = dialog
 
@@ -996,9 +964,7 @@ class MainWindow(QObject):
             dialog = self.region_mapping_dialogs[id]
             dialog.set_stale(True)
 
-    def on_mapping_domain_changed(
-        self, i: int, j: int, size_i: int, size_j: int
-    ):
+    def on_mapping_domain_changed(self, i: int, j: int, size_i: int, size_j: int):
         self.mapping_domain_area = {
             "position": np.array((i, j)),
             "size": np.array((size_i, size_j)),
@@ -1006,9 +972,7 @@ class MainWindow(QObject):
         for dialog in self.region_mapping_dialogs.values():
             dialog.set_domain_roi(self.mapping_domain_area)
 
-    def on_mapping_highlight_changed(
-        self, i: int, j: int, size_i: int, size_j: int
-    ):
+    def on_mapping_highlight_changed(self, i: int, j: int, size_i: int, size_j: int):
         self.mapping_highlight_area = {
             "position": np.array((i, j)),
             "size": np.array((size_i, size_j)),

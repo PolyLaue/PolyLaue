@@ -1,4 +1,4 @@
-# Copyright © 2025, UChicago Argonne, LLC. See "LICENSE" for full details.
+# Copyright © 2026, UChicago Argonne, LLC. See "LICENSE" for full details.
 
 from __future__ import annotations
 import logging
@@ -57,9 +57,7 @@ class Series(Editable):
         if scans is None:
             # Use the same number of scans as the last series, if possible.
             if parent.series:
-                scans = [
-                    Scan(self) for _ in range(parent.series[-1].num_scans)
-                ]
+                scans = [Scan(self) for _ in range(parent.series[-1].num_scans)]
             else:
                 # Default to 1 scan
                 scans = [Scan(self)]
@@ -234,9 +232,7 @@ class Series(Editable):
         file_dict = {}
 
         # Identify all files that match the full regex
-        full_regex = re.compile(
-            file_prefix + IMAGE_FILE_SUFFIX_REGEX, re.IGNORECASE
-        )
+        full_regex = re.compile(file_prefix + IMAGE_FILE_SUFFIX_REGEX, re.IGNORECASE)
 
         # Start after the number of frames to skip
         start_idx = skip_frames + 1
@@ -277,8 +273,7 @@ class Series(Editable):
         file_list = [file_dict[i] for i in indices]
 
         logger.debug(
-            f'For series with dirpath "{dirpath}", found '
-            f'{len(file_list)} files'
+            f'For series with dirpath "{dirpath}", found ' f'{len(file_list)} files'
         )
 
         return file_prefix, file_list
@@ -337,8 +332,7 @@ class Series(Editable):
             # Assume the extra file is the final dark file
             has_final_dark_file = True
             logger.debug(
-                f'For series at "{dirpath}", assuming final file is a '
-                'dark file'
+                f'For series at "{dirpath}", assuming final file is a ' 'dark file'
             )
         elif num_files < expected_num_files:
             msg = (

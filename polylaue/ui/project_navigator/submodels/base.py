@@ -1,4 +1,4 @@
-# Copyright © 2025, UChicago Argonne, LLC. See "LICENSE" for full details.
+# Copyright © 2026, UChicago Argonne, LLC. See "LICENSE" for full details.
 
 from abc import ABC, abstractmethod
 
@@ -6,7 +6,6 @@ from PySide6.QtCore import QModelIndex, Qt
 
 from polylaue.model.editable import Editable
 from polylaue.ui.editor import EditorDialog
-
 
 # Enum shortcuts
 ItemFlags = Qt.ItemFlags

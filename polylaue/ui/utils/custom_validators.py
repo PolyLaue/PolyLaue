@@ -1,4 +1,4 @@
-# Copyright © 2025, UChicago Argonne, LLC. See "LICENSE" for full details.
+# Copyright © 2026, UChicago Argonne, LLC. See "LICENSE" for full details.
 
 from typing import Any, Callable
 
@@ -50,9 +50,7 @@ def empty_folder_validator(
         if confirm_dialog.exec() == QMessageBox.StandardButton.Yes:
             return
         else:
-            raise ValidationError(
-                "The directory wasn't used because it isn't empty."
-            )
+            raise ValidationError("The directory wasn't used because it isn't empty.")
 
     return
 
@@ -73,8 +71,6 @@ def unique_value_validator(
         return
 
     if not is_unique_fn(value):
-        raise ValidationError(
-            'The value is not unique, please pick a different value.'
-        )
+        raise ValidationError('The value is not unique, please pick a different value.')
 
     return

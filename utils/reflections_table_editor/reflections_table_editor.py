@@ -1,4 +1,4 @@
-# Copyright © 2025, UChicago Argonne, LLC. See "LICENSE" for full details.
+# Copyright © 2026, UChicago Argonne, LLC. See "LICENSE" for full details.
 
 from pathlib import Path
 
@@ -91,9 +91,7 @@ class ReflectionsTableEditor:
                 parent = f[path].parent
                 del f[path]
 
-            while (
-                parent is not None and len(parent) == 0 and parent.name != '/'
-            ):
+            while parent is not None and len(parent) == 0 and parent.name != '/':
                 group = parent
                 parent = group.parent
                 del f[group.name]

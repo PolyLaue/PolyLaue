@@ -1,4 +1,4 @@
-# Copyright © 2025, UChicago Argonne, LLC. See "LICENSE" for full details.
+# Copyright © 2026, UChicago Argonne, LLC. See "LICENSE" for full details.
 
 import signal
 import sys
@@ -47,9 +47,7 @@ def main():
 
     app = QApplication(sys.argv)
 
-    data = resource_loader.read_binary(
-        polylaue.resources.icons, 'polylaue.ico'
-    )
+    data = resource_loader.read_binary(polylaue.resources.icons, 'polylaue.ico')
     pixmap = QPixmap()
     pixmap.loadFromData(data, 'ico')
     icon = QIcon(pixmap)

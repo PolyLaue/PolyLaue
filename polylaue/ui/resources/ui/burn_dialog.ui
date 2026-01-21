@@ -7,13 +7,83 @@
     <x>0</x>
     <y>0</y>
     <width>460</width>
-    <height>687</height>
+    <height>707</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Burn Reflections</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
+   <item row="0" column="0" colspan="2">
+    <layout class="QGridLayout" name="gridLayout_3">
+     <item row="0" column="1">
+      <widget class="QCheckBox" name="activate_burn">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Activate the burn function, so that when the dmin slider or structure type is edited, burn is triggered.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;If the crystal ID changes, or the current frame changes, burn is automatically deactivated in order to prevent any accidental overwriting of previously burned reflections.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">Q</string>
+       </property>
+       <property name="text">
+        <string>Activate Burn</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="0">
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item row="0" column="2">
+      <spacer name="horizontalSpacer_2">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+    </layout>
+   </item>
+   <item row="2" column="1">
+    <widget class="QComboBox" name="structure_type">
+     <property name="toolTip">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the structure type used when burning reflections.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0">
+    <widget class="QLabel" name="structure_type_label">
+     <property name="toolTip">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the structure type used when burning reflections.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="text">
+      <string>Structure Type:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="9" column="0" colspan="2">
+    <widget class="QPushButton" name="clear">
+     <property name="toolTip">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Clear reflections matching the currently selected crystal ID in the HDF5 file for the currently viewed frame.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="text">
+      <string>Clear Reflections</string>
+     </property>
+    </widget>
+   </item>
    <item row="7" column="0" colspan="2">
     <widget class="QGroupBox" name="angular_shift_group">
      <property name="title">
@@ -60,99 +130,21 @@
      </layout>
     </widget>
    </item>
-   <item row="2" column="1">
-    <widget class="QComboBox" name="structure_type">
-     <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the structure type used when burning reflections.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+   <item row="1" column="0" colspan="2">
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
      </property>
-    </widget>
-   </item>
-   <item row="3" column="0" colspan="2">
-    <widget class="QGroupBox" name="crystal_group">
-     <property name="title">
-      <string>Crystal</string>
+     <property name="sizeType">
+      <enum>QSizePolicy::Fixed</enum>
      </property>
-     <layout class="QGridLayout" name="gridLayout_4">
-      <item row="0" column="1">
-       <widget class="QSpinBox" name="crystal_id">
-        <property name="toolTip">
-         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the crystal ID that these reflections will correspond to. Existings reflections with this crystal ID will be overwritten when the structure type or dmin are modified.&lt;br/&gt;&lt;/p&gt;&lt;p&gt;If this crystal ID does not already exist within the reflections HDF5 file, a new entry will be made using the current ABC matrix as the parameters.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-        </property>
-        <property name="maximum">
-         <number>1000000</number>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="0">
-       <widget class="QLabel" name="crystal_id_label">
-        <property name="toolTip">
-         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the crystal ID that these reflections will correspond to. Existings reflections with this crystal ID will be overwritten when the structure type or dmin are modified.&lt;br/&gt;&lt;/p&gt;&lt;p&gt;If this crystal ID does not already exist within the reflections HDF5 file, a new entry will be made using the current ABC matrix as the parameters.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-        </property>
-        <property name="text">
-         <string>ID:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="0">
-       <widget class="QLabel" name="crystal_orientation_label">
-        <property name="toolTip">
-         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Specify the location from which the crystal's ABC matrix (orientation) will be obtained.&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&amp;quot;From HDF5 File&amp;quot; - the ABC matrix within the HDF5 file corresponding to the selected &amp;quot;Crystal ID&amp;quot; will be used. There must already exist an ABC matrix with the specified crystal ID in the &amp;quot;/crystals&amp;quot; dataset in order for this option to be used.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&amp;quot;From Project Directory&amp;quot; - the ABC matrix within the file &amp;quot;abc_matrix.npy&amp;quot; located at the root level of the project directory will be used. This file must exist in order for this option to be used. If the selected &amp;quot;Crystal ID&amp;quot; does not already exist within the HDF5 file, this ABC matrix will be written to the HDF5 file with that &amp;quot;Crystal ID&amp;quot; upon executing burn.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-        </property>
-        <property name="text">
-         <string>Orientation:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="4" column="0" colspan="2">
-       <widget class="QPushButton" name="write_crystal_orientation">
-        <property name="text">
-         <string>Write Orientation to Project Directory</string>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="0" colspan="2">
-       <widget class="QPushButton" name="overwrite_crystal">
-        <property name="toolTip">
-         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;In the HDF5 reflections file, overwrite the ABC matrix corresponding to the currently selected crystal ID with the current ABC Matrix (as determined by the crystal orientation selection).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-        </property>
-        <property name="text">
-         <string>Overwrite Crystal in Reflections File</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="1">
-       <widget class="QComboBox" name="crystal_orientation">
-        <property name="toolTip">
-         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Specify the location from which the crystal's ABC matrix (orientation) will be obtained.&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&amp;quot;From HDF5 File&amp;quot; - the ABC matrix within the HDF5 file corresponding to the selected &amp;quot;Crystal ID&amp;quot; will be used. There must already exist an ABC matrix with the specified crystal ID in the &amp;quot;/crystals&amp;quot; dataset in order for this option to be used.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&amp;quot;From Project Directory&amp;quot; - the ABC matrix within the file &amp;quot;abc_matrix.npy&amp;quot; located at the root level of the project directory will be used. This file must exist in order for this option to be used. If the selected &amp;quot;Crystal ID&amp;quot; does not already exist within the HDF5 file, this ABC matrix will be written to the HDF5 file with that &amp;quot;Crystal ID&amp;quot; upon executing burn.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-        </property>
-        <item>
-         <property name="text">
-          <string>From Project Directory</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>From HDF5 File</string>
-         </property>
-        </item>
-       </widget>
-      </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="crystal_name_label">
-        <property name="text">
-         <string>Name:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="1">
-       <widget class="QLineEdit" name="crystal_name">
-        <property name="maxLength">
-         <number>30</number>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </widget>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>20</height>
+      </size>
+     </property>
+    </spacer>
    </item>
    <item row="6" column="0" colspan="2">
     <widget class="QGroupBox" name="min_d_spacing_group">
@@ -242,82 +234,103 @@
      </layout>
     </widget>
    </item>
-   <item row="0" column="0" colspan="2">
-    <layout class="QGridLayout" name="gridLayout_3">
-     <item row="0" column="1">
-      <widget class="QCheckBox" name="activate_burn">
-       <property name="toolTip">
-        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Activate the burn function, so that when the dmin slider or structure type is edited, burn is triggered.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;If the crystal ID changes, or the current frame changes, burn is automatically deactivated in order to prevent any accidental overwriting of previously burned reflections.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">Q</string>
-       </property>
-       <property name="text">
-        <string>Activate Burn</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="0">
-      <spacer name="horizontalSpacer">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>40</width>
-         <height>20</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-     <item row="0" column="2">
-      <spacer name="horizontalSpacer_2">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>40</width>
-         <height>20</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-    </layout>
-   </item>
-   <item row="8" column="0" colspan="2">
-    <widget class="QPushButton" name="clear">
-     <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Clear reflections matching the currently selected crystal ID in the HDF5 file for the currently viewed frame.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+   <item row="3" column="0" colspan="2">
+    <widget class="QGroupBox" name="crystal_group">
+     <property name="title">
+      <string>Crystal</string>
      </property>
-     <property name="text">
-      <string>Clear Reflections</string>
-     </property>
+     <layout class="QGridLayout" name="gridLayout_4">
+      <item row="0" column="1">
+       <widget class="QSpinBox" name="crystal_id">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the crystal ID that these reflections will correspond to. Existings reflections with this crystal ID will be overwritten when the structure type or dmin are modified.&lt;br/&gt;&lt;/p&gt;&lt;p&gt;If this crystal ID does not already exist within the reflections HDF5 file, a new entry will be made using the current ABC matrix as the parameters.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+        <property name="maximum">
+         <number>1000000</number>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="crystal_id_label">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the crystal ID that these reflections will correspond to. Existings reflections with this crystal ID will be overwritten when the structure type or dmin are modified.&lt;br/&gt;&lt;/p&gt;&lt;p&gt;If this crystal ID does not already exist within the reflections HDF5 file, a new entry will be made using the current ABC matrix as the parameters.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+        <property name="text">
+         <string>ID:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="crystal_orientation_label">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Specify the location from which the crystal's ABC matrix (orientation) will be obtained.&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&amp;quot;From HDF5 File&amp;quot; - the ABC matrix within the HDF5 file corresponding to the selected &amp;quot;Crystal ID&amp;quot; will be used. There must already exist an ABC matrix with the specified crystal ID in the &amp;quot;/crystals&amp;quot; dataset in order for this option to be used.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&amp;quot;From Project Directory&amp;quot; - the ABC matrix within the file &amp;quot;abc_matrix.npy&amp;quot; located at the root level of the project directory will be used. This file must exist in order for this option to be used. If the selected &amp;quot;Crystal ID&amp;quot; does not already exist within the HDF5 file, this ABC matrix will be written to the HDF5 file with that &amp;quot;Crystal ID&amp;quot; upon executing burn.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+        <property name="text">
+         <string>Orientation:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0" colspan="2">
+       <widget class="QPushButton" name="write_crystal_orientation">
+        <property name="text">
+         <string>Write Orientation to Project Directory</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0" colspan="2">
+       <widget class="QPushButton" name="overwrite_crystal">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;In the HDF5 reflections file, overwrite the ABC matrix corresponding to the currently selected crystal ID with the current ABC Matrix (as determined by the crystal orientation selection).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+        <property name="text">
+         <string>Overwrite Crystal in Reflections File</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QComboBox" name="crystal_orientation">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Specify the location from which the crystal's ABC matrix (orientation) will be obtained.&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&amp;quot;From HDF5 File&amp;quot; - the ABC matrix within the HDF5 file corresponding to the selected &amp;quot;Crystal ID&amp;quot; will be used. There must already exist an ABC matrix with the specified crystal ID in the &amp;quot;/crystals&amp;quot; dataset in order for this option to be used.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&amp;quot;From Project Directory&amp;quot; - the ABC matrix within the file &amp;quot;abc_matrix.npy&amp;quot; located at the root level of the project directory will be used. This file must exist in order for this option to be used. If the selected &amp;quot;Crystal ID&amp;quot; does not already exist within the HDF5 file, this ABC matrix will be written to the HDF5 file with that &amp;quot;Crystal ID&amp;quot; upon executing burn.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+        <item>
+         <property name="text">
+          <string>From Project Directory</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>From HDF5 File</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="crystal_name_label">
+        <property name="text">
+         <string>Name:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QLineEdit" name="crystal_name">
+        <property name="maxLength">
+         <number>30</number>
+        </property>
+       </widget>
+      </item>
+     </layout>
     </widget>
    </item>
-   <item row="1" column="0" colspan="2">
-    <spacer name="verticalSpacer">
-     <property name="orientation">
-      <enum>Qt::Vertical</enum>
+   <item row="8" column="0" colspan="2">
+    <widget class="QCheckBox" name="use_custom_internal_abc_matrix">
+     <property name="enabled">
+      <bool>false</bool>
      </property>
-     <property name="sizeType">
-      <enum>QSizePolicy::Fixed</enum>
-     </property>
-     <property name="sizeHint" stdset="0">
-      <size>
-       <width>20</width>
-       <height>20</height>
-      </size>
-     </property>
-    </spacer>
-   </item>
-   <item row="2" column="0">
-    <widget class="QLabel" name="structure_type_label">
      <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the structure type used when burning reflections.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Use a custom internal ABC matrix. The current one is: &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
      <property name="text">
-      <string>Structure Type:</string>
+      <string>Use Custom Internal ABC Matrix</string>
      </property>
     </widget>
    </item>
@@ -344,6 +357,7 @@
   <tabstop>apply_angular_shift</tabstop>
   <tabstop>angular_shift_from_another_crystal</tabstop>
   <tabstop>angular_shift_crystal_id</tabstop>
+  <tabstop>use_custom_internal_abc_matrix</tabstop>
   <tabstop>clear</tabstop>
  </tabstops>
  <resources/>
@@ -377,6 +391,22 @@
     <hint type="destinationlabel">
      <x>336</x>
      <y>609</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>use_custom_internal_abc_matrix</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>angular_shift_group</receiver>
+   <slot>setDisabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>229</x>
+     <y>643</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>229</x>
+     <y>563</y>
     </hint>
    </hints>
   </connection>

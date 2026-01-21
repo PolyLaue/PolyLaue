@@ -1,4 +1,4 @@
-# Copyright © 2025, UChicago Argonne, LLC. See "LICENSE" for full details.
+# Copyright © 2026, UChicago Argonne, LLC. See "LICENSE" for full details.
 
 import logging
 
@@ -366,9 +366,7 @@ class PolyLaueImageView(pg.ImageView):
         message += self.reflection_status_message
         self.mouse_move_message.emit(message)
 
-    def format_reflection_metadata(
-        self, rows: np.ndarray, delim: str = ', '
-    ) -> str:
+    def format_reflection_metadata(self, rows: np.ndarray, delim: str = ', ') -> str:
         # Convert some of these to lists, so that we get native
         # types instead of numpy types. Otherwise, they will
         # be printed like `np.int64(1)`.

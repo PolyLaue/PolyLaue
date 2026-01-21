@@ -1,4 +1,4 @@
-# Copyright © 2025, UChicago Argonne, LLC. See "LICENSE" for full details.
+# Copyright © 2026, UChicago Argonne, LLC. See "LICENSE" for full details.
 
 from PySide6.QtCore import QBuffer, QByteArray, QFile, QObject
 from PySide6.QtWidgets import QDialog, QWidget
@@ -24,9 +24,7 @@ class UiLoader(QUiLoader, QSingleton):
         for item in register_list:
             self.registerCustomWidget(item)
 
-    def load_file(
-        self, filename: PathLike, parent: QWidget | None = None
-    ) -> QWidget:
+    def load_file(self, filename: PathLike, parent: QWidget | None = None) -> QWidget:
         """Load a UI file and return the widget
 
         Returns a widget created from the UI file.
@@ -44,9 +42,7 @@ class UiLoader(QUiLoader, QSingleton):
         self.process_ui(ui)
         return ui
 
-    def load_bytes(
-        self, data: bytes, parent: QWidget | None = None
-    ) -> QWidget:
+    def load_bytes(self, data: bytes, parent: QWidget | None = None) -> QWidget:
         """Load a UI file from a string and return the widget"""
         buf = QBuffer(QByteArray(data))
         ui = self.load(buf, parent)

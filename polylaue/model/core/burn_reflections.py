@@ -1,7 +1,6 @@
-# Copyright © 2025, UChicago Argonne, LLC. See "LICENSE" for full details.
+# Copyright © 2026, UChicago Argonne, LLC. See "LICENSE" for full details.
 
 import numpy as np
-
 
 VALID_STRUCTURE_TYPES = [
     '',
@@ -59,11 +58,7 @@ def burn(
     abc_ang = np.degrees(np.arccos(abc_ang))
     print('alpha=, beta=, gamma=:', abc_ang)
     print('Unit cell volume, Angstroms**3:', round(float(abc_vol), 2))
-    d_min = (
-        0.4246
-        * 29.2
-        / (2.0 * float(energy_highest) * np.sin(float(pix_dist[2])))
-    )
+    d_min = 0.4246 * 29.2 / (2.0 * float(energy_highest) * np.sin(float(pix_dist[2])))
     print(' ')
     print(
         '... Detector opening resolution limit d/n >',
@@ -73,21 +68,15 @@ def burn(
     if d_min < float(res_lim):
         d_min = float(res_lim)
         print(' ')
-        print(
-            '... Sample resolution limit d/n >', round(d_min, 4), 'Angstroms'
-        )
+        print('... Sample resolution limit d/n >', round(d_min, 4), 'Angstroms')
     print(' ')
-    hkl_max_flo = np.sqrt(np.sum(np.square(abc_dir), axis=1)) / np.float64(
-        d_min
-    )
+    hkl_max_flo = np.sqrt(np.sum(np.square(abc_dir), axis=1)) / np.float64(d_min)
     hkl_max = hkl_max_flo.astype(np.int64) + np.int64(1)
     print('h,k,l maximal:', hkl_max)
     max_h = hkl_max[0]
     max_k = hkl_max[1]
     max_l = hkl_max[2]
-    h1 = np.expand_dims(
-        np.arange(np.int64(1), (max_h + 1), dtype=np.int64), axis=1
-    )
+    h1 = np.expand_dims(np.arange(np.int64(1), (max_h + 1), dtype=np.int64), axis=1)
     k1 = np.expand_dims(np.arange(-max_k, (max_k + 1), dtype=np.int64), axis=1)
     l1 = np.expand_dims(np.arange(-max_l, (max_l + 1), dtype=np.int64), axis=1)
     h0 = np.expand_dims(np.zeros(max_h, dtype=np.int64), axis=1)
@@ -113,9 +102,7 @@ def burn(
         ),
     )
     hkl = (
-        np.expand_dims(
-            k[max_k : (np.int64(2) * max_k + np.int64(1)), :], axis=1
-        )
+        np.expand_dims(k[max_k : (np.int64(2) * max_k + np.int64(1)), :], axis=1)
         + l[max_l : (np.int64(2) * max_l + np.int64(1)), :]
     )
     hkl2 = np.reshape(hkl, ((max_k + np.int64(1)) * (max_l + np.int64(1)), 3))
@@ -183,9 +170,7 @@ def burn(
         'keV:',
         np.shape(hkl)[0],
     )
-    hkl_dif = beam_dir - hkl_vec * np.expand_dims(
-        hkl_tet, axis=1
-    ) * np.float64(2)
+    hkl_dif = beam_dir - hkl_vec * np.expand_dims(hkl_tet, axis=1) * np.float64(2)
     vec_sel = np.nonzero(hkl_dif[:, 2] > pix_dist[3])
     hkl_vec = hkl_vec[vec_sel[0], :]
     hkl_dif = hkl_dif[vec_sel[0], :]
@@ -229,9 +214,7 @@ def burn(
     hkl_tet = hkl_tet[vec_sel[0]]
     hkl_enr = hkl_enr[vec_sel[0]]
     hkl = hkl[vec_sel[0], :]
-    vec_sel = np.nonzero(
-        np.fabs(hkl_tet) > np.float64(15) * pix_dist[0] / pix_dist[1]
-    )
+    vec_sel = np.nonzero(np.fabs(hkl_tet) > np.float64(15) * pix_dist[0] / pix_dist[1])
     hkl_vec = hkl_vec[vec_sel[0], :]
     hkl_dif = hkl_dif[vec_sel[0], :]
     hkl_pos = hkl_pos[vec_sel[0], :]
@@ -299,9 +282,7 @@ def burn(
     print('n    %')
     sta_pre_tot = float(np.shape(hkl)[0])
     for i in range(5):
-        print(
-            (i + 1), round((float(sta_mul[i]) * 100.0 / sta_pre_tot), 2), '%'
-        )
+        print((i + 1), round((float(sta_mul[i]) * 100.0 / sta_pre_tot), 2), '%')
     if structure_type != '':
         if structure_type == 'fcc':
             ref_cond1 = range(0, (max_h + max_k + 1), 2)

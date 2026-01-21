@@ -1,4 +1,4 @@
-# Copyright © 2025, UChicago Argonne, LLC. See "LICENSE" for full details.
+# Copyright © 2026, UChicago Argonne, LLC. See "LICENSE" for full details.
 
 from PySide6.QtWidgets import (
     QDialog,
@@ -16,9 +16,7 @@ from polylaue.ui.utils.keep_dialog_on_top import keep_dialog_on_top
 
 
 class ProjectNavigatorDialog(QDialog):
-    def __init__(
-        self, project_manager: ProjectManager, parent: QWidget = None
-    ):
+    def __init__(self, project_manager: ProjectManager, parent: QWidget = None):
         super().__init__(parent)
         keep_dialog_on_top(self)
 
@@ -58,9 +56,7 @@ class ProjectNavigatorDialog(QDialog):
         self.add_button.clicked.connect(self.on_add_clicked)
         self.edit_button.clicked.connect(self.on_edit_clicked)
         self.remove_button.clicked.connect(self.on_remove_clicked)
-        self.view.selectionModel().selectionChanged.connect(
-            self.update_enable_states
-        )
+        self.view.selectionModel().selectionChanged.connect(self.update_enable_states)
         self.view.path_changed.connect(self.update_enable_states)
 
     def on_add_clicked(self):

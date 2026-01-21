@@ -1,4 +1,4 @@
-# Copyright © 2025, UChicago Argonne, LLC. See "LICENSE" for full details.
+# Copyright © 2026, UChicago Argonne, LLC. See "LICENSE" for full details.
 
 from __future__ import annotations
 from functools import lru_cache
@@ -117,8 +117,7 @@ class Project(Editable):
         path = self.geometry_path
         if path is None:
             raise RuntimeError(
-                'Geometry file does not exist: '
-                f'{self.expected_geometry_file_path}'
+                'Geometry file does not exist: ' f'{self.expected_geometry_file_path}'
             )
 
         return load_geometry_file(path)

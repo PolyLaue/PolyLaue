@@ -1,4 +1,4 @@
-# Copyright © 2025, UChicago Argonne, LLC. See "LICENSE" for full details.
+# Copyright © 2026, UChicago Argonne, LLC. See "LICENSE" for full details.
 
 import numpy as np
 
@@ -92,6 +92,4 @@ table_from_file = editor.reflections_table(
     scan_pos_y,
 )
 
-print(
-    'After modifying, reflections table from file is now:\n', table_from_file
-)
+print('After modifying, reflections table from file is now:\n', table_from_file)

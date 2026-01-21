@@ -24,7 +24,7 @@ readme = 'REAMDE.md'
 polylaue = 'polylaue.main:main'
 
 [tool.black]
-line-length = 79
+line-length = 88
 skip-string-normalization = true
 
 [tool.setuptools_scm]

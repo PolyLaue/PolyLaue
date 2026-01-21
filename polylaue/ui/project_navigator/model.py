@@ -1,4 +1,4 @@
-# Copyright © 2025, UChicago Argonne, LLC. See "LICENSE" for full details.
+# Copyright © 2026, UChicago Argonne, LLC. See "LICENSE" for full details.
 
 from typing import Any
 
@@ -55,9 +55,7 @@ class ProjectNavigatorModel(QAbstractTableModel):
     """
     data_modified = Signal()
 
-    def __init__(
-        self, project_manager: ProjectManager, parent: QObject = None
-    ):
+    def __init__(self, project_manager: ProjectManager, parent: QObject = None):
         super().__init__(parent)
         self.project_manager = project_manager
         self.path = []
@@ -114,9 +112,7 @@ class ProjectNavigatorModel(QAbstractTableModel):
         self.data_modified.emit()
         return True
 
-    def headerData(
-        self, section: int, orientation: int, role: int = Qt.DisplayRole
-    ):
+    def headerData(self, section: int, orientation: int, role: int = Qt.DisplayRole):
         if role == Qt.DisplayRole and orientation == Qt.Horizontal:
             return self.headers[section]
 

@@ -1,8 +1,7 @@
-# Copyright © 2025, UChicago Argonne, LLC. See "LICENSE" for full details.
+# Copyright © 2026, UChicago Argonne, LLC. See "LICENSE" for full details.
 
 import h5py
 import numpy as np
-
 
 table_of_reflections = np.array(
     [
