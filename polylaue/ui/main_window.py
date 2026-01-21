@@ -78,6 +78,7 @@ class MainWindow(QObject):
 
         self.reflections_editor = ReflectionsEditor(
             self.frame_tracker,
+            self.include_advanced_structures,
             self.ui,
         )
 
@@ -128,6 +129,9 @@ class MainWindow(QObject):
         self.ui.action_enable_live_acquisition.toggled.connect(
             self.on_action_enable_live_acquisition_toggled
         )
+        self.ui.action_include_advanced_structures.toggled.connect(
+            self.on_action_include_advanced_structures_toggled
+        )
 
         self.image_view.shift_scan_number.connect(self.on_shift_scan_number)
         self.image_view.shift_scan_position.connect(self.on_shift_scan_position)
@@ -164,6 +168,10 @@ class MainWindow(QObject):
             'apply_background_subtraction',
             self.apply_background_subtraction,
         )
+        settings.setValue(
+            'include_advanced_structures',
+            self.include_advanced_structures,
+        )
 
         # Save image view settings
         settings.setValue(
@@ -183,6 +191,10 @@ class MainWindow(QObject):
 
         self.apply_background_subtraction = settings.value(
             'apply_background_subtraction', 'true'
+        ) in ('true', True)
+
+        self.include_advanced_structures = settings.value(
+            'include_advanced_structures', 'false'
         ) in ('true', True)
 
         self.image_view.settings_serialized = settings.value('image_view_settings', {})
@@ -250,6 +262,14 @@ class MainWindow(QObject):
     @apply_background_subtraction.setter
     def apply_background_subtraction(self, b: bool):
         return self.ui.action_apply_background_subtraction.setChecked(b)
+
+    @property
+    def include_advanced_structures(self) -> bool:
+        return self.ui.action_include_advanced_structures.isChecked()
+
+    @include_advanced_structures.setter
+    def include_advanced_structures(self, b: bool):
+        return self.ui.action_include_advanced_structures.setChecked(b)
 
     @property
     def live_acquisition_enabled(self) -> bool:
@@ -696,6 +716,11 @@ class MainWindow(QObject):
         series.self_validate(check_dark_file=False)
         self.save_project_manager()
         self.on_shift_scan_number(1)
+
+    def on_action_include_advanced_structures_toggled(self):
+        self.reflections_editor.include_advanced_structures = (
+            self.include_advanced_structures
+        )
 
     def open_mapping_regions_manager(self):
         if not hasattr(self, '_regions_navigator_dialog'):

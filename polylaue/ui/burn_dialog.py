@@ -2,7 +2,7 @@
 
 from PySide6.QtCore import QObject, Signal
 
-from polylaue.model.core import VALID_STRUCTURE_TYPES
+from polylaue.model.core import BASIC_STRUCTURE_TYPES, VALID_STRUCTURE_TYPES
 from polylaue.ui.utils.block_signals import block_signals
 from polylaue.ui.utils.ui_loader import UiLoader
 
@@ -17,12 +17,14 @@ class BurnDialog(QObject):
     write_crystal_orientation = Signal()
     clear_reflections = Signal()
 
-    def __init__(self, parent=None):
+    def __init__(self, include_advanced_structures: bool, parent=None):
         super().__init__(parent)
 
         self.ui = UiLoader().load_file('burn_dialog.ui', parent)
 
-        self.add_structure_options()
+        self._include_advanced_structures = include_advanced_structures
+
+        self.reset_structure_options()
 
         self._custom_internal_abc_matrix = None
 
@@ -31,8 +33,24 @@ class BurnDialog(QObject):
         self.update_enable_states()
         self.setup_connections()
 
-    def add_structure_options(self):
-        self.ui.structure_type.addItems(VALID_STRUCTURE_TYPES)
+    def reset_structure_options(self):
+        w = self.ui.structure_type
+        prev = self.structure_type
+
+        if self.include_advanced_structures:
+            types = VALID_STRUCTURE_TYPES
+        else:
+            types = BASIC_STRUCTURE_TYPES
+
+        with block_signals(w):
+            w.clear()
+            w.addItems(types)
+
+            if prev in types:
+                w.setCurrentText(prev)
+
+        if prev not in types:
+            w.currentIndexChanged.emit(w.currentIndex())
 
     def setup_connections(self):
         self.ui.activate_burn.toggled.connect(self.on_activate_burn)
@@ -105,6 +123,19 @@ class BurnDialog(QObject):
     @property
     def structure_type(self) -> str:
         return self.ui.structure_type.currentText()
+
+    @property
+    def include_advanced_structures(self) -> bool:
+        return self._include_advanced_structures
+
+    @include_advanced_structures.setter
+    def include_advanced_structures(self, b: bool):
+        if self._include_advanced_structures is b:
+            # Nothing to do
+            return
+
+        self._include_advanced_structures = b
+        self.reset_structure_options()
 
     @property
     def crystal_orientation(self) -> str:

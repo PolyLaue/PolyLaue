@@ -63,7 +63,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>26</height>
+     <height>27</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_projects">
@@ -100,6 +100,7 @@
     </property>
     <addaction name="action_apply_background_subtraction"/>
     <addaction name="action_enable_live_acquisition"/>
+    <addaction name="action_include_advanced_structures"/>
    </widget>
    <addaction name="menu_projects"/>
    <addaction name="menu_overlays"/>
@@ -178,6 +179,17 @@
   <action name="action_indexing_track">
    <property name="text">
     <string>Track</string>
+   </property>
+  </action>
+  <action name="action_include_advanced_structures">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Include Advanced Structure Types</string>
+   </property>
+   <property name="toolTip">
+    <string>Include advanced structure types in the Burn Dialog. These are structure types that would not be used by most users.</string>
    </property>
   </action>
  </widget>

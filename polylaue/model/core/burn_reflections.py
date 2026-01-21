@@ -2,15 +2,20 @@
 
 import numpy as np
 
-VALID_STRUCTURE_TYPES = [
+BASIC_STRUCTURE_TYPES = [
     '',
     'hcp',
     'Diamond',
     'fcc',
     'bcc',
+]
+
+ADVANCED_STRUCTURE_TYPES = [
     'Cmcm',
     'Laves',
 ]
+
+VALID_STRUCTURE_TYPES = BASIC_STRUCTURE_TYPES + ADVANCED_STRUCTURE_TYPES
 
 
 def burn(

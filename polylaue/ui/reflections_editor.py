@@ -26,7 +26,12 @@ class ReflectionsEditor(QObject):
     """Emitted when the reflections style was modified"""
     reflections_style_changed = Signal()
 
-    def __init__(self, frame_tracker: FrameTracker, parent=None):
+    def __init__(
+        self,
+        frame_tracker: FrameTracker,
+        include_advanced_structures: bool = False,
+        parent=None,
+    ):
         super().__init__(parent)
         self.ui = UiLoader().load_file('reflections_editor.ui', parent)
 
@@ -34,6 +39,7 @@ class ReflectionsEditor(QObject):
         self._section = None
         self.reflections = None
         self._burn_workflow = None
+        self._include_advanced_structures = include_advanced_structures
 
         self.reflections_style_editor = ReflectionsStyleEditor(self.ui)
         self.ui.reflections_style_editor_layout.addWidget(
@@ -128,6 +134,16 @@ class ReflectionsEditor(QObject):
     def style(self, v: ReflectionsStyle):
         self.reflections_style_editor.style = v
 
+    @property
+    def include_advanced_structures(self) -> bool:
+        return self._include_advanced_structures
+
+    @include_advanced_structures.setter
+    def include_advanced_structures(self, b: bool):
+        self._include_advanced_structures = b
+        if self._burn_workflow is not None:
+            self._burn_workflow.include_advanced_structures = b
+
     def create_empty_reflections_file(self):
         path = self.section.expected_reflections_file_path
         with h5py.File(path, 'w'):
@@ -150,6 +166,7 @@ class ReflectionsEditor(QObject):
             self.section,
             self.frame_tracker,
             self.reflections,
+            self.include_advanced_structures,
             parent=self.ui,
         )
 
