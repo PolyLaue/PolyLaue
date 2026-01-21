@@ -2,12 +2,20 @@
 
 import numpy as np
 
-VALID_STRUCTURE_TYPES = [
+BASIC_STRUCTURE_TYPES = [
     '',
     'hcp',
     'Diamond',
     'fcc',
+    'bcc',
 ]
+
+ADVANCED_STRUCTURE_TYPES = [
+    'Cmcm',
+    'Laves',
+]
+
+VALID_STRUCTURE_TYPES = BASIC_STRUCTURE_TYPES + ADVANCED_STRUCTURE_TYPES
 
 
 def burn(
@@ -284,6 +292,16 @@ def burn(
     for i in range(5):
         print((i + 1), round((float(sta_mul[i]) * 100.0 / sta_pre_tot), 2), '%')
     if structure_type != '':
+        if structure_type == 'Laves':
+            ref_cond1 = range(0, (max_l + 1), 2)
+            ref_cond2 = range(1, (max_h + max_k + 1), 3)
+            ref_cond3 = range(2, (max_h + max_k + 1), 3)
+        if structure_type == 'Cmcm':
+            ref_cond1 = range(0, (max_h + max_k + 1), 2)
+            ref_cond2 = range(0, (max_h + 1), 2)
+            ref_cond3 = range(0, (max_l + 1), 2)
+        if structure_type == 'bcc':
+            ref_cond1 = range(0, (max_h + max_k + max_l + 1), 2)
         if structure_type == 'fcc':
             ref_cond1 = range(0, (max_h + max_k + 1), 2)
             ref_cond2 = range(0, (max_h + max_l + 1), 2)
@@ -309,6 +327,44 @@ def burn(
                 h = int(aaa[0]) * i
                 k = int(aaa[1]) * i
                 l = int(aaa[2]) * i  # noqa
+                if structure_type == 'Laves':
+                    ch_ch = -1
+                    if abs(l) in ref_cond1:
+                        ch_ch = ch_ch + 1
+                    elif abs(h - k) in ref_cond2:
+                        ch_ch = ch_ch + 1
+                    elif abs(h - k) in ref_cond3:
+                        ch_ch = ch_ch + 1
+                    if ch_ch == 0:
+                        if ch_ch_ch == 1:
+                            ch_ch_ch = 0
+                            nnn1 = i
+                        nnn2 = i
+                if structure_type == 'Cmcm':
+                    ch_ch = -1
+                    if abs(h + k) in ref_cond1:
+                        ch_ch = ch_ch + 1
+                    if ch_ch == 0:
+                        if k == 0:
+                            ch_ch = -2
+                            if abs(h) in ref_cond2:
+                                ch_ch = ch_ch + 1
+                            if abs(l) in ref_cond2:
+                                ch_ch = ch_ch + 1
+                    if ch_ch == 0:
+                        if ch_ch_ch == 1:
+                            ch_ch_ch = 0
+                            nnn1 = i
+                        nnn2 = i
+                if structure_type == 'bcc':
+                    ch_ch = -1
+                    if abs(h + k + l) in ref_cond1:
+                        ch_ch = ch_ch + 1
+                    if ch_ch == 0:
+                        if ch_ch_ch == 1:
+                            ch_ch_ch = 0
+                            nnn1 = i
+                        nnn2 = i
                 if structure_type == 'fcc':
                     ch_ch = -3
                     if abs(h + k) in ref_cond1:

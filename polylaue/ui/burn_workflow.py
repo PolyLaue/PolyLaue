@@ -27,6 +27,7 @@ class BurnWorkflow(QObject):
         section: Section,
         frame_tracker: FrameTracker,
         reflections: ExternalReflections,
+        include_advanced_structures: bool,
         parent: QWidget = None,
     ):
         super().__init__(parent)
@@ -34,6 +35,7 @@ class BurnWorkflow(QObject):
         self.section = section
         self.frame_tracker = frame_tracker
         self.reflections = reflections
+        self._include_advanced_structures = include_advanced_structures
         self.parent = parent
 
         self.abc_matrix = None
@@ -168,7 +170,7 @@ class BurnWorkflow(QObject):
         if self.burn_dialog:
             self.burn_dialog.ui.hide()
 
-        self.burn_dialog = BurnDialog(self.parent)
+        self.burn_dialog = BurnDialog(self.include_advanced_structures, self.parent)
         dialog = self.burn_dialog
         dialog.burn_triggered.connect(self.run_burn)
         dialog.crystal_name_modified.connect(self.write_crystal_name)
@@ -248,6 +250,16 @@ class BurnWorkflow(QObject):
     @property
     def crystal_id(self) -> int:
         return self.burn_dialog.crystal_id
+
+    @property
+    def include_advanced_structures(self) -> bool:
+        return self._include_advanced_structures
+
+    @include_advanced_structures.setter
+    def include_advanced_structures(self, b: bool):
+        self._include_advanced_structures = b
+        if self.burn_dialog is not None:
+            self.burn_dialog.include_advanced_structures = b
 
     @property
     def burn_kwargs(self) -> dict:
