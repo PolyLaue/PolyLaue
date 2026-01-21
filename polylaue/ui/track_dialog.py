@@ -438,6 +438,8 @@ class TrackDialog:
         if self.track_within_this_scan:
             dialog.custom_internal_abc_matrix = self.track_within_this_scan_abc_matrix
             dialog.use_custom_internal_abc_matrix = True
+        else:
+            dialog.custom_internal_abc_matrix = None
 
         if not dialog.ui.isVisible():
             dialog.ui.show()
