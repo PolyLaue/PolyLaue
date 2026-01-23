@@ -2,6 +2,8 @@
 
 from PySide6.QtCore import QObject, Signal
 
+import numpy as np
+
 from polylaue.model.core import BASIC_STRUCTURE_TYPES, VALID_STRUCTURE_TYPES
 from polylaue.ui.utils.block_signals import block_signals
 from polylaue.ui.utils.ui_loader import UiLoader
