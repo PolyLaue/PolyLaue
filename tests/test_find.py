@@ -7,6 +7,8 @@ import pytest
 
 from polylaue.model.core import find, find_py
 
+from tests.conftest import skip_slow
+
 
 @pytest.fixture
 def indexing_points(test_dir: Path) -> np.ndarray:
@@ -38,6 +40,7 @@ def find_kwargs(
     }
 
 
+@skip_slow
 def test_find(
     find_kwargs: dict,
     ref_abc_matrix: np.ndarray,
@@ -49,6 +52,7 @@ def test_find(
     assert np.max(np.abs(output - ref_abc_matrix)) < tol
 
 
+@skip_slow
 def test_find_py(
     find_kwargs: dict,
     ref_abc_matrix: np.ndarray,
