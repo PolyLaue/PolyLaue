@@ -127,6 +127,13 @@ class Series(Editable):
 
         return self.dirpath / filename
 
+    def scan_by_number(self, scan_number: int) -> Scan | None:
+        """Return the Scan object for the given scan number, or None."""
+        idx = scan_number - self.scan_start_number
+        if 0 <= idx < len(self.scans):
+            return self.scans[idx]
+        return None
+
     def scan_number(self, scan: Scan) -> int:
         # Get the number of the provided scan
         if scan not in self.scans:

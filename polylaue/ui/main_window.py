@@ -35,6 +35,7 @@ from polylaue.model.section import Section
 from polylaue.model.series import Series
 from polylaue.model.state import load_project_manager, save_project_manager
 from polylaue.ui.find_dialog import FindDialog
+from polylaue.ui.scan_position_coords_dialog import ScanPositionCoordsDialog
 from polylaue.ui.frame_tracker import FrameTracker
 from polylaue.ui.hkl_regions_navigator.dialog import HklRegionsNavigatorDialog
 from polylaue.ui.image_view import PolyLaueImageView
@@ -141,6 +142,9 @@ class MainWindow(QObject):
         )
         self.image_view.set_image_to_section_background.connect(
             self.set_current_image_to_section_background
+        )
+        self.image_view.open_scan_position_coords_dialog.connect(
+            self.on_open_scan_position_coords_dialog
         )
 
         self.reflections_editor.reflections_changed.connect(self.on_reflections_changed)
@@ -587,7 +591,24 @@ class MainWindow(QObject):
             )
 
         self.ui.info_label.setText(text)
+        self.update_position_label()
         self.update_time_label()
+
+    def update_position_label(self):
+        pos_text = ''
+        if self.series is not None:
+            scan = self.current_scan
+            if scan is not None:
+                pos_um = scan.compute_position_um(
+                    int(self.scan_pos[1]), int(self.scan_pos[0])
+                )
+                if pos_um is not None:
+                    y_um, z_um = pos_um
+                    y_str = f'{y_um:.6f}'.rstrip('0').rstrip('.')
+                    z_str = f'{z_um:.6f}'.rstrip('0').rstrip('.')
+                    pos_text = f'Y={y_str} µm, Z={z_str} µm'
+
+        self.ui.position_label.setText(pos_text)
 
     def update_time_label(self):
         # This is the relative time of the creation of the currently viewed
@@ -650,6 +671,35 @@ class MainWindow(QObject):
         if self.apply_background_subtraction:
             # Same logic now as toggling background subtraction on/off
             self.on_action_apply_background_subtraction_toggled()
+
+    @property
+    def current_scan(self) -> Scan | None:
+        if self.series is None:
+            return None
+
+        return self.series.scan_by_number(self.scan_num)
+
+    def on_open_scan_position_coords_dialog(self):
+        if self.series is None:
+            QMessageBox.warning(self.ui, 'No Series', 'A series must be loaded first.')
+            return
+
+        scan = self.current_scan
+        if scan is None:
+            QMessageBox.warning(
+                self.ui, 'No Scan', 'No scan found for the current position.'
+            )
+            return
+
+        dialog = ScanPositionCoordsDialog(self.ui)
+        params = dialog.exec(scan.scan_center_params)
+        if params is None:
+            # User cancelled
+            return
+
+        scan.scan_center_params = params
+        self.save_project_manager()
+        self.update_info_label()
 
     def open_reflections_editor(self):
         self.reflections_editor.ui.show()
