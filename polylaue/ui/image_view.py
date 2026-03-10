@@ -37,6 +37,9 @@ class PolyLaueImageView(pg.ImageView):
     """Indicates the current image should be set to the section background"""
     set_image_to_section_background = Signal()
 
+    """Indicates the user wants to open the scan position coordinates dialog"""
+    open_scan_position_coords_dialog = Signal()
+
     def __init__(self, *args, **kwargs):
         frame_tracker = kwargs.pop('frame_tracker')
         super().__init__(*args, **kwargs)
@@ -489,6 +492,9 @@ class PolyLaueImageView(pg.ImageView):
 
         action = menu.addAction('perform saturation check')
         action.triggered.connect(self.perform_saturation_check)
+
+        action = menu.addAction('set scan position coordinates')
+        action.triggered.connect(self.open_scan_position_coords_dialog.emit)
 
     def add_additional_cmap_menu_actions(self):
         """Add a 'reverse' action to the pyqtgraph colormap menu

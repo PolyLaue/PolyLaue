@@ -18,7 +18,7 @@
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
-       <widget class="QLabel" name="empty_label">
+       <widget class="QLabel" name="position_label">
         <property name="text">
          <string/>
         </property>
