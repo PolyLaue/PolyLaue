@@ -27,5 +27,8 @@ polylaue = 'polylaue.main:main'
 line-length = 88
 skip-string-normalization = true
 
+[tool.pytest.ini_options]
+testpaths = ['tests']
+
 [tool.setuptools_scm]
 # This section can be empty

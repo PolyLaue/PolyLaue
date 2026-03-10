@@ -1,5 +1,7 @@
 # Copyright © 2026, UChicago Argonne, LLC. See "LICENSE" for full details.
 
+from pathlib import Path
+
 from polylaue.model.project_manager import ProjectManager
 
 
@@ -32,6 +34,11 @@ def test_serialize(test_project_manager_serialized):
     # Verify that everything present within the reference matches
     # This won't fail when we add new keys (because only keys
     # that already exist in the reference are checked).
+    # Path-valued keys are resolved via Path.resolve() on deserialization,
+    # which produces platform-specific results.  Compare them as Paths
+    # so that e.g. "/" vs "D:\" differences don't cause failures.
+    path_keys = {'dirpath_str', 'directory_str', 'background_image_path_str'}
+
     def recurse_check(d: dict, ref: dict):
         for key, value in ref.items():
             if isinstance(value, dict) and key in d:
@@ -50,7 +57,10 @@ def test_serialize(test_project_manager_serialized):
                 continue
 
             if key in d:
-                assert d[key] == value
+                if key in path_keys and value is not None:
+                    assert Path(d[key]).resolve() == Path(value).resolve()
+                else:
+                    assert d[key] == value
 
     serialized = pm.serialize()
     recurse_check(serialized, ref_serialized)

@@ -9,6 +9,11 @@ import pytest
 
 TEST_DIR = Path(__file__).resolve().parent
 
+skip_slow = pytest.mark.skipif(
+    os.environ.get('SKIP_SLOW_TESTS', '').lower() in ('1', 'true'),
+    reason='Skipped because SKIP_SLOW_TESTS is set',
+)
+
 
 @pytest.fixture
 def test_data_path():

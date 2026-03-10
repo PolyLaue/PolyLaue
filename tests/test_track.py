@@ -7,6 +7,8 @@ import pytest
 
 from polylaue.model.core import track, track_py
 
+from tests.conftest import skip_slow
+
 
 @pytest.fixture
 def refinement_points(test_dir: Path) -> np.ndarray:
@@ -46,22 +48,26 @@ def track_kwargs(
     }
 
 
+@skip_slow
 def test_track(
     track_kwargs: dict,
     ref_abc_matrix: np.ndarray,
 ):
-    output = track(**track_kwargs)
+    output, nang = track(**track_kwargs)
 
     # The output abc matrix should be close to the reference one
+    assert output is not None
     tol = 1e-5
     assert np.max(np.abs(output - ref_abc_matrix)) < tol
 
 
+@skip_slow
 def test_track_py(
     track_kwargs: dict,
     ref_abc_matrix: np.ndarray,
 ):
     # Now try out the Python version
-    output = track_py(**track_kwargs)
+    output, nang = track_py(**track_kwargs)
+    assert output is not None
     tol = 1e-5
     assert np.max(np.abs(output - ref_abc_matrix)) < tol
