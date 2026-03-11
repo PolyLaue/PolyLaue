@@ -178,7 +178,7 @@
   </action>
   <action name="action_indexing_track">
    <property name="text">
-    <string>Track</string>
+    <string>Track/Refine</string>
    </property>
   </action>
   <action name="action_include_advanced_structures">

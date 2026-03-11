@@ -51,6 +51,7 @@ class Series(Editable):
         skip_frames: int | None = None,
         background_image_path: PathLike | None = None,
         file_prefix: str | None = None,
+        scan_center_params: dict | None = None,
     ):
         super().__init__()
 
@@ -83,7 +84,7 @@ class Series(Editable):
             if parent.series:
                 skip_frames = parent.series[-1].skip_frames
             else:
-                skip_frames = 10
+                skip_frames = 0
 
         self.name = name
         self.description = description
@@ -96,6 +97,7 @@ class Series(Editable):
         self.has_final_dark_file = False
         self.file_prefix = file_prefix
         self.file_list = []
+        self.scan_center_params = scan_center_params
         self.parent = parent
 
     @property
@@ -431,6 +433,45 @@ class Series(Editable):
 
         self.background_image_path = v
 
+    def compute_position(
+        self, scan_pos_y: int, scan_pos_z: int
+    ) -> tuple[float, float] | None:
+        """Compute the physical position for a given scan position.
+
+        The number of points along each axis is obtained from the
+        scan_shape (rows=Z, columns=Y).
+
+        Returns (y, z) or None if scan center params are not set.
+        """
+        params = self.scan_center_params
+        if params is None:
+            return None
+
+        center_y = params['center_y']
+        center_z = params['center_z']
+        y_min = params['y_min']
+        y_max = params['y_max']
+        z_min = params['z_min']
+        z_max = params['z_max']
+
+        # scan_shape is (rows, cols) = (z_num_points, y_num_points)
+        y_num_points = self.scan_shape[1]
+        z_num_points = self.scan_shape[0]
+
+        if y_num_points > 1:
+            y_step = (y_max - y_min) / (y_num_points - 1)
+            y_val = center_y + y_min + scan_pos_y * y_step
+        else:
+            y_val = center_y
+
+        if z_num_points > 1:
+            z_step = (z_max - z_min) / (z_num_points - 1)
+            z_val = center_z + z_min + scan_pos_z * z_step
+        else:
+            z_val = center_z
+
+        return (y_val, z_val)
+
     # Serialization code
     _attrs_to_serialize = [
         'name',
@@ -442,6 +483,7 @@ class Series(Editable):
         'skip_frames',
         'file_prefix',
         'background_image_path_str',
+        'scan_center_params',
     ]
 
     @property

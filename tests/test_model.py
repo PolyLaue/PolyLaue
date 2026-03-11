@@ -60,13 +60,11 @@ class TestScan:
         assert serialized == {
             'shift_x': 5,
             'shift_y': -3,
-            'scan_center_params': None,
         }
 
         new_scan = Scan.from_serialized(serialized, parent=series)
         assert new_scan.shift_x == 5
         assert new_scan.shift_y == -3
-        assert new_scan.scan_center_params is None
 
 
 class TestSeries:

@@ -597,16 +597,14 @@ class MainWindow(QObject):
     def update_position_label(self):
         pos_text = ''
         if self.series is not None:
-            scan = self.current_scan
-            if scan is not None:
-                pos_um = scan.compute_position_um(
-                    int(self.scan_pos[1]), int(self.scan_pos[0])
-                )
-                if pos_um is not None:
-                    y_um, z_um = pos_um
-                    y_str = f'{y_um:.6f}'.rstrip('0').rstrip('.')
-                    z_str = f'{z_um:.6f}'.rstrip('0').rstrip('.')
-                    pos_text = f'Y={y_str} µm, Z={z_str} µm'
+            pos = self.series.compute_position(
+                int(self.scan_pos[1]), int(self.scan_pos[0])
+            )
+            if pos is not None:
+                y_val, z_val = pos
+                y_str = f'{y_val:.6f}'.rstrip('0').rstrip('.')
+                z_str = f'{z_val:.6f}'.rstrip('0').rstrip('.')
+                pos_text = f'Y={y_str}, Z={z_str}'
 
         self.ui.position_label.setText(pos_text)
 
@@ -684,20 +682,13 @@ class MainWindow(QObject):
             QMessageBox.warning(self.ui, 'No Series', 'A series must be loaded first.')
             return
 
-        scan = self.current_scan
-        if scan is None:
-            QMessageBox.warning(
-                self.ui, 'No Scan', 'No scan found for the current position.'
-            )
-            return
-
         dialog = ScanPositionCoordsDialog(self.ui)
-        params = dialog.exec(scan.scan_center_params)
+        params = dialog.exec(self.series.scan_center_params)
         if params is None:
             # User cancelled
             return
 
-        scan.scan_center_params = params
+        self.series.scan_center_params = params
         self.save_project_manager()
         self.update_info_label()
 
