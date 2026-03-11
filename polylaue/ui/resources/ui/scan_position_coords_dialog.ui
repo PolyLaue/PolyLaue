@@ -33,7 +33,7 @@
          <string>Y coordinate of the scan center.</string>
         </property>
         <property name="suffix">
-         <string> µm</string>
+         <string></string>
         </property>
         <property name="keyboardTracking">
          <bool>false</bool>
@@ -62,7 +62,7 @@
          <string>Z coordinate of the scan center.</string>
         </property>
         <property name="suffix">
-         <string> µm</string>
+         <string></string>
         </property>
         <property name="keyboardTracking">
          <bool>false</bool>
@@ -100,7 +100,7 @@
          <string>Minimum Y offset relative to the scan center.</string>
         </property>
         <property name="suffix">
-         <string> µm</string>
+         <string></string>
         </property>
         <property name="keyboardTracking">
          <bool>false</bool>
@@ -129,7 +129,7 @@
          <string>Maximum Y offset relative to the scan center.</string>
         </property>
         <property name="suffix">
-         <string> µm</string>
+         <string></string>
         </property>
         <property name="keyboardTracking">
          <bool>false</bool>
@@ -167,7 +167,7 @@
          <string>Minimum Z offset relative to the scan center.</string>
         </property>
         <property name="suffix">
-         <string> µm</string>
+         <string></string>
         </property>
         <property name="keyboardTracking">
          <bool>false</bool>
@@ -196,7 +196,7 @@
          <string>Maximum Z offset relative to the scan center.</string>
         </property>
         <property name="suffix">
-         <string> µm</string>
+         <string></string>
         </property>
         <property name="keyboardTracking">
          <bool>false</bool>

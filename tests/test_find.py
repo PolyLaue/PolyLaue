@@ -7,7 +7,7 @@ import pytest
 
 from polylaue.model.core import find, find_py
 
-from tests.conftest import skip_slow
+from conftest import skip_slow
 
 
 @pytest.fixture
