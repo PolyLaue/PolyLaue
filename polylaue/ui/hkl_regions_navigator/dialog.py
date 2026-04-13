@@ -357,7 +357,7 @@ class HklRegionsNavigatorDialog(QDialog):
         # Reset color of previously selected roi, if any
         roi_item = self.roi_items_manager.roi_items.get(self.selected_roi_id)
         if roi_item is not None:
-            roi_item.pen.setColor(Qt.white)
+            roi_item.pen.setColor(Qt.cyan)
             roi_item.update()
 
         if current.count() > 0:

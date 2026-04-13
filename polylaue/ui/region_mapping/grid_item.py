@@ -122,7 +122,7 @@ class CustomGridItem(pg.GraphicsObject):
             len(self.x_ticks) > self.active_cell[0] + 1
             and len(self.y_ticks) > self.active_cell[1] + 1
         ):
-            p.setPen(pg.mkPen('y', width=2))
+            p.setPen(pg.mkPen('c', width=4))
 
             x0 = self.x_ticks[self.active_cell[0]]
             y0 = self.y_ticks[self.active_cell[1]]
