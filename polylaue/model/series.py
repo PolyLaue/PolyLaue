@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from polylaue.model.editable import Editable, ParameterDescription
-from polylaue.model.io import get_file_creation_time
+from polylaue.model.io import get_file_creation_time, validate_image_file
 from polylaue.model.scan import Scan
 from polylaue.model.serializable import ValidationError
 from polylaue.typing import PathLike
@@ -288,28 +288,45 @@ class Series(Editable):
         return file_prefix, file_list
 
     @property
-    def has_enough_data_for_new_scan(self) -> bool:
-        # Check if there are enough data files present for a new scan.
-        # This needs to be fast because we will check it multiple times each
-        # second during acquisition.
+    def newest_available_scan_number(self) -> int | None:
+        """Find the newest scan number for which all data files exist.
+
+        Returns the scan number of the newest complete scan beyond the
+        current set, or None if no new complete scan is available.
+        This needs to be fast because it's called during live acquisition.
+        """
         prefix = self.file_prefix
         if not prefix or not self.file_list:
-            return False
+            return None
 
-        # Assume that we will use the same file extension as the other files
         last_file = self.file_list[-1]
         suffix = Path(last_file).suffix
+        scan_size = int(np.prod(self.scan_shape))
 
-        # We make assumptions here about the file name pattern that we don't
-        # exactly make elsewhere. We assume it has enough leading zeroes to
-        # always contain at least 3 digits, which is true for the data we
-        # are currently looking at, but might not always be true.
-        final_file_idx = self.skip_frames + (self.num_scans + 1) * np.prod(
-            self.scan_shape
-        )
+        newest = None
+        extra = 1
+        while True:
+            final_file_idx = self.skip_frames + (self.num_scans + extra) * scan_size
+            filename = f'{prefix}_{final_file_idx:03d}{suffix}'
+            filepath = self.dirpath / filename
+            if not filepath.exists():
+                break
+            newest = extra
+            newest_filepath = filepath
+            extra += 1
 
-        filename = f'{prefix}_{final_file_idx:03d}{suffix}'
-        return (self.dirpath / filename).exists()
+        if newest is None:
+            return None
+
+        # Verify the last file of the newest scan is fully written
+        # by attempting to open it. During fast acquisition, a file
+        # may exist on disk but not be fully written yet.
+        if not validate_image_file(newest_filepath):
+            newest -= 1
+            if newest == 0:
+                return None
+
+        return self.scan_start_number + self.num_scans + newest - 1
 
     def invalidate(self):
         self.file_prefix = None

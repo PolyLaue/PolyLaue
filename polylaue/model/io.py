@@ -27,6 +27,27 @@ def identify_loader_function(
     return load_file_with_fabio
 
 
+def validate_image_file(path: PathLike) -> bool:
+    """Check whether an image file can be opened.
+
+    This is intentionally lightweight — it reads only the file header,
+    not the full pixel data.  Returns False for missing, empty, or
+    partially-written files.
+    """
+    extension = Path(path).suffix[1:]
+    try:
+        for regex, func in CUSTOM_VALIDATORS.items():
+            if re.match(regex, extension):
+                func(path)
+                return True
+
+        # Default to fabio
+        _validate_with_fabio(path)
+        return True
+    except Exception:
+        return False
+
+
 def load_image_file(path: PathLike, bounds: Optional[Bounds] = None) -> np.ndarray:
     # Automatically identify the file type and load it
     func = identify_loader_function(path)
@@ -99,11 +120,35 @@ def get_file_creation_time(filepath: PathLike) -> float:
     return stats.st_mtime
 
 
-# The key for these custom readers is the regular expression
+def _validate_tif_file(path: PathLike) -> None:
+    """Open a TIF header to verify the file is readable."""
+    import warnings
+
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', UserWarning)
+        Image.open(path).close()
+
+
+def _validate_with_fabio(path: PathLike) -> None:
+    """Open a file with fabio to verify it is readable."""
+    import warnings
+
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        with fabio.open(path):
+            pass
+
+
+# The key for these custom readers/validators is the regular expression
 # that the extension should match.
 CUSTOM_READERS = {
     r'^tiff?$': load_tif_file,
 }
 
+CUSTOM_VALIDATORS = {
+    r'^tiff?$': _validate_tif_file,
+}
+
 # Compile the regular expressions
 CUSTOM_READERS = {re.compile(k): v for k, v in CUSTOM_READERS.items()}
+CUSTOM_VALIDATORS = {re.compile(k): v for k, v in CUSTOM_VALIDATORS.items()}
