@@ -218,6 +218,8 @@ def track(
     hkl_pri = hkl_pri[vec_sel[0], :]
     hkl_sec = hkl_sec[vec_sel[0], :]
     print('Combinations of primary and secondary vectors:', np.shape(hkl_sec)[0])
+    if np.shape(hkl_sec)[0] == 0:
+        return None, None
     print('J. Appl. Phys., Vol. 86, No. 9, 1 November 1999, 5249-5255')
     hkl_axi1 = hkl_pri
     obs_axi1 = obs_pri
