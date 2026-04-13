@@ -736,8 +736,13 @@ class MainWindow(QObject):
             self._live_acquisition_running = False
             return
 
-        # Add a new scan if one is available
-        self._add_new_scan_if_available()
+        # Add a new scan if one is available.
+        # Catch exceptions (e.g. partially-written files during fast
+        # acquisition) and retry on the next cycle.
+        try:
+            self._add_new_scan_if_available()
+        except Exception:
+            logger.debug('Live acquisition: error loading new scan, will retry')
 
         # Run the check again after the check gap time expires.
         QTimer.singleShot(
@@ -747,16 +752,21 @@ class MainWindow(QObject):
 
     def _add_new_scan_if_available(self):
         series = self.series
-        if series is None or not series.has_enough_data_for_new_scan:
-            # Can't add a new scan
+        if series is None:
+            return
+
+        newest = series.newest_available_scan_number
+        if newest is None:
+            # No new scans available
             return
 
         first_scan = series.scan_range_tuple[0]
-        new_final_scan = series.scan_range_tuple[1] + 1
-        series.scan_range_tuple = (first_scan, new_final_scan)
+        current_final = series.scan_range_tuple[1]
+        num_new = newest - current_final
+        series.scan_range_tuple = (first_scan, newest)
         series.self_validate(check_dark_file=False)
         self.save_project_manager()
-        self.on_shift_scan_number(1)
+        self.on_shift_scan_number(num_new)
 
     def on_action_include_advanced_structures_toggled(self):
         self.reflections_editor.include_advanced_structures = (
