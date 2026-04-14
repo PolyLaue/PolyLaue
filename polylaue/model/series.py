@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 import logging
+import os
 from pathlib import Path
 import re
 from typing import TYPE_CHECKING
@@ -293,7 +294,16 @@ class Series(Editable):
 
         Returns the scan number of the newest complete scan beyond the
         current set, or None if no new complete scan is available.
-        This needs to be fast because it's called during live acquisition.
+
+        A single ``os.listdir()`` call fetches every filename in one
+        network round-trip. After that, all checks are O(1) in-memory
+        set lookups, which is critical on slow network drives.
+
+        Thread-safety: called from the live-acquisition background
+        thread. Only *reads* attributes on ``self`` (``file_prefix``,
+        ``file_list``, ``scan_shape``, ``skip_frames``, ``num_scans``,
+        ``dirpath``). The caller must ensure no other thread is writing
+        to these attributes concurrently.
         """
         prefix = self.file_prefix
         if not prefix or not self.file_list:
@@ -303,16 +313,20 @@ class Series(Editable):
         suffix = Path(last_file).suffix
         scan_size = int(np.prod(self.scan_shape))
 
+        # One directory listing, then all checks are in-memory set lookups.
+        try:
+            dir_contents = set(os.listdir(self.dirpath))
+        except OSError:
+            return None
+
         newest = None
         extra = 1
         while True:
-            final_file_idx = self.skip_frames + (self.num_scans + extra) * scan_size
-            filename = f'{prefix}_{final_file_idx:03d}{suffix}'
-            filepath = self.dirpath / filename
-            if not filepath.exists():
+            idx = self.skip_frames + (self.num_scans + extra) * scan_size
+            filename = f'{prefix}_{idx:03d}{suffix}'
+            if filename not in dir_contents:
                 break
             newest = extra
-            newest_filepath = filepath
             extra += 1
 
         if newest is None:
@@ -321,12 +335,44 @@ class Series(Editable):
         # Verify the last file of the newest scan is fully written
         # by attempting to open it. During fast acquisition, a file
         # may exist on disk but not be fully written yet.
+        final_idx = self.skip_frames + (self.num_scans + newest) * scan_size
+        filename = f'{prefix}_{final_idx:03d}{suffix}'
+        newest_filepath = self.dirpath / filename
         if not validate_image_file(newest_filepath):
             newest -= 1
             if newest == 0:
                 return None
 
         return self.scan_start_number + self.num_scans + newest - 1
+
+    def extend_file_list(self, num_new_scans: int) -> None:
+        """Extend the file list for newly detected scans.
+
+        Constructs expected filenames from the known naming pattern
+        rather than re-listing the directory. This avoids the expensive
+        directory iterations that ``self_validate()`` performs.
+
+        Must be called after ``scan_range_tuple`` has already been
+        updated to include the new scans.
+        """
+        if not self.file_list or not self.file_prefix:
+            return
+
+        suffix = Path(self.file_list[-1]).suffix
+        scan_size = int(np.prod(self.scan_shape))
+
+        # scan_range_tuple was already updated, so num_scans includes
+        # the new scans. Compute the old file count from the geometry.
+        old_file_count = (self.num_scans - num_new_scans) * scan_size
+
+        # Trim any trailing entries beyond the previous scan range
+        # (e.g. from an initial self_validate that found extra files).
+        del self.file_list[old_file_count:]
+
+        for i in range(num_new_scans * scan_size):
+            idx = self.skip_frames + old_file_count + 1 + i
+            filename = f'{self.file_prefix}_{idx:03d}{suffix}'
+            self.file_list.append(filename)
 
     def invalidate(self):
         self.file_prefix = None

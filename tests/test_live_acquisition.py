@@ -148,3 +148,63 @@ class TestLiveAcquisition:
 
         # No more new scans
         assert series.newest_available_scan_number is None
+
+    def test_extend_file_list(self, tmp_path: Path) -> None:
+        """extend_file_list adds correct filenames without re-listing dir."""
+        # 1 existing scan (001-006)
+        _create_files(tmp_path, 'img', range(1, 7))
+        series = _make_series(tmp_path)
+        series.self_validate(check_dark_file=False)
+
+        assert len(series.file_list) == 6
+        assert series.file_list[-1] == 'img_006.tif'
+
+        # Simulate detecting 2 new scans via extend_file_list
+        series.scan_range_tuple = (1, 3)
+        series.extend_file_list(2)
+
+        assert len(series.file_list) == 18
+        assert series.file_list[6] == 'img_007.tif'
+        assert series.file_list[-1] == 'img_018.tif'
+
+    def test_extend_file_list_with_skip_frames(self, tmp_path: Path) -> None:
+        """extend_file_list accounts for skip_frames in indices."""
+        # skip_frames=2, scan_shape=(2,3)=6 files per scan
+        # Scan 1: 003-008
+        _create_files(tmp_path, 'img', range(1, 9))
+        series = _make_series(tmp_path, skip_frames=2)
+        series.self_validate(check_dark_file=False)
+
+        assert len(series.file_list) == 6
+        assert series.file_list[0] == 'img_003.tif'
+
+        # Extend by 1 scan: new files should be 009-014
+        series.scan_range_tuple = (1, 2)
+        series.extend_file_list(1)
+
+        assert len(series.file_list) == 12
+        assert series.file_list[6] == 'img_009.tif'
+        assert series.file_list[-1] == 'img_014.tif'
+
+    def test_extend_file_list_matches_self_validate(self, tmp_path: Path) -> None:
+        """extend_file_list produces the same list as self_validate."""
+        # Start with exactly 1 scan (like a real acquisition start)
+        _create_files(tmp_path, 'img', range(1, 7))
+        series = _make_series(tmp_path)
+        series.self_validate(check_dark_file=False)
+        assert len(series.file_list) == 6
+
+        # Files for 3 more scans arrive
+        _create_files(tmp_path, 'img', range(7, 25))
+
+        # Build a reference via self_validate with the full range
+        ref_series = _make_series(tmp_path)
+        ref_series.scan_range_tuple = (1, 4)
+        ref_series.self_validate(check_dark_file=False)
+        expected = list(ref_series.file_list)
+
+        # Now use extend_file_list on the original series
+        series.scan_range_tuple = (1, 4)
+        series.extend_file_list(3)
+
+        assert series.file_list == expected
