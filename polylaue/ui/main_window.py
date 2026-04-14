@@ -11,7 +11,6 @@ from PySide6.QtCore import (
     QEvent,
     QObject,
     QSettings,
-    QTimer,
     Qt,
 )
 from PySide6.QtGui import QIcon
@@ -46,6 +45,7 @@ from polylaue.ui.project_navigator.dialog import ProjectNavigatorDialog
 from polylaue.ui.region_mapping.dialog import RegionMappingDialog
 from polylaue.ui.regions_navigator.dialog import RegionsNavigatorDialog
 from polylaue.ui.track_dialog import TrackDialog
+from polylaue.ui.background_poller import BackgroundPoller
 from polylaue.ui.utils.ui_loader import UiLoader
 
 logger = logging.getLogger(__name__)
@@ -94,9 +94,10 @@ class MainWindow(QObject):
         self.show_mapping_highlight_area = False
         self.show_mapping_domain_area = False
 
-        self._live_acquisition_running = False
-        # Check every third of a second
-        self._live_acquisition_check_gap = 1 / 3
+        self._live_acq_poller = BackgroundPoller(
+            self._check_for_new_scans,
+            interval_ms=333,
+        )
 
         self.setup_connections()
 
@@ -130,6 +131,10 @@ class MainWindow(QObject):
         self.ui.action_enable_live_acquisition.toggled.connect(
             self.on_action_enable_live_acquisition_toggled
         )
+        self._live_acq_poller.result_ready.connect(
+            self._on_live_acquisition_check_result
+        )
+        self._live_acq_poller.check_error.connect(self._on_live_acquisition_check_error)
         self.ui.action_include_advanced_structures.toggled.connect(
             self.on_action_include_advanced_structures_toggled
         )
@@ -715,56 +720,60 @@ class MainWindow(QObject):
         self.image_view.on_mouse_move()
         self.set_mapping_dialogs_stale()
 
-    def on_action_enable_live_acquisition_toggled(self):
+    def on_action_enable_live_acquisition_toggled(self) -> None:
         if self.live_acquisition_enabled:
-            self.begin_live_acquisition()
+            self._live_acq_poller.start()
+        else:
+            self._live_acq_poller.stop()
 
-        # Live acquisition will end itself if disabled
+    def _check_for_new_scans(self) -> int | None:
+        """Return the newest available scan number, or None.
 
-    def begin_live_acquisition(self):
-        if self._live_acquisition_running:
-            # It's already running. No need to start it again.
-            return
+        Called from the ``BackgroundPoller`` thread. Must remain
+        thread-safe: only read from ``self.series`` attributes -- never
+        write. See ``BackgroundPoller._worker`` for the synchronization
+        protocol that prevents concurrent read/write access.
+        """
+        series = self.series
+        if series is None:
+            return None
+        return series.newest_available_scan_number
 
-        # Start the loop
-        self._live_acquisition_running = True
-        self._live_acquisition_loop()
+    def _on_live_acquisition_check_result(self, newest: int | None) -> None:
+        """Handle the result of a background scan check (main thread)."""
+        if newest is not None:
+            self._apply_new_scans(newest)
+        self._live_acq_poller.notify_ready()
 
-    def _live_acquisition_loop(self):
-        if not self.live_acquisition_enabled:
-            # It was disabled
-            self._live_acquisition_running = False
-            return
+    def _on_live_acquisition_check_error(self) -> None:
+        """Handle an error from the background scan check (main thread)."""
+        logger.debug('Live acquisition: error checking for new scans, will retry')
+        self._live_acq_poller.notify_ready()
 
-        # Add a new scan if one is available.
-        # Catch exceptions (e.g. partially-written files during fast
-        # acquisition) and retry on the next cycle.
-        try:
-            self._add_new_scan_if_available()
-        except Exception:
-            logger.debug('Live acquisition: error loading new scan, will retry')
+    def _apply_new_scans(self, newest: int) -> None:
+        """Update the series and display for newly detected scans (main thread).
 
-        # Run the check again after the check gap time expires.
-        QTimer.singleShot(
-            self._live_acquisition_check_gap,
-            self._live_acquisition_loop,
-        )
-
-    def _add_new_scan_if_available(self):
+        Modifies ``Series.scans``, ``Series.file_list``, and the UI.
+        The background thread must not be reading the Series while this
+        runs. That is guaranteed by the ``BackgroundPoller``
+        synchronization protocol: the poller waits for
+        ``notify_ready()`` before polling again.
+        """
         series = self.series
         if series is None:
             return
 
-        newest = series.newest_available_scan_number
-        if newest is None:
-            # No new scans available
+        current_final = series.scan_range_tuple[1]
+        if newest <= current_final:
+            # Already up to date (stale result from background thread)
             return
 
         first_scan = series.scan_range_tuple[0]
-        current_final = series.scan_range_tuple[1]
         num_new = newest - current_final
         series.scan_range_tuple = (first_scan, newest)
-        series.self_validate(check_dark_file=False)
+        # Extend the file list directly rather than calling
+        # self_validate(), which re-lists the entire directory.
+        series.extend_file_list(num_new)
         self.save_project_manager()
         self.on_shift_scan_number(num_new)
 

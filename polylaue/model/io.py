@@ -30,9 +30,13 @@ def identify_loader_function(
 def validate_image_file(path: PathLike) -> bool:
     """Check whether an image file can be opened.
 
-    This is intentionally lightweight — it reads only the file header,
+    This is intentionally lightweight -- it reads only the file header,
     not the full pixel data.  Returns False for missing, empty, or
     partially-written files.
+
+    Thread-safety: called from the live-acquisition background thread.
+    Uses only the ``path`` argument and module-level constants
+    (``CUSTOM_VALIDATORS``); no shared mutable state is accessed.
     """
     extension = Path(path).suffix[1:]
     try:
@@ -121,7 +125,12 @@ def get_file_creation_time(filepath: PathLike) -> float:
 
 
 def _validate_tif_file(path: PathLike) -> None:
-    """Open a TIF header to verify the file is readable."""
+    """Open a TIF header to verify the file is readable.
+
+    Thread-safety: called from the live-acquisition background thread
+    (via ``validate_image_file``). Only operates on the given path;
+    no shared mutable state is accessed.
+    """
     import warnings
 
     with warnings.catch_warnings():
@@ -130,7 +139,12 @@ def _validate_tif_file(path: PathLike) -> None:
 
 
 def _validate_with_fabio(path: PathLike) -> None:
-    """Open a file with fabio to verify it is readable."""
+    """Open a file with fabio to verify it is readable.
+
+    Thread-safety: called from the live-acquisition background thread
+    (via ``validate_image_file``). Only operates on the given path;
+    no shared mutable state is accessed.
+    """
     import warnings
 
     with warnings.catch_warnings():

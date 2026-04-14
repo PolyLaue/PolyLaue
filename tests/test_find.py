@@ -35,7 +35,7 @@ def find_kwargs(
         'beam_dir': test_geometry['beam_dir'],
         'pix_dist': test_geometry['pix_dist'],
         'ang_tol': 0.07,
-        'res_lim': 0.4,
+        'res_lim': 0.6,
         'ref_thr': 3,
     }
 
