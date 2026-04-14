@@ -216,6 +216,35 @@ class ExternalReflections(BaseReflections):
 
             f[path] = full_array
 
+    def closest_angular_shift_scan_number(
+        self,
+        crystal_id: int,
+        scan_number: int,
+    ) -> int | None:
+        """Find the closest scan number that has an angular shift.
+
+        Returns the scan number itself if it has a shift, otherwise
+        the nearest scan number (preferring earlier scans on ties).
+        Returns None if no shifts exist for this crystal ID at all.
+        """
+        path = f'/angular_shifts/{crystal_id}'
+        with h5py.File(self.filepath, 'r') as f:
+            if path not in f:
+                return None
+
+            dataset = f[path]
+            # Build list of valid scan numbers (1-indexed)
+            valid_scans = []
+            for i in range(len(dataset)):
+                if not np.isnan(dataset[i, 0]):
+                    valid_scans.append(i + 1)
+
+        if not valid_scans:
+            return None
+
+        # Find the closest scan number
+        return min(valid_scans, key=lambda s: (abs(s - scan_number), s))
+
     def angular_shift_matrix(
         self,
         crystal_id: int,

@@ -343,10 +343,22 @@ class BurnDialog(QObject):
         self.update_enable_states()
         self.emit_if_active()
 
-    def set_has_angular_shift(self, b: bool):
+    def set_has_angular_shift(
+        self,
+        b: bool,
+        shift_scan: int | None = None,
+        is_current_scan: bool = False,
+    ):
         w = self.ui.has_angular_shift_label
-        result = 'Yes' if b else 'No'
-        w.setText(f'Has angular shift: {result}')
+        if not b:
+            w.setText('Has angular shift: No')
+            self.apply_angular_shift = False
+        elif is_current_scan:
+            w.setText('Has angular shift: Yes (current scan)')
+            self.apply_angular_shift = True
+        else:
+            w.setText(f'Has angular shift: Yes (from scan {shift_scan})')
+            self.apply_angular_shift = True
 
     def emit_if_active(self):
         if not self.burn_activated:

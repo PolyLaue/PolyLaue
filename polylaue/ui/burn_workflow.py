@@ -192,14 +192,39 @@ class BurnWorkflow(QObject):
         return self.frame_tracker.scan_num
 
     @property
-    def angular_shift_matrix(self) -> np.ndarray | None:
+    def angular_shift_scan_number(self) -> int | None:
+        """Find the scan number whose angular shift will be used.
+
+        Returns the current scan if it has a shift, otherwise the
+        closest scan with a shift, or None if no shifts exist.
+        """
         d = self.burn_dialog
         reflections = self.reflections
         scan_num = self.scan_num
 
         if not d.angular_shift_from_another_crystal:
+            crystal_id = self.crystal_id
+        else:
+            crystal_id = d.angular_shift_crystal_id
+
+        return reflections.closest_angular_shift_scan_number(
+            crystal_id, scan_num
+        )
+
+    @property
+    def angular_shift_matrix(self) -> np.ndarray | None:
+        d = self.burn_dialog
+        reflections = self.reflections
+        scan_num = self.scan_num
+
+        # Use the closest available scan with an angular shift
+        shift_scan = self.angular_shift_scan_number
+        if shift_scan is None:
+            return None
+
+        if not d.angular_shift_from_another_crystal:
             # This is the easy one. Just pull it from the table.
-            return reflections.angular_shift_matrix(self.crystal_id, scan_num)
+            return reflections.angular_shift_matrix(self.crystal_id, shift_scan)
 
         # Check different ABC matrix scan numbers and do transformation
         # if required.
@@ -210,7 +235,7 @@ class BurnWorkflow(QObject):
         if ref_start_scan == this_start_scan:
             # The two ABC matrices were made using the same scan number. We
             # can just use the angular shift matrix as-is.
-            return reflections.angular_shift_matrix(crystal_id, scan_num)
+            return reflections.angular_shift_matrix(crystal_id, shift_scan)
 
         # At this point, in order for this to work, there has to be
         # angular shifts from the ref start scan to both this start scan
@@ -221,7 +246,7 @@ class BurnWorkflow(QObject):
             this_start_scan,
         )
 
-        if scan_num == reflections.crystal_scan_number(crystal_id):
+        if shift_scan == reflections.crystal_scan_number(crystal_id):
             # If the target scan number is the same as the reference
             # starting scan, the shift to target is identity.
             shift_to_target = np.eye(3).flatten()
@@ -229,7 +254,7 @@ class BurnWorkflow(QObject):
             # There must be a shift from the reference to the target.
             shift_to_target = reflections.angular_shift_matrix(
                 crystal_id,
-                scan_num,
+                shift_scan,
             )
 
         if shift_to_this is None or shift_to_target is None:
@@ -379,11 +404,18 @@ class BurnWorkflow(QObject):
             # Nothing to do...
             return
 
-        has_angular_shift = (
-            dialog.crystal_orientation_is_from_hdf5_file
-            and self.angular_shift_matrix is not None
+        if not dialog.crystal_orientation_is_from_hdf5_file:
+            dialog.set_has_angular_shift(False)
+            return
+
+        shift_scan = self.angular_shift_scan_number
+        has_shift = shift_scan is not None and self.angular_shift_matrix is not None
+        is_current_scan = has_shift and shift_scan == self.scan_num
+        dialog.set_has_angular_shift(
+            has_shift,
+            shift_scan=shift_scan,
+            is_current_scan=is_current_scan,
         )
-        dialog.set_has_angular_shift(has_angular_shift)
 
     def overwrite_crystal(self):
         self.load_abc_matrix()
