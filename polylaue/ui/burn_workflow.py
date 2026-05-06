@@ -166,6 +166,7 @@ class BurnWorkflow(QObject):
             crystals_table = np.vstack((crystals_table, self.abc_matrix))
 
         self.reflections.crystals_table = crystals_table
+        self.reflections.set_crystal_scan_number(self.crystal_id, self.scan_num)
 
     def show_burn_dialog(self):
         if self.burn_dialog:
@@ -403,6 +404,7 @@ class BurnWorkflow(QObject):
         # Otherwise, we'll overwrite the crystal!
         crystals_table[crystal_id] = self.abc_matrix
         self.reflections.crystals_table = crystals_table
+        self.reflections.set_crystal_scan_number(crystal_id, self.scan_num)
 
     def write_crystal_orientation(self):
         self.load_abc_matrix()
