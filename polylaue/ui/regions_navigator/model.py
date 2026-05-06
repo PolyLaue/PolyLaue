@@ -93,7 +93,7 @@ class RegionsNavigatorModel(QAbstractTableModel):
 
             self.roi_manager.update_roi(id, new_pos, new_size)
 
-            self.dataChanged.emit(index, index, role)
+            self.dataChanged.emit(index, index, [role])
 
             return True
 
@@ -147,4 +147,4 @@ class RegionsNavigatorModel(QAbstractTableModel):
         self.roi_manager.update_roi(id, position, size)
         top_left = self.createIndex(row, 1)
         bottom_right = self.createIndex(row, 4)
-        self.dataChanged.emit(top_left, bottom_right, Qt.EditRole)
+        self.dataChanged.emit(top_left, bottom_right, [Qt.EditRole])

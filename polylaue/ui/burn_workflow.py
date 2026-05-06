@@ -1,5 +1,6 @@
 # Copyright © 2026, UChicago Argonne, LLC. See "LICENSE" for full details.
 
+import re
 from pathlib import Path
 
 from PySide6.QtCore import QObject, QSettings, Qt, Signal
@@ -165,6 +166,7 @@ class BurnWorkflow(QObject):
             crystals_table = np.vstack((crystals_table, self.abc_matrix))
 
         self.reflections.crystals_table = crystals_table
+        self.reflections.set_crystal_scan_number(self.crystal_id, self.scan_num)
 
     def show_burn_dialog(self):
         if self.burn_dialog:
@@ -178,6 +180,7 @@ class BurnWorkflow(QObject):
         dialog.update_has_angular_shift.connect(self.update_has_angular_shift)
         dialog.overwrite_crystal.connect(self.overwrite_crystal)
         dialog.write_crystal_orientation.connect(self.write_crystal_orientation)
+        dialog.save_as_new_crystal.connect(self.save_as_new_crystal)
         self.burn_dialog.clear_reflections.connect(self.clear_reflections)
         self.load_crystal_name()
         self.update_has_angular_shift()
@@ -401,6 +404,7 @@ class BurnWorkflow(QObject):
         # Otherwise, we'll overwrite the crystal!
         crystals_table[crystal_id] = self.abc_matrix
         self.reflections.crystals_table = crystals_table
+        self.reflections.set_crystal_scan_number(crystal_id, self.scan_num)
 
     def write_crystal_orientation(self):
         self.load_abc_matrix()
@@ -442,6 +446,74 @@ class BurnWorkflow(QObject):
             box.exec_()
             if cb.isChecked():
                 settings.setValue(skip_message_key, True)
+
+    def save_as_new_crystal(self):
+        self.load_abc_matrix()
+        if self.abc_matrix is None:
+            QMessageBox.critical(
+                None,
+                'No ABC Matrix',
+                'Failed to load the ABC matrix. Cannot save.',
+            )
+            return
+
+        old_name = self.burn_dialog.crystal_name
+
+        # Clear reflections for the old crystal ID on the current frame,
+        # since they were burned with a modified matrix.
+        self.clear_reflections()
+
+        reflections = self.reflections
+        new_crystal_id = reflections.num_crystals
+
+        crystals_table = reflections.crystals_table
+        if crystals_table.size == 0:
+            crystals_table = np.zeros((1, 9))
+            crystals_table[0] = self.abc_matrix
+        else:
+            crystals_table = np.vstack((crystals_table, self.abc_matrix))
+
+        reflections.crystals_table = crystals_table
+        reflections.set_crystal_scan_number(new_crystal_id, self.scan_num)
+
+        self.burn_dialog.crystal_id = new_crystal_id
+        self.burn_dialog.set_crystal_orientation_to_hdf5_file()
+        self.burn_dialog.apply_angular_shift = False
+        self.burn_dialog.custom_internal_abc_matrix = None
+        self.burn_dialog.use_custom_internal_abc_matrix = False
+
+        new_name = self._unique_crystal_name(old_name)
+        self.burn_dialog.crystal_name = new_name
+        self.write_crystal_name()
+
+        self.burn_dialog.activate_burn()
+
+        msg = (
+            f'Saved as new crystal with ID {new_crystal_id} '
+            f'(scan number {self.scan_num}).'
+        )
+        QMessageBox.information(None, 'Crystal Saved', msg)
+
+    def _unique_crystal_name(self, name: str) -> str:
+        if not name:
+            return ''
+
+        match = re.match(r'^(.*) \((\d+)\)$', name)
+        if match:
+            base = match.group(1)
+            start = int(match.group(2)) + 1
+        else:
+            base = name
+            start = 2
+
+        existing = {n.decode() for n in self.reflections.crystal_names}
+
+        num = start
+        while True:
+            candidate = f'{base} ({num})'
+            if candidate not in existing:
+                return candidate
+            num += 1
 
     def clear_reflections(self):
         # Delete any reflections matching the currently selected crystal ID

@@ -18,6 +18,7 @@ class BurnDialog(QObject):
     update_has_angular_shift = Signal()
     write_crystal_orientation = Signal()
     clear_reflections = Signal()
+    save_as_new_crystal = Signal()
 
     def __init__(self, include_advanced_structures: bool, parent=None):
         super().__init__(parent)
@@ -91,6 +92,7 @@ class BurnDialog(QObject):
             self.on_use_custom_internal_abc_matrix_toggled
         )
 
+        self.ui.save_as_new_crystal.clicked.connect(self.on_save_as_new_crystal_clicked)
         self.ui.clear.clicked.connect(self.on_clear_clicked)
 
     def update_enable_states(self):
@@ -107,6 +109,11 @@ class BurnDialog(QObject):
         self.ui.write_crystal_orientation.setEnabled(not using_custom_matrix)
 
         self.ui.angular_shift_group.setEnabled(not using_custom_matrix)
+
+        can_save_new = (
+            self._custom_internal_abc_matrix is not None or self.apply_angular_shift
+        )
+        self.ui.save_as_new_crystal.setEnabled(can_save_new)
 
     def activate_burn(self):
         self.burn_activated = True
@@ -266,6 +273,8 @@ class BurnDialog(QObject):
             'Use a custom internal ABC matrix. ' f'The current one is:\n\n{abc_matrix}'
         )
 
+        self.update_enable_states()
+
     def on_activate_burn(self):
         self.emit_if_active()
 
@@ -275,6 +284,8 @@ class BurnDialog(QObject):
     def on_crystal_id_changed(self):
         # Deactivate the burn function
         self.deactivate_burn()
+
+        self.custom_internal_abc_matrix = None
 
         # Load the crystal name
         self.load_crystal_name.emit()
@@ -329,6 +340,7 @@ class BurnDialog(QObject):
             # Make sure the angular shift from another crystal is disabled
             self.angular_shift_from_another_crystal = False
 
+        self.update_enable_states()
         self.emit_if_active()
 
     def on_angular_shift_from_another_crystal_changed(self):
@@ -353,6 +365,9 @@ class BurnDialog(QObject):
             return
 
         self.burn_triggered.emit()
+
+    def on_save_as_new_crystal_clicked(self):
+        self.save_as_new_crystal.emit()
 
     def on_clear_clicked(self):
         self.deactivate_burn()

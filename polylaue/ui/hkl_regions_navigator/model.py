@@ -85,8 +85,6 @@ class RegionsNavigatorModel(QAbstractTableModel):
                 return float(roi['size'][0])
             elif col == SIZE_Y_COL:
                 return float(roi['size'][1])
-        elif role == Qt.ItemDataRole.FontRole:
-            return QBrush(Qt.GlobalColor.green)
         elif role == Qt.ItemDataRole.BackgroundRole:
             id = self.roi_manager.index_to_id(index.row())
             roi = self.roi_manager.get_roi(id)
@@ -149,7 +147,7 @@ class RegionsNavigatorModel(QAbstractTableModel):
                 id, new_crystal_id, new_hkl, new_position, new_size
             )
 
-            self.dataChanged.emit(index, index, role)
+            self.dataChanged.emit(index, index, [role])
 
             return True
 
@@ -218,4 +216,4 @@ class RegionsNavigatorModel(QAbstractTableModel):
         self.roi_manager.update_roi(id, crystal_id, hkl, position, size)
         top_left = self.createIndex(row, H_COL)
         bottom_right = self.createIndex(row, SIZE_Y_COL)
-        self.dataChanged.emit(top_left, bottom_right, Qt.EditRole)
+        self.dataChanged.emit(top_left, bottom_right, [Qt.EditRole])

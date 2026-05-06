@@ -187,6 +187,8 @@ def find(
                 'Combinations of primary and secondary vectors:',
                 np.shape(hkl_sec)[0],
             )
+            if np.shape(hkl_sec)[0] == 0:
+                continue
             print('J. Appl. Phys., Vol. 86, No. 9, 1 November 1999, 5249-5255')
             hkl_axi1 = hkl_pri
             obs_axi1 = obs_pri

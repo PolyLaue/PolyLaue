@@ -44,6 +44,8 @@ class Project(Editable):
         self.description = description
         self.energy_range = energy_range
         self.frame_shape = frame_shape
+        # white_beam_shift is currently unused in the UI, but retained
+        # for potential future use in geometry calculations.
         self.white_beam_shift = white_beam_shift
         self.min_find_resolution = min_find_resolution
         self.min_tracking_resolution = min_tracking_resolution
@@ -195,12 +197,6 @@ class Project(Editable):
                 'min': 1e-16,
                 'max': float('inf'),
                 'tooltip': 'The energy range of the x-ray beam in keV',
-            },
-            'white_beam_shift': {
-                'type': 'float',
-                'label': 'Beam Shift',
-                'min': 1e-16,
-                'max': float('inf'),
             },
             'geometry_path_str': {
                 'type': 'file',
