@@ -158,10 +158,13 @@ class RegionMappingDialog(QDialog):
         self.show_domain_button = QPushButton(SHOW_DOMAIN_MSG, self)
         self.show_domain_button.clicked.connect(self.on_domain_clicked)
 
+        self.lock_scan_number_checkbox = QCheckBox('Lock Scan Number', self)
+
         buttons_layout.addWidget(self.show_highlight_button)
         buttons_layout.addWidget(self.show_domain_button)
         buttons_layout.addWidget(self.refresh_button)
         buttons_layout.addWidget(self.save_data_button)
+        buttons_layout.addWidget(self.lock_scan_number_checkbox)
 
         self.progress_bar = QProgressBar()
         self.layout().addWidget(self.progress_bar)
@@ -263,10 +266,12 @@ class RegionMappingDialog(QDialog):
                 return shift_position(-1, 0)
             case Key.Key_PageUp:
                 # Move up one scan
-                return shift_scan_number(1)
+                if not self.scan_number_locked:
+                    return shift_scan_number(1)
             case Key.Key_PageDown:
                 # Move down one scan
-                return shift_scan_number(-1)
+                if not self.scan_number_locked:
+                    return shift_scan_number(-1)
 
         return super().keyPressEvent(event)
 
@@ -278,7 +283,13 @@ class RegionMappingDialog(QDialog):
         self.series = series
         self.set_stale(True)
 
+    @property
+    def scan_number_locked(self) -> bool:
+        return self.lock_scan_number_checkbox.isChecked()
+
     def set_scan_number(self, scan_number: int):
+        if self.scan_number_locked:
+            return
         self.scan_number = scan_number
         self.set_stale(True)
 
