@@ -53,18 +53,44 @@ class TestScan:
         section.series.append(series)
 
         scan = series.scans[0]
-        scan.shift_x = 5
-        scan.shift_y = -3
+        assert scan.serialize() == {}
 
-        serialized = scan.serialize()
-        assert serialized == {
+        new_scan = Scan.from_serialized(scan.serialize(), parent=series)
+        assert new_scan.parent is series
+
+    def test_scan_deserialize_ignores_unknown_attributes(self, capsys):
+        # Older settings files may contain attributes that have since
+        # been removed, such as the scan shifts. These should be
+        # skipped without errors.
+        pm = ProjectManager()
+        project = Project(parent=pm, name='P')
+        pm.projects.append(project)
+        section = Section(parent=project, name='S')
+        project.sections.append(section)
+        series = Series(
+            parent=section,
+            name='Ser',
+            dirpath='/tmp/test',
+            scan_start_number=1,
+            scan_shape=(3, 3),
+        )
+        section.series.append(series)
+
+        legacy = {
             'shift_x': 5,
             'shift_y': -3,
         }
+        scan = Scan.from_serialized(legacy, parent=series)
+        assert not hasattr(scan, 'shift_x')
+        assert not hasattr(scan, 'shift_y')
+        assert scan.serialize() == {}
 
-        new_scan = Scan.from_serialized(serialized, parent=series)
-        assert new_scan.shift_x == 5
-        assert new_scan.shift_y == -3
+        # The removed scan shifts are skipped silently
+        assert capsys.readouterr().err == ''
+
+        # But other unknown attributes still produce a warning
+        Scan.from_serialized({'unknown_attribute': 1}, parent=series)
+        assert 'unknown_attribute' in capsys.readouterr().err
 
 
 class TestSeries:

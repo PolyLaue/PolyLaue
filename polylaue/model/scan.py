@@ -13,20 +13,17 @@ class Scan(Serializable):
     def __init__(
         self,
         parent: Series,
-        shift_x: int = 0,
-        shift_y: int = 0,
     ):
         self.parent = parent
-        self.shift_x = shift_x
-        self.shift_y = shift_y
 
     @property
     def number(self) -> int:
         # This is based upon the scan info from the parent
         return self.parent.scan_number(self)
 
-    # Serialization code
-    _attrs_to_serialize = [
+    # The scan shifts were removed, but may still be present in
+    # older settings files. Skip them silently.
+    _attrs_to_ignore = [
         'shift_x',
         'shift_y',
     ]

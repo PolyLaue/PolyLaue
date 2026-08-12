@@ -108,10 +108,6 @@ class ProjectNavigatorView(QTableView):
         return self.submodel.type == 'series'
 
     @property
-    def is_submodel_scans(self) -> bool:
-        return self.submodel.type == 'scans'
-
-    @property
     def selected_rows(self):
         return [
             self.proxy_model.mapToSource(x).row()
@@ -139,7 +135,6 @@ class ProjectNavigatorView(QTableView):
         source_index = self.proxy_model.mapToSource(index)
         row_clicked = source_index.row()
         col_clicked = source_index.column()
-        is_series = self.is_submodel_series
         selected_rows = self.selected_rows
         num_selected_rows = len(selected_rows)
 
@@ -173,21 +168,11 @@ class ProjectNavigatorView(QTableView):
         def edit_entry():
             self.edit_entry(row_clicked)
 
-        def edit_scan_shifts():
-            self.descend_into_row(row_clicked)
-
         if ItemFlag.ItemIsEditable in index.flags():
             add_actions(
                 {
                     'Edit': edit_entry,
                     'Edit Field': edit_item,
-                }
-            )
-
-        if is_series:
-            add_actions(
-                {
-                    'Scan Shifts': edit_scan_shifts,
                 }
             )
 
@@ -232,9 +217,6 @@ class ProjectNavigatorView(QTableView):
             series = self.model.submodel.entry_list[row]
             # Get the first scan and open that.
             self.open_scan.emit(series.scans[0])
-        elif self.is_submodel_scans:
-            scan = self.model.submodel.entry_list[row]
-            self.open_scan.emit(scan)
         else:
             # If it is anything except a series, navigate inside it.
             self.descend_into_row(row)
