@@ -46,6 +46,7 @@ from polylaue.ui.region_mapping.dialog import RegionMappingDialog
 from polylaue.ui.regions_navigator.dialog import RegionsNavigatorDialog
 from polylaue.ui.track_dialog import TrackDialog
 from polylaue.ui.background_poller import BackgroundPoller
+from polylaue.ui.utils.block_signals import block_signals
 from polylaue.ui.utils.ui_loader import UiLoader
 
 logger = logging.getLogger(__name__)
@@ -104,6 +105,9 @@ class MainWindow(QObject):
 
         self.setup_connections()
 
+        # Hide the scan number widgets until a series is loaded
+        self.update_info_label()
+
         if '--ignore-settings' not in QCoreApplication.arguments():
             self.load_settings()
 
@@ -153,6 +157,13 @@ class MainWindow(QObject):
         )
         self.image_view.open_scan_position_coords_dialog.connect(
             self.on_open_scan_position_coords_dialog
+        )
+        self.image_view.go_to_scan_number.connect(self.on_go_to_scan_number)
+        self.ui.scan_num_spin_box.valueChanged.connect(
+            self.on_scan_num_spin_box_value_changed
+        )
+        self.ui.scan_num_spin_box.editingFinished.connect(
+            self.on_scan_num_spin_box_editing_finished
         )
 
         self.reflections_editor.reflections_changed.connect(self.on_reflections_changed)
@@ -476,6 +487,57 @@ class MainWindow(QObject):
         self.on_frame_changed()
         self.on_hkls_changed()
 
+    def on_go_to_scan_number(self):
+        """Move the keyboard focus to the scan number spin box"""
+        sb = self.ui.scan_num_spin_box
+        if not sb.isVisible():
+            # No series is loaded
+            return
+
+        sb.setFocus()
+        sb.selectAll()
+
+    def on_scan_num_spin_box_value_changed(self, scan_num: int):
+        """Jump directly to the provided scan number"""
+        if self.series is None or scan_num == self.scan_num:
+            return
+
+        if self.section.series_with_scan_index(scan_num) is None:
+            # The scan ranges of the series within a section are not
+            # necessarily contiguous, so the scan number may be missing
+            # even though it was within the spin box bounds.
+            msg = f'Scan number "{scan_num}" was not found in this section'
+            QMessageBox.critical(self.ui, 'Scan Not Found', msg)
+        else:
+            self.on_shift_scan_number(scan_num - self.scan_num)
+
+        # Sync the spin box back up with whatever scan we actually
+        # ended up on (the jump may have failed).
+        self.update_scan_num_spin_box()
+
+    def on_scan_num_spin_box_editing_finished(self):
+        # After the user presses enter in the spin box, hand the focus
+        # back to the image view, so that its keyboard navigation keys
+        # keep working.
+        if self.ui.scan_num_spin_box.hasFocus():
+            self.image_view.setFocus()
+
+    def update_scan_num_spin_box(self):
+        # Bound the spin box by the full scan range of the section
+        scan_ranges = [s.scan_range_tuple for s in self.section.series]
+        min_scan = min(x[0] for x in scan_ranges)
+        max_scan = max(x[1] for x in scan_ranges)
+
+        sb = self.ui.scan_num_spin_box
+        with block_signals(sb):
+            sb.setRange(min_scan, max_scan)
+            sb.setValue(int(self.scan_num))
+
+        sb.setToolTip(
+            'Type a scan number to jump directly to it (Ctrl+G). '
+            f'The maximum scan number is {max_scan}.'
+        )
+
     def on_shift_scan_position(self, i: int, j: int):
         """Shift the scan position by `i` rows and `j` columns"""
         if self.series is None:
@@ -591,16 +653,18 @@ class MainWindow(QObject):
         return filepath, img
 
     def update_info_label(self):
-        if self.series is None:
+        has_series = self.series is not None
+        self.ui.scan_label.setVisible(has_series)
+        self.ui.scan_num_spin_box.setVisible(has_series)
+
+        if not has_series:
             text = ''
         else:
+            self.update_scan_num_spin_box()
             # Make sure these are native types, or else on Mac and
             # Windows, they might appear as `np.int64(1)`.
-            text = (
-                f'Scan {int(self.scan_num)}, '
-                # Reverse the position to match HPCAT notation
-                f'Position {tuple(map(int, self.scan_pos[::-1] + 1))}'
-            )
+            # Reverse the position to match HPCAT notation
+            text = f'Position {tuple(map(int, self.scan_pos[::-1] + 1))}'
 
         self.ui.info_label.setText(text)
         self.update_position_label()

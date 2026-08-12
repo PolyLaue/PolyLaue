@@ -40,6 +40,9 @@ class PolyLaueImageView(pg.ImageView):
     """Indicates the user wants to open the scan position coordinates dialog"""
     open_scan_position_coords_dialog = Signal()
 
+    """Indicates the user wants to jump to a specific scan number"""
+    go_to_scan_number = Signal()
+
     def __init__(self, *args, **kwargs):
         frame_tracker = kwargs.pop('frame_tracker')
         super().__init__(*args, **kwargs)
@@ -438,6 +441,11 @@ class PolyLaueImageView(pg.ImageView):
             case Key.Key_PageDown:
                 # Move down one scan
                 return shift_scan_number(-1)
+            case Key.Key_G if event.modifiers() & Qt.ControlModifier:
+                # Jump to a specific scan number
+                self.go_to_scan_number.emit()
+                event.accept()
+                return
 
         return super().keyPressEvent(event)
 
