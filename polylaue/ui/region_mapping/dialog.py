@@ -105,6 +105,7 @@ class RegionMappingDialog(QDialog):
     sigShowDomainChanged = Signal(bool)
     sigMappingHighlightChanged = Signal(int, int, int, int)
     sigMappingDomainChanged = Signal(int, int, int, int)
+    sigLockToggled = Signal(bool)
 
     def __init__(
         self,
@@ -159,6 +160,7 @@ class RegionMappingDialog(QDialog):
         self.show_domain_button.clicked.connect(self.on_domain_clicked)
 
         self.lock_scan_number_checkbox = QCheckBox('Lock Scan Number', self)
+        self.lock_scan_number_checkbox.toggled.connect(self.on_lock_toggled)
 
         buttons_layout.addWidget(self.show_highlight_button)
         buttons_layout.addWidget(self.show_domain_button)
@@ -280,12 +282,21 @@ class RegionMappingDialog(QDialog):
         self.debounced_refresh.cancel()
 
     def set_series(self, series: Series):
+        if self.scan_number_locked:
+            # A locked dialog keeps both its series and its scan number,
+            # since the scan number is only valid within its series.
+            return
+
         self.series = series
         self.set_stale(True)
 
     @property
     def scan_number_locked(self) -> bool:
         return self.lock_scan_number_checkbox.isChecked()
+
+    def on_lock_toggled(self, locked: bool):
+        self._update_window_title()
+        self.sigLockToggled.emit(locked)
 
     def set_scan_number(self, scan_number: int):
         if self.scan_number_locked:
@@ -610,10 +621,14 @@ class RegionMappingDialog(QDialog):
         self.change_scan_position.emit(scan_pos[0], scan_pos[1])
 
     def _update_window_title(self):
+        title = f'Mapping for Region {self.roi_id}'
+        if self.scan_number >= 0:
+            title += f', Scan {self.scan_number}'
+        if self.scan_number_locked:
+            title += ' [LOCKED]'
         if self.stale:
-            self.setWindowTitle(f'Mapping for Region {self.roi_id} [STALE]')
-        else:
-            self.setWindowTitle(f'Mapping for Region {self.roi_id}')
+            title += ' [STALE]'
+        self.setWindowTitle(title)
 
     def _create_map_image(self, roi_id: str, series: Series, scan_number: int):
         # NOTE: The image is row-major,

@@ -88,7 +88,10 @@ class MainWindow(QObject):
         self.hkl_provider = HklProvider(self.frame_tracker)
         self.hkl_roi_manager = HklROIManager()
 
-        self.region_mapping_dialogs = {}
+        # Map of ROI id to the list of open mapping dialogs for that ROI.
+        # There can be more than one dialog per ROI when some of them are
+        # locked to specific scan numbers.
+        self.region_mapping_dialogs: dict[str, list[RegionMappingDialog]] = {}
         self.mapping_highlight_area = None
         self.mapping_domain_area = None
         self.show_mapping_highlight_area = False
@@ -496,7 +499,7 @@ class MainWindow(QObject):
 
         self.frame_tracker.scan_pos = (i, j)
 
-        for dialog in self.region_mapping_dialogs.values():
+        for dialog in self.all_region_mapping_dialogs:
             dialog.set_scan_position(self.scan_pos[0], self.scan_pos[1])
 
         self.on_frame_changed()
@@ -528,7 +531,7 @@ class MainWindow(QObject):
             d.remove_all_rois()
 
     def on_series_or_scan_changed(self):
-        for dialog in self.region_mapping_dialogs.values():
+        for dialog in self.all_region_mapping_dialogs:
             dialog.set_series(self.series)
             dialog.set_scan_number(self.scan_num)
 
@@ -539,8 +542,12 @@ class MainWindow(QObject):
             d = self._hkl_regions_navigator_dialog
             d.roi_items_manager.on_hkls_changed()
 
+    @property
+    def all_region_mapping_dialogs(self) -> list[RegionMappingDialog]:
+        return [d for dialogs in self.region_mapping_dialogs.values() for d in dialogs]
+
     def set_mapping_dialogs_stale(self):
-        for dialog in self.region_mapping_dialogs.values():
+        for dialog in self.all_region_mapping_dialogs:
             dialog.set_stale(True)
 
     def load_current_image(self):
@@ -973,10 +980,8 @@ class MainWindow(QObject):
         d.disconnect()
 
     def on_roi_remove_clicked(self, id: str):
-        if id in self.region_mapping_dialogs:
-            dialog = self.region_mapping_dialogs[id]
+        for dialog in self.region_mapping_dialogs.pop(id, []):
             dialog.setParent(None)
-            del self.region_mapping_dialogs[id]
 
         # Reset mapping highlight and domain regions if the last roi has been removed
         if len(self.region_mapping_dialogs) == 0:
@@ -1013,40 +1018,85 @@ class MainWindow(QObject):
                 "size": np.array((1, 1)),
             }
 
-        if id in self.region_mapping_dialogs:
-            dialog = self.region_mapping_dialogs[id]
-        else:
-            dialog = RegionMappingDialog(id, roi_manager, self.ui)
-            histogram_widget = self.image_view.getHistogramWidget()
+        dialogs = self.region_mapping_dialogs.setdefault(id, [])
 
-            if histogram_widget:
-                dialog.link_levels_and_lookuptable(histogram_widget.item)
-
-            dialog.open_image_fn = self.open_image
-            dialog.set_series(self.series)
-            dialog.set_scan_number(self.scan_num)
-            dialog.set_scan_position(self.scan_pos[0], self.scan_pos[1])
-            dialog.set_domain_roi(self.mapping_domain_area)
-            dialog.set_highlight_roi(self.mapping_highlight_area)
-            dialog.set_show_domain(self.show_mapping_domain_area)
-            dialog.set_show_highlight(self.show_mapping_highlight_area)
-            dialog.set_stale(True)
-
-            dialog.change_scan_position.connect(self.on_change_scan_position)
-            dialog.shift_scan_number.connect(self.on_shift_scan_number)
-            dialog.shift_scan_position.connect(self.on_shift_scan_position)
-            dialog.sigMappingDomainChanged.connect(self.on_mapping_domain_changed)
-            dialog.sigMappingHighlightChanged.connect(self.on_mapping_highlight_changed)
-            dialog.sigShowDomainChanged.connect(self.on_show_domain_changed)
-            dialog.sigShowHighlightChanged.connect(self.on_show_highlight_changed)
-
-            self.region_mapping_dialogs[id] = dialog
+        # Raise the first unlocked dialog for this region, if there is one.
+        # If all of the dialogs are locked to specific scan numbers, create
+        # a new one, so that maps of the same region at different scan
+        # numbers can be compared side by side.
+        dialog = next((d for d in dialogs if not d.scan_number_locked), None)
+        if dialog is None:
+            dialog = self._create_region_mapping_dialog(roi_manager, id)
+            dialogs.append(dialog)
 
         dialog.show()
+        dialog.raise_()
+
+    def _create_region_mapping_dialog(
+        self, roi_manager: ROIManager, id: str
+    ) -> RegionMappingDialog:
+        dialog = RegionMappingDialog(id, roi_manager, self.ui)
+        histogram_widget = self.image_view.getHistogramWidget()
+
+        if histogram_widget:
+            dialog.link_levels_and_lookuptable(histogram_widget.item)
+
+        dialog.open_image_fn = self.open_image
+        dialog.set_series(self.series)
+        dialog.set_scan_number(self.scan_num)
+        dialog.set_scan_position(self.scan_pos[0], self.scan_pos[1])
+        dialog.set_domain_roi(self.mapping_domain_area)
+        dialog.set_highlight_roi(self.mapping_highlight_area)
+        dialog.set_show_domain(self.show_mapping_domain_area)
+        dialog.set_show_highlight(self.show_mapping_highlight_area)
+        dialog.set_stale(True)
+
+        dialog.change_scan_position.connect(self.on_change_scan_position)
+        dialog.shift_scan_number.connect(self.on_shift_scan_number)
+        dialog.shift_scan_position.connect(self.on_shift_scan_position)
+        dialog.sigMappingDomainChanged.connect(self.on_mapping_domain_changed)
+        dialog.sigMappingHighlightChanged.connect(self.on_mapping_highlight_changed)
+        dialog.sigShowDomainChanged.connect(self.on_show_domain_changed)
+        dialog.sigShowHighlightChanged.connect(self.on_show_highlight_changed)
+        dialog.sigLockToggled.connect(
+            partial(self.on_mapping_dialog_lock_toggled, dialog)
+        )
+        dialog.finished.connect(partial(self.on_mapping_dialog_closed, dialog))
+
+        return dialog
+
+    def on_mapping_dialog_closed(self, dialog: RegionMappingDialog, result: int):
+        if not dialog.scan_number_locked:
+            # Keep the dialog around, so it will be reused the next
+            # time this region is displayed.
+            return
+
+        # A locked dialog cannot be raised again via "Display", so
+        # drop it when it is closed. Otherwise, repeatedly creating,
+        # locking, and closing dialogs would grow the list forever.
+        dialogs = self.region_mapping_dialogs.get(dialog.roi_id, [])
+        if dialog in dialogs:
+            dialogs.remove(dialog)
+
+        dialog.setParent(None)
+
+    def on_mapping_dialog_lock_toggled(
+        self, dialog: RegionMappingDialog, locked: bool
+    ):
+        if locked:
+            return
+
+        if dialog.series is self.series and dialog.scan_number == self.scan_num:
+            # Already in sync. Avoid a needless map refresh.
+            return
+
+        # The dialog was just unlocked. Sync it back up with the current
+        # series and scan number.
+        dialog.set_series(self.series)
+        dialog.set_scan_number(self.scan_num)
 
     def on_roi_modified(self, id: str):
-        if id in self.region_mapping_dialogs:
-            dialog = self.region_mapping_dialogs[id]
+        for dialog in self.region_mapping_dialogs.get(id, []):
             dialog.set_stale(True)
 
     def on_mapping_domain_changed(self, i: int, j: int, size_i: int, size_j: int):
@@ -1054,7 +1104,7 @@ class MainWindow(QObject):
             "position": np.array((i, j)),
             "size": np.array((size_i, size_j)),
         }
-        for dialog in self.region_mapping_dialogs.values():
+        for dialog in self.all_region_mapping_dialogs:
             dialog.set_domain_roi(self.mapping_domain_area)
 
     def on_mapping_highlight_changed(self, i: int, j: int, size_i: int, size_j: int):
@@ -1062,17 +1112,17 @@ class MainWindow(QObject):
             "position": np.array((i, j)),
             "size": np.array((size_i, size_j)),
         }
-        for dialog in self.region_mapping_dialogs.values():
+        for dialog in self.all_region_mapping_dialogs:
             dialog.set_highlight_roi(self.mapping_highlight_area)
 
     def on_show_domain_changed(self, show: bool):
         self.show_mapping_domain_area = show
-        for dialog in self.region_mapping_dialogs.values():
+        for dialog in self.all_region_mapping_dialogs:
             dialog.set_show_domain(self.show_mapping_domain_area)
 
     def on_show_highlight_changed(self, show: bool):
         self.show_mapping_highlight_area = show
-        for dialog in self.region_mapping_dialogs.values():
+        for dialog in self.all_region_mapping_dialogs:
             dialog.set_show_highlight(self.show_mapping_highlight_area)
 
 
