@@ -21,6 +21,7 @@ class Section(Editable):
         name: str = '',
         series: list[Series] | None = None,
         description: str = '',
+        acquisition_intervals: dict | None = None,
     ):
         super().__init__()
 
@@ -31,6 +32,11 @@ class Section(Editable):
         self._name = name
         self.series = series
         self.description = description
+
+        # The intervals used to compute frame acquisition times, in
+        # fractional seconds. If set, this is a dict with the keys
+        # "frame_period", "row_break", and "scan_break".
+        self.acquisition_intervals = acquisition_intervals
 
     @property
     def num_series(self):
@@ -120,6 +126,7 @@ class Section(Editable):
     _attrs_to_serialize = [
         'name',
         'description',
+        'acquisition_intervals',
         'series_serialized',
     ]
 

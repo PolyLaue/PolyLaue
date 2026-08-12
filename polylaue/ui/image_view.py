@@ -43,11 +43,21 @@ class PolyLaueImageView(pg.ImageView):
     """Indicates the user wants to jump to a specific scan number"""
     go_to_scan_number = Signal()
 
+    """Indicates the user wants to open the acquisition times dialog"""
+    open_acquisition_times_dialog = Signal()
+
+    """Indicates the current frame should be set as time zero"""
+    set_frame_as_time_zero = Signal()
+
     def __init__(self, *args, **kwargs):
         frame_tracker = kwargs.pop('frame_tracker')
         super().__init__(*args, **kwargs)
 
         self._last_mouse_position = None
+
+        # If set, this is called when the context menu is shown, to
+        # decide whether "set frame as time zero" should be enabled
+        self.time_zero_action_enabled_fn = None
 
         self.frame_tracker = frame_tracker
         self._reflections = None
@@ -503,6 +513,19 @@ class PolyLaueImageView(pg.ImageView):
 
         action = menu.addAction('set scan position coordinates')
         action.triggered.connect(self.open_scan_position_coords_dialog.emit)
+
+        action = menu.addAction('set acquisition times')
+        action.triggered.connect(self.open_acquisition_times_dialog.emit)
+
+        action = menu.addAction('set frame as time zero')
+        action.triggered.connect(self.set_frame_as_time_zero.emit)
+        self._time_zero_action = action
+
+        menu.aboutToShow.connect(self._update_time_zero_action_enabled)
+
+    def _update_time_zero_action_enabled(self):
+        fn = self.time_zero_action_enabled_fn
+        self._time_zero_action.setEnabled(fn() if fn is not None else True)
 
     def add_additional_cmap_menu_actions(self):
         """Add a 'reverse' action to the pyqtgraph colormap menu

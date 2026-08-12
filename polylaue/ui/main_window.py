@@ -1,8 +1,8 @@
 # Copyright © 2026, UChicago Argonne, LLC. See "LICENSE" for full details.
 
-import datetime
 from functools import lru_cache, partial
 import logging
+import math
 from pathlib import Path
 import sys
 
@@ -33,6 +33,7 @@ from polylaue.model.scan import Scan
 from polylaue.model.section import Section
 from polylaue.model.series import Series
 from polylaue.model.state import load_project_manager, save_project_manager
+from polylaue.ui.acquisition_times_dialog import AcquisitionTimesDialog
 from polylaue.ui.find_dialog import FindDialog
 from polylaue.ui.scan_position_coords_dialog import ScanPositionCoordsDialog
 from polylaue.ui.frame_tracker import FrameTracker
@@ -61,6 +62,11 @@ class MainWindow(QObject):
         self.working_dir = None
         self.series = None
         self.frame_tracker = FrameTracker()
+
+        # The time zero used for computed frame times, in fractional
+        # seconds relative to the first frame of the current series.
+        # This resets to zero whenever a different series is loaded.
+        self._time_zero = 0.0
 
         # We currently assume all image files in a series will have the
         # same image loader. Cache that image loader so we do not have
@@ -158,6 +164,13 @@ class MainWindow(QObject):
         self.image_view.open_scan_position_coords_dialog.connect(
             self.on_open_scan_position_coords_dialog
         )
+        self.image_view.open_acquisition_times_dialog.connect(
+            self.on_open_acquisition_times_dialog
+        )
+        self.image_view.set_frame_as_time_zero.connect(
+            self.on_set_frame_as_time_zero
+        )
+        self.image_view.time_zero_action_enabled_fn = self.computed_times_active
         self.image_view.go_to_scan_number.connect(self.on_go_to_scan_number)
         self.ui.scan_num_spin_box.valueChanged.connect(
             self.on_scan_num_spin_box_value_changed
@@ -357,6 +370,10 @@ class MainWindow(QObject):
             # Restore the previous series
             self.series = prev_series
             return False
+
+        if series is not prev_series:
+            # Reset the time zero to the first frame of this series
+            self._time_zero = 0.0
 
         if reset_settings:
             # Reset scan position
@@ -685,29 +702,41 @@ class MainWindow(QObject):
         self.ui.position_label.setText(pos_text)
 
     def update_time_label(self):
-        # This is the relative time of the creation of the currently viewed
-        # file with respect to the creation of the first file within this
-        # whole section.
         if self.series is None:
             self.ui.time_label.setText('')
             return
 
-        rtime = self.series.relative_file_creation_time(*self.scan_pos, self.scan_num)
+        rtime = self.series.computed_frame_time(*self.scan_pos, self.scan_num)
+        if rtime is not None:
+            # This time was computed from the section's acquisition
+            # intervals, relative to this series' time zero (which is,
+            # by default, the first frame of the series).
+            # Round down to microseconds. Round to nanoseconds first,
+            # so that floating point representation error does not
+            # leak into the displayed time.
+            microseconds = math.floor(
+                round((rtime - self._time_zero) * 1e9) / 1000
+            )
+        else:
+            # No acquisition intervals are configured for this section.
+            # Fall back to the relative time of the creation of the
+            # currently viewed file with respect to the creation of the
+            # first file within this whole section.
+            rtime = self.series.relative_file_creation_time(
+                *self.scan_pos, self.scan_num
+            )
+            # Round to milliseconds
+            microseconds = round(rtime * 1e3) * 1000
 
-        # Round to milliseconds
-        rtime = round(rtime, 3)
+        sign = '-' if microseconds < 0 else ''
+        us = abs(int(microseconds))
+        hours, remainder = divmod(us, 3_600_000_000)
+        minutes, remainder = divmod(remainder, 60_000_000)
+        seconds, us = divmod(remainder, 1_000_000)
 
-        td = datetime.timedelta(seconds=rtime)
-
-        seconds = td.seconds
-        hours = td.days * 24 + seconds // 3600
-        minutes = (seconds % 3600) // 60
-        remaining_seconds = seconds % 60
-        milliseconds = td.microseconds // 1000
-
-        rtime_str = f'{hours:02}h:{minutes:02}m:{remaining_seconds:02}'
-        if milliseconds != 0:
-            rtime_str += f'.{milliseconds:03}'
+        rtime_str = f'{sign}{hours:02}h:{minutes:02}m:{seconds:02}'
+        if us != 0:
+            rtime_str += f'.{us:06}'.rstrip('0')
         rtime_str += 's'
 
         self.ui.time_label.setText(rtime_str)
@@ -767,6 +796,54 @@ class MainWindow(QObject):
         self.series.scan_center_params = params
         self.save_project_manager()
         self.update_info_label()
+
+    def on_open_acquisition_times_dialog(self):
+        if self.series is None:
+            QMessageBox.warning(self.ui, 'No Series', 'A series must be loaded first.')
+            return
+
+        dialog = AcquisitionTimesDialog(self.ui)
+        prev = self.section.acquisition_intervals
+        params = dialog.exec(prev)
+        if params is None:
+            # User cancelled
+            return
+
+        # If the interval values changed, any custom time zero was
+        # computed from the old intervals and is no longer valid.
+        # Toggling "Apply acquisition times" alone keeps the time zero.
+        interval_keys = ('frame_period', 'row_break', 'scan_break')
+        if prev is None or any(prev.get(k) != params[k] for k in interval_keys):
+            self._time_zero = 0.0
+
+        self.section.acquisition_intervals = params
+        self.save_project_manager()
+        self.update_time_label()
+
+    def computed_times_active(self) -> bool:
+        """Whether frame times are currently computed from intervals"""
+        if self.series is None:
+            return False
+
+        first_scan = self.series.scan_start_number
+        return self.series.computed_frame_time(0, 0, first_scan) is not None
+
+    def on_set_frame_as_time_zero(self):
+        if self.series is None:
+            QMessageBox.warning(self.ui, 'No Series', 'A series must be loaded first.')
+            return
+
+        time_zero = self.series.computed_frame_time(*self.scan_pos, self.scan_num)
+        if time_zero is None:
+            msg = (
+                'The acquisition times must be set and applied before '
+                'a frame can be set as time zero.'
+            )
+            QMessageBox.warning(self.ui, 'No Acquisition Times', msg)
+            return
+
+        self._time_zero = time_zero
+        self.update_time_label()
 
     def open_reflections_editor(self):
         self.reflections_editor.ui.show()

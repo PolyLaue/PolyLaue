@@ -105,6 +105,66 @@ class TestSeries:
         assert series.num_scans == 3
         assert series.scan_range == range(1, 4)
 
+    def test_computed_frame_time(self, project_manager):
+        series = project_manager.projects[0].sections[0].series[0]
+        section = series.parent
+
+        # No intervals configured, so no computed times
+        assert section.acquisition_intervals is None
+        assert series.computed_frame_time(0, 0, 1) is None
+
+        section.acquisition_intervals = {
+            'frame_period': 0.1,
+            'row_break': 2.0,
+            'scan_break': 30.0,
+        }
+        series.scan_range_tuple = (1, 3)
+
+        compute = series.computed_frame_time
+
+        # The scan shape is 5 rows x 7 columns, so each row takes 0.7 s
+        # and each scan takes 5 * 0.7 + 4 * 2.0 = 11.5 s
+        assert compute(0, 0, 1) == 0.0
+        assert compute(0, 3, 1) == pytest.approx(0.3)
+        assert compute(1, 0, 1) == pytest.approx(0.7 + 2.0)
+        assert compute(4, 6, 1) == pytest.approx(4 * 2.7 + 0.6)
+        assert compute(0, 0, 2) == pytest.approx(11.5 + 30.0)
+        assert compute(1, 2, 3) == pytest.approx(2 * 41.5 + 2.7 + 0.2)
+
+        # Disabling the intervals reverts to no computed times, while
+        # keeping the interval values
+        section.acquisition_intervals['enabled'] = False
+        assert compute(0, 0, 1) is None
+        section.acquisition_intervals['enabled'] = True
+        assert compute(0, 3, 1) == pytest.approx(0.3)
+
+    def test_computed_frame_time_1x1_scans(self, project_manager):
+        # Fast processes are collected as a series of 1x1 scans. With a
+        # scan break of zero, the frame time should reduce to the scan
+        # index times the frame period.
+        section = project_manager.projects[0].sections[0]
+        series = Series(
+            parent=section,
+            name='TimeScan',
+            dirpath='/tmp/test_series',
+            scan_start_number=1,
+            scan_shape=(1, 1),
+        )
+        section.series.append(series)
+        series.scan_range_tuple = (1, 100)
+
+        section.acquisition_intervals = {
+            'frame_period': 0.05,
+            'row_break': 12.34,  # unused for a 1x1 scan shape
+            'scan_break': 0.0,
+        }
+
+        for scan_number in (1, 2, 50, 100):
+            expected = (scan_number - 1) * 0.05
+            assert series.computed_frame_time(0, 0, scan_number) == pytest.approx(
+                expected
+            )
+
     def test_scan_shape_reversed(self, project_manager):
         series = project_manager.projects[0].sections[0].series[0]
         assert series.scan_shape == (5, 7)

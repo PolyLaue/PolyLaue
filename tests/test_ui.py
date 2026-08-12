@@ -7,6 +7,7 @@ import pytest
 from PySide6.QtWidgets import QApplication
 
 from polylaue.model.roi_manager import ROIManager
+from polylaue.ui.acquisition_times_dialog import AcquisitionTimesDialog
 from polylaue.ui.region_mapping.dialog import RegionMappingDialog
 
 
@@ -38,3 +39,21 @@ def test_region_mapping_dialog_lock(qapp):
     dialog.set_scan_number(7)
     assert dialog.scan_number == 7
     assert '[LOCKED]' not in dialog.windowTitle()
+
+
+def test_acquisition_times_dialog(qapp):
+    dialog = AcquisitionTimesDialog()
+
+    # Unchecked by default, with the interval widgets grayed out
+    assert dialog.enabled is False
+    assert not dialog.ui.intervals_widget.isEnabled()
+
+    params = {
+        'enabled': True,
+        'frame_period': 0.05,
+        'row_break': 2.5,
+        'scan_break': 30.0,
+    }
+    dialog.settings_serialized = params
+    assert dialog.settings_serialized == params
+    assert dialog.ui.intervals_widget.isEnabled()
