@@ -1,8 +1,8 @@
 # Copyright © 2026, UChicago Argonne, LLC. See "LICENSE" for full details.
 
-import datetime
 from functools import lru_cache, partial
 import logging
+import math
 from pathlib import Path
 import sys
 
@@ -33,6 +33,7 @@ from polylaue.model.scan import Scan
 from polylaue.model.section import Section
 from polylaue.model.series import Series
 from polylaue.model.state import load_project_manager, save_project_manager
+from polylaue.ui.acquisition_times_dialog import AcquisitionTimesDialog
 from polylaue.ui.find_dialog import FindDialog
 from polylaue.ui.scan_position_coords_dialog import ScanPositionCoordsDialog
 from polylaue.ui.frame_tracker import FrameTracker
@@ -46,6 +47,7 @@ from polylaue.ui.region_mapping.dialog import RegionMappingDialog
 from polylaue.ui.regions_navigator.dialog import RegionsNavigatorDialog
 from polylaue.ui.track_dialog import TrackDialog
 from polylaue.ui.background_poller import BackgroundPoller
+from polylaue.ui.utils.block_signals import block_signals
 from polylaue.ui.utils.ui_loader import UiLoader
 
 logger = logging.getLogger(__name__)
@@ -60,6 +62,11 @@ class MainWindow(QObject):
         self.working_dir = None
         self.series = None
         self.frame_tracker = FrameTracker()
+
+        # The time zero used for computed frame times, in fractional
+        # seconds relative to the first frame of the current series.
+        # This resets to zero whenever a different series is loaded.
+        self._time_zero = 0.0
 
         # We currently assume all image files in a series will have the
         # same image loader. Cache that image loader so we do not have
@@ -88,7 +95,10 @@ class MainWindow(QObject):
         self.hkl_provider = HklProvider(self.frame_tracker)
         self.hkl_roi_manager = HklROIManager()
 
-        self.region_mapping_dialogs = {}
+        # Map of ROI id to the list of open mapping dialogs for that ROI.
+        # There can be more than one dialog per ROI when some of them are
+        # locked to specific scan numbers.
+        self.region_mapping_dialogs: dict[str, list[RegionMappingDialog]] = {}
         self.mapping_highlight_area = None
         self.mapping_domain_area = None
         self.show_mapping_highlight_area = False
@@ -100,6 +110,9 @@ class MainWindow(QObject):
         )
 
         self.setup_connections()
+
+        # Hide the scan number widgets until a series is loaded
+        self.update_info_label()
 
         if '--ignore-settings' not in QCoreApplication.arguments():
             self.load_settings()
@@ -150,6 +163,18 @@ class MainWindow(QObject):
         )
         self.image_view.open_scan_position_coords_dialog.connect(
             self.on_open_scan_position_coords_dialog
+        )
+        self.image_view.open_acquisition_times_dialog.connect(
+            self.on_open_acquisition_times_dialog
+        )
+        self.image_view.set_frame_as_time_zero.connect(self.on_set_frame_as_time_zero)
+        self.image_view.time_zero_action_enabled_fn = self.computed_times_active
+        self.image_view.go_to_scan_number.connect(self.on_go_to_scan_number)
+        self.ui.scan_num_spin_box.valueChanged.connect(
+            self.on_scan_num_spin_box_value_changed
+        )
+        self.ui.scan_num_spin_box.editingFinished.connect(
+            self.on_scan_num_spin_box_editing_finished
         )
 
         self.reflections_editor.reflections_changed.connect(self.on_reflections_changed)
@@ -344,6 +369,10 @@ class MainWindow(QObject):
             self.series = prev_series
             return False
 
+        if series is not prev_series:
+            # Reset the time zero to the first frame of this series
+            self._time_zero = 0.0
+
         if reset_settings:
             # Reset scan position
             self.reset_scan_position()
@@ -473,6 +502,57 @@ class MainWindow(QObject):
         self.on_frame_changed()
         self.on_hkls_changed()
 
+    def on_go_to_scan_number(self):
+        """Move the keyboard focus to the scan number spin box"""
+        sb = self.ui.scan_num_spin_box
+        if not sb.isVisible():
+            # No series is loaded
+            return
+
+        sb.setFocus()
+        sb.selectAll()
+
+    def on_scan_num_spin_box_value_changed(self, scan_num: int):
+        """Jump directly to the provided scan number"""
+        if self.series is None or scan_num == self.scan_num:
+            return
+
+        if self.section.series_with_scan_index(scan_num) is None:
+            # The scan ranges of the series within a section are not
+            # necessarily contiguous, so the scan number may be missing
+            # even though it was within the spin box bounds.
+            msg = f'Scan number "{scan_num}" was not found in this section'
+            QMessageBox.critical(self.ui, 'Scan Not Found', msg)
+        else:
+            self.on_shift_scan_number(scan_num - self.scan_num)
+
+        # Sync the spin box back up with whatever scan we actually
+        # ended up on (the jump may have failed).
+        self.update_scan_num_spin_box()
+
+    def on_scan_num_spin_box_editing_finished(self):
+        # After the user presses enter in the spin box, hand the focus
+        # back to the image view, so that its keyboard navigation keys
+        # keep working.
+        if self.ui.scan_num_spin_box.hasFocus():
+            self.image_view.setFocus()
+
+    def update_scan_num_spin_box(self):
+        # Bound the spin box by the full scan range of the section
+        scan_ranges = [s.scan_range_tuple for s in self.section.series]
+        min_scan = min(x[0] for x in scan_ranges)
+        max_scan = max(x[1] for x in scan_ranges)
+
+        sb = self.ui.scan_num_spin_box
+        with block_signals(sb):
+            sb.setRange(min_scan, max_scan)
+            sb.setValue(int(self.scan_num))
+
+        sb.setToolTip(
+            'Type a scan number to jump directly to it (Ctrl+G). '
+            f'The maximum scan number is {max_scan}.'
+        )
+
     def on_shift_scan_position(self, i: int, j: int):
         """Shift the scan position by `i` rows and `j` columns"""
         if self.series is None:
@@ -496,7 +576,7 @@ class MainWindow(QObject):
 
         self.frame_tracker.scan_pos = (i, j)
 
-        for dialog in self.region_mapping_dialogs.values():
+        for dialog in self.all_region_mapping_dialogs:
             dialog.set_scan_position(self.scan_pos[0], self.scan_pos[1])
 
         self.on_frame_changed()
@@ -528,7 +608,7 @@ class MainWindow(QObject):
             d.remove_all_rois()
 
     def on_series_or_scan_changed(self):
-        for dialog in self.region_mapping_dialogs.values():
+        for dialog in self.all_region_mapping_dialogs:
             dialog.set_series(self.series)
             dialog.set_scan_number(self.scan_num)
 
@@ -539,8 +619,12 @@ class MainWindow(QObject):
             d = self._hkl_regions_navigator_dialog
             d.roi_items_manager.on_hkls_changed()
 
+    @property
+    def all_region_mapping_dialogs(self) -> list[RegionMappingDialog]:
+        return [d for dialogs in self.region_mapping_dialogs.values() for d in dialogs]
+
     def set_mapping_dialogs_stale(self):
-        for dialog in self.region_mapping_dialogs.values():
+        for dialog in self.all_region_mapping_dialogs:
             dialog.set_stale(True)
 
     def load_current_image(self):
@@ -584,16 +668,18 @@ class MainWindow(QObject):
         return filepath, img
 
     def update_info_label(self):
-        if self.series is None:
+        has_series = self.series is not None
+        self.ui.scan_label.setVisible(has_series)
+        self.ui.scan_num_spin_box.setVisible(has_series)
+
+        if not has_series:
             text = ''
         else:
+            self.update_scan_num_spin_box()
             # Make sure these are native types, or else on Mac and
             # Windows, they might appear as `np.int64(1)`.
-            text = (
-                f'Scan {int(self.scan_num)}, '
-                # Reverse the position to match HPCAT notation
-                f'Position {tuple(map(int, self.scan_pos[::-1] + 1))}'
-            )
+            # Reverse the position to match HPCAT notation
+            text = f'Position {tuple(map(int, self.scan_pos[::-1] + 1))}'
 
         self.ui.info_label.setText(text)
         self.update_position_label()
@@ -614,29 +700,39 @@ class MainWindow(QObject):
         self.ui.position_label.setText(pos_text)
 
     def update_time_label(self):
-        # This is the relative time of the creation of the currently viewed
-        # file with respect to the creation of the first file within this
-        # whole section.
         if self.series is None:
             self.ui.time_label.setText('')
             return
 
-        rtime = self.series.relative_file_creation_time(*self.scan_pos, self.scan_num)
+        rtime = self.series.computed_frame_time(*self.scan_pos, self.scan_num)
+        if rtime is not None:
+            # This time was computed from the section's acquisition
+            # intervals, relative to this series' time zero (which is,
+            # by default, the first frame of the series).
+            # Round down to microseconds. Round to nanoseconds first,
+            # so that floating point representation error does not
+            # leak into the displayed time.
+            microseconds = math.floor(round((rtime - self._time_zero) * 1e9) / 1000)
+        else:
+            # No acquisition intervals are configured for this section.
+            # Fall back to the relative time of the creation of the
+            # currently viewed file with respect to the creation of the
+            # first file within this whole section.
+            rtime = self.series.relative_file_creation_time(
+                *self.scan_pos, self.scan_num
+            )
+            # Round to milliseconds
+            microseconds = round(rtime * 1e3) * 1000
 
-        # Round to milliseconds
-        rtime = round(rtime, 3)
+        sign = '-' if microseconds < 0 else ''
+        us = abs(int(microseconds))
+        hours, remainder = divmod(us, 3_600_000_000)
+        minutes, remainder = divmod(remainder, 60_000_000)
+        seconds, us = divmod(remainder, 1_000_000)
 
-        td = datetime.timedelta(seconds=rtime)
-
-        seconds = td.seconds
-        hours = td.days * 24 + seconds // 3600
-        minutes = (seconds % 3600) // 60
-        remaining_seconds = seconds % 60
-        milliseconds = td.microseconds // 1000
-
-        rtime_str = f'{hours:02}h:{minutes:02}m:{remaining_seconds:02}'
-        if milliseconds != 0:
-            rtime_str += f'.{milliseconds:03}'
+        rtime_str = f'{sign}{hours:02}h:{minutes:02}m:{seconds:02}'
+        if us != 0:
+            rtime_str += f'.{us:06}'.rstrip('0')
         rtime_str += 's'
 
         self.ui.time_label.setText(rtime_str)
@@ -696,6 +792,54 @@ class MainWindow(QObject):
         self.series.scan_center_params = params
         self.save_project_manager()
         self.update_info_label()
+
+    def on_open_acquisition_times_dialog(self):
+        if self.series is None:
+            QMessageBox.warning(self.ui, 'No Series', 'A series must be loaded first.')
+            return
+
+        dialog = AcquisitionTimesDialog(self.ui)
+        prev = self.section.acquisition_intervals
+        params = dialog.exec(prev)
+        if params is None:
+            # User cancelled
+            return
+
+        # If the interval values changed, any custom time zero was
+        # computed from the old intervals and is no longer valid.
+        # Toggling "Apply acquisition times" alone keeps the time zero.
+        interval_keys = ('frame_period', 'row_break', 'scan_break')
+        if prev is None or any(prev.get(k) != params[k] for k in interval_keys):
+            self._time_zero = 0.0
+
+        self.section.acquisition_intervals = params
+        self.save_project_manager()
+        self.update_time_label()
+
+    def computed_times_active(self) -> bool:
+        """Whether frame times are currently computed from intervals"""
+        if self.series is None:
+            return False
+
+        first_scan = self.series.scan_start_number
+        return self.series.computed_frame_time(0, 0, first_scan) is not None
+
+    def on_set_frame_as_time_zero(self):
+        if self.series is None:
+            QMessageBox.warning(self.ui, 'No Series', 'A series must be loaded first.')
+            return
+
+        time_zero = self.series.computed_frame_time(*self.scan_pos, self.scan_num)
+        if time_zero is None:
+            msg = (
+                'The acquisition times must be set and applied before '
+                'a frame can be set as time zero.'
+            )
+            QMessageBox.warning(self.ui, 'No Acquisition Times', msg)
+            return
+
+        self._time_zero = time_zero
+        self.update_time_label()
 
     def open_reflections_editor(self):
         self.reflections_editor.ui.show()
@@ -973,10 +1117,8 @@ class MainWindow(QObject):
         d.disconnect()
 
     def on_roi_remove_clicked(self, id: str):
-        if id in self.region_mapping_dialogs:
-            dialog = self.region_mapping_dialogs[id]
+        for dialog in self.region_mapping_dialogs.pop(id, []):
             dialog.setParent(None)
-            del self.region_mapping_dialogs[id]
 
         # Reset mapping highlight and domain regions if the last roi has been removed
         if len(self.region_mapping_dialogs) == 0:
@@ -1013,40 +1155,83 @@ class MainWindow(QObject):
                 "size": np.array((1, 1)),
             }
 
-        if id in self.region_mapping_dialogs:
-            dialog = self.region_mapping_dialogs[id]
-        else:
-            dialog = RegionMappingDialog(id, roi_manager, self.ui)
-            histogram_widget = self.image_view.getHistogramWidget()
+        dialogs = self.region_mapping_dialogs.setdefault(id, [])
 
-            if histogram_widget:
-                dialog.link_levels_and_lookuptable(histogram_widget.item)
-
-            dialog.open_image_fn = self.open_image
-            dialog.set_series(self.series)
-            dialog.set_scan_number(self.scan_num)
-            dialog.set_scan_position(self.scan_pos[0], self.scan_pos[1])
-            dialog.set_domain_roi(self.mapping_domain_area)
-            dialog.set_highlight_roi(self.mapping_highlight_area)
-            dialog.set_show_domain(self.show_mapping_domain_area)
-            dialog.set_show_highlight(self.show_mapping_highlight_area)
-            dialog.set_stale(True)
-
-            dialog.change_scan_position.connect(self.on_change_scan_position)
-            dialog.shift_scan_number.connect(self.on_shift_scan_number)
-            dialog.shift_scan_position.connect(self.on_shift_scan_position)
-            dialog.sigMappingDomainChanged.connect(self.on_mapping_domain_changed)
-            dialog.sigMappingHighlightChanged.connect(self.on_mapping_highlight_changed)
-            dialog.sigShowDomainChanged.connect(self.on_show_domain_changed)
-            dialog.sigShowHighlightChanged.connect(self.on_show_highlight_changed)
-
-            self.region_mapping_dialogs[id] = dialog
+        # Raise the first unlocked dialog for this region, if there is one.
+        # If all of the dialogs are locked to specific scan numbers, create
+        # a new one, so that maps of the same region at different scan
+        # numbers can be compared side by side.
+        dialog = next((d for d in dialogs if not d.scan_number_locked), None)
+        if dialog is None:
+            dialog = self._create_region_mapping_dialog(roi_manager, id)
+            dialogs.append(dialog)
 
         dialog.show()
+        dialog.raise_()
+
+    def _create_region_mapping_dialog(
+        self, roi_manager: ROIManager, id: str
+    ) -> RegionMappingDialog:
+        dialog = RegionMappingDialog(id, roi_manager, self.ui)
+        histogram_widget = self.image_view.getHistogramWidget()
+
+        if histogram_widget:
+            dialog.link_levels_and_lookuptable(histogram_widget.item)
+
+        dialog.open_image_fn = self.open_image
+        dialog.set_series(self.series)
+        dialog.set_scan_number(self.scan_num)
+        dialog.set_scan_position(self.scan_pos[0], self.scan_pos[1])
+        dialog.set_domain_roi(self.mapping_domain_area)
+        dialog.set_highlight_roi(self.mapping_highlight_area)
+        dialog.set_show_domain(self.show_mapping_domain_area)
+        dialog.set_show_highlight(self.show_mapping_highlight_area)
+        dialog.set_stale(True)
+
+        dialog.change_scan_position.connect(self.on_change_scan_position)
+        dialog.shift_scan_number.connect(self.on_shift_scan_number)
+        dialog.shift_scan_position.connect(self.on_shift_scan_position)
+        dialog.sigMappingDomainChanged.connect(self.on_mapping_domain_changed)
+        dialog.sigMappingHighlightChanged.connect(self.on_mapping_highlight_changed)
+        dialog.sigShowDomainChanged.connect(self.on_show_domain_changed)
+        dialog.sigShowHighlightChanged.connect(self.on_show_highlight_changed)
+        dialog.sigLockToggled.connect(
+            partial(self.on_mapping_dialog_lock_toggled, dialog)
+        )
+        dialog.finished.connect(partial(self.on_mapping_dialog_closed, dialog))
+
+        return dialog
+
+    def on_mapping_dialog_closed(self, dialog: RegionMappingDialog, result: int):
+        if not dialog.scan_number_locked:
+            # Keep the dialog around, so it will be reused the next
+            # time this region is displayed.
+            return
+
+        # A locked dialog cannot be raised again via "Display", so
+        # drop it when it is closed. Otherwise, repeatedly creating,
+        # locking, and closing dialogs would grow the list forever.
+        dialogs = self.region_mapping_dialogs.get(dialog.roi_id, [])
+        if dialog in dialogs:
+            dialogs.remove(dialog)
+
+        dialog.setParent(None)
+
+    def on_mapping_dialog_lock_toggled(self, dialog: RegionMappingDialog, locked: bool):
+        if locked:
+            return
+
+        if dialog.series is self.series and dialog.scan_number == self.scan_num:
+            # Already in sync. Avoid a needless map refresh.
+            return
+
+        # The dialog was just unlocked. Sync it back up with the current
+        # series and scan number.
+        dialog.set_series(self.series)
+        dialog.set_scan_number(self.scan_num)
 
     def on_roi_modified(self, id: str):
-        if id in self.region_mapping_dialogs:
-            dialog = self.region_mapping_dialogs[id]
+        for dialog in self.region_mapping_dialogs.get(id, []):
             dialog.set_stale(True)
 
     def on_mapping_domain_changed(self, i: int, j: int, size_i: int, size_j: int):
@@ -1054,7 +1239,7 @@ class MainWindow(QObject):
             "position": np.array((i, j)),
             "size": np.array((size_i, size_j)),
         }
-        for dialog in self.region_mapping_dialogs.values():
+        for dialog in self.all_region_mapping_dialogs:
             dialog.set_domain_roi(self.mapping_domain_area)
 
     def on_mapping_highlight_changed(self, i: int, j: int, size_i: int, size_j: int):
@@ -1062,17 +1247,17 @@ class MainWindow(QObject):
             "position": np.array((i, j)),
             "size": np.array((size_i, size_j)),
         }
-        for dialog in self.region_mapping_dialogs.values():
+        for dialog in self.all_region_mapping_dialogs:
             dialog.set_highlight_roi(self.mapping_highlight_area)
 
     def on_show_domain_changed(self, show: bool):
         self.show_mapping_domain_area = show
-        for dialog in self.region_mapping_dialogs.values():
+        for dialog in self.all_region_mapping_dialogs:
             dialog.set_show_domain(self.show_mapping_domain_area)
 
     def on_show_highlight_changed(self, show: bool):
         self.show_mapping_highlight_area = show
-        for dialog in self.region_mapping_dialogs.values():
+        for dialog in self.all_region_mapping_dialogs:
             dialog.set_show_highlight(self.show_mapping_highlight_area)
 
 

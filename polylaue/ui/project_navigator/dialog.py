@@ -70,11 +70,9 @@ class ProjectNavigatorDialog(QDialog):
 
     def update_enable_states(self):
         num_rows_selected = len(self.view.selected_rows)
-        is_scans = self.view.is_submodel_scans
 
-        self.add_button.setEnabled(not is_scans)
-        self.edit_button.setEnabled(not is_scans and num_rows_selected > 0)
-        self.remove_button.setEnabled(not is_scans and num_rows_selected > 0)
+        self.edit_button.setEnabled(num_rows_selected > 0)
+        self.remove_button.setEnabled(num_rows_selected > 0)
 
     @property
     def layout(self):

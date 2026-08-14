@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>acquisition_times_dialog</class>
+ <widget class="QDialog" name="acquisition_times_dialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>420</width>
+    <height>180</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Acquisition Times</string>
+  </property>
+  <layout class="QVBoxLayout" name="main_layout">
+   <item>
+    <widget class="QCheckBox" name="apply_acquisition_times">
+     <property name="toolTip">
+      <string>When checked, the displayed frame times are computed from these intervals. When unchecked, the file creation times are displayed instead. The intervals are kept, so checking this box again restores the computed times.</string>
+     </property>
+     <property name="text">
+      <string>Apply acquisition times</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QWidget" name="intervals_widget" native="true">
+     <layout class="QGridLayout" name="intervals_grid">
+     <item row="0" column="0">
+      <widget class="QLabel" name="frame_period_label">
+       <property name="text">
+        <string>Acquisition time per image:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="ScientificDoubleSpinBox" name="frame_period">
+       <property name="toolTip">
+        <string>The time between the starts of two consecutive images within a row, in seconds. This is the full period per image, including the detector readout time.</string>
+       </property>
+       <property name="suffix">
+        <string> s</string>
+       </property>
+       <property name="keyboardTracking">
+        <bool>false</bool>
+       </property>
+       <property name="decimals">
+        <number>6</number>
+       </property>
+       <property name="minimum">
+        <double>0.000000000000000</double>
+       </property>
+       <property name="maximum">
+        <double>1000000.000000000000000</double>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="row_break_label">
+       <property name="text">
+        <string>Break between rows:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="ScientificDoubleSpinBox" name="row_break">
+       <property name="toolTip">
+        <string>The break between two consecutive rows of a 2D scan, in seconds. This is the extra time between the end of one row and the start of the next row.</string>
+       </property>
+       <property name="suffix">
+        <string> s</string>
+       </property>
+       <property name="keyboardTracking">
+        <bool>false</bool>
+       </property>
+       <property name="decimals">
+        <number>6</number>
+       </property>
+       <property name="minimum">
+        <double>0.000000000000000</double>
+       </property>
+       <property name="maximum">
+        <double>1000000.000000000000000</double>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0">
+      <widget class="QLabel" name="scan_break_label">
+       <property name="text">
+        <string>Break between scans:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="ScientificDoubleSpinBox" name="scan_break">
+       <property name="toolTip">
+        <string>The break between two consecutive 2D scans of the series, in seconds. This is the extra time between the end of one scan and the start of the next scan. For a series of 1x1 scans collected back to back, enter 0.</string>
+       </property>
+       <property name="suffix">
+        <string> s</string>
+       </property>
+       <property name="keyboardTracking">
+        <bool>false</bool>
+       </property>
+       <property name="decimals">
+        <number>6</number>
+       </property>
+       <property name="minimum">
+        <double>0.000000000000000</double>
+       </property>
+       <property name="maximum">
+        <double>1000000.000000000000000</double>
+       </property>
+      </widget>
+     </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QDialogButtonBox" name="button_box">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <tabstops>
+  <tabstop>apply_acquisition_times</tabstop>
+  <tabstop>frame_period</tabstop>
+  <tabstop>row_break</tabstop>
+  <tabstop>scan_break</tabstop>
+ </tabstops>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>button_box</sender>
+   <signal>accepted()</signal>
+   <receiver>acquisition_times_dialog</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>210</x>
+     <y>160</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>210</x>
+     <y>90</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>button_box</sender>
+   <signal>rejected()</signal>
+   <receiver>acquisition_times_dialog</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>210</x>
+     <y>160</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>210</x>
+     <y>90</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>

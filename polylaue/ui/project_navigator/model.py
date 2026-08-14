@@ -14,7 +14,6 @@ from polylaue.model.project_manager import ProjectManager
 from polylaue.ui.project_navigator.submodels import (
     BaseSubmodel,
     ProjectsSubmodel,
-    ScansSubmodel,
     SectionsSubmodel,
     SeriesSubmodel,
 )
@@ -29,7 +28,6 @@ class ProjectNavigatorModel(QAbstractTableModel):
     2. Project
     3. Section
     4. Series
-    5. Scan
 
     The ProjectNavigatorModel shares some characteristics of a file system
     model, but also contains some differences. Notably, each tier has a
@@ -148,5 +146,4 @@ SUBMODELS = [
     ProjectsSubmodel,
     SectionsSubmodel,
     SeriesSubmodel,
-    ScansSubmodel,
 ]

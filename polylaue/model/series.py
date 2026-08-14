@@ -561,6 +561,37 @@ class Series(Editable):
         self.invalidate()
         super().deserialize(d)
 
+    def computed_frame_time(
+        self, row: int, column: int, scan_number: int
+    ) -> float | None:
+        """Compute the time of a frame from the acquisition intervals.
+
+        The time is relative to the first frame of this series, in
+        fractional seconds. Returns None if the parent section does not
+        have acquisition intervals configured.
+
+        Rows are collected one at a time, left to right, with a break
+        between consecutive rows and a break between consecutive scans.
+        """
+        intervals = self.parent.acquisition_intervals
+        if intervals is None or not intervals.get('enabled', True):
+            return None
+
+        frame_period = intervals['frame_period']
+        row_break = intervals['row_break']
+        scan_break = intervals['scan_break']
+
+        num_rows, num_columns = self.scan_shape
+        row_duration = num_columns * frame_period
+        scan_duration = num_rows * row_duration + (num_rows - 1) * row_break
+
+        scan_idx = scan_number - self.scan_start_number
+        return (
+            scan_idx * (scan_duration + scan_break)
+            + row * (row_duration + row_break)
+            + column * frame_period
+        )
+
     def relative_file_creation_time(
         self, row: int, column: int, scan_number: int
     ) -> float:

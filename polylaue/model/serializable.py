@@ -21,6 +21,12 @@ class Serializable:
     # Subclasses should override this.
     _attrs_to_serialize = []
 
+    # A list of attributes that were serialized in the past, but have
+    # since been removed. These are skipped silently (no warning)
+    # during deserialization, so that older settings files can still
+    # be loaded without noise.
+    _attrs_to_ignore = []
+
     def serialize(self) -> dict:
         # Serialize the series into a dict that can be saved and loaded
         return {k: getattr(self, k) for k in self._attrs_to_serialize}
@@ -29,11 +35,16 @@ class Serializable:
         # Set all of the settings from the dict
         for k, v in d.items():
             if k not in self._attrs_to_serialize:
-                msg = (
-                    'WARNING: skipping over unknown attribute provided '
-                    f'to deserializer: {k}'
-                )
-                print(msg, file=sys.stderr)
+                # Skip unknown attributes, so that settings files
+                # containing attributes that have since been removed
+                # can still be loaded.
+                if k not in self._attrs_to_ignore:
+                    msg = (
+                        'WARNING: skipping over unknown attribute provided '
+                        f'to deserializer: {k}'
+                    )
+                    print(msg, file=sys.stderr)
+                continue
 
             setattr(self, k, v)
 

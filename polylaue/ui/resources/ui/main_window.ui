@@ -16,31 +16,57 @@
   <widget class="QWidget" name="central_widget">
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
-     <layout class="QHBoxLayout" name="horizontalLayout">
-      <item>
+     <layout class="QGridLayout" name="info_bar_layout" columnstretch="1,1,1">
+      <item row="0" column="0">
        <widget class="QLabel" name="position_label">
         <property name="text">
          <string/>
         </property>
        </widget>
       </item>
-      <item>
-       <widget class="QLabel" name="info_label">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignCenter</set>
-        </property>
-       </widget>
+      <item row="0" column="1">
+       <layout class="QHBoxLayout" name="scan_info_layout">
+        <item>
+         <spacer name="scan_info_left_spacer">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <widget class="QLabel" name="scan_label">
+          <property name="text">
+           <string>Scan</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QSpinBox" name="scan_num_spin_box">
+          <property name="toolTip">
+           <string>Type a scan number to jump directly to it (Ctrl+G)</string>
+          </property>
+          <property name="keyboardTracking">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="info_label">
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="scan_info_right_spacer">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+         </spacer>
+        </item>
+       </layout>
       </item>
-      <item>
+      <item row="0" column="2">
        <widget class="QLabel" name="time_label">
         <property name="text">
          <string/>
