@@ -18,9 +18,7 @@ class AcquisitionTimesDialog:
         self.ui.apply_acquisition_times.toggled.connect(
             self.ui.intervals_widget.setEnabled
         )
-        self.ui.intervals_widget.setEnabled(
-            self.ui.apply_acquisition_times.isChecked()
-        )
+        self.ui.intervals_widget.setEnabled(self.ui.apply_acquisition_times.isChecked())
 
     def exec(self, initial_params: dict | None = None) -> dict | None:
         """Show the dialog and return the parameters if accepted.

@@ -167,9 +167,7 @@ class MainWindow(QObject):
         self.image_view.open_acquisition_times_dialog.connect(
             self.on_open_acquisition_times_dialog
         )
-        self.image_view.set_frame_as_time_zero.connect(
-            self.on_set_frame_as_time_zero
-        )
+        self.image_view.set_frame_as_time_zero.connect(self.on_set_frame_as_time_zero)
         self.image_view.time_zero_action_enabled_fn = self.computed_times_active
         self.image_view.go_to_scan_number.connect(self.on_go_to_scan_number)
         self.ui.scan_num_spin_box.valueChanged.connect(
@@ -714,9 +712,7 @@ class MainWindow(QObject):
             # Round down to microseconds. Round to nanoseconds first,
             # so that floating point representation error does not
             # leak into the displayed time.
-            microseconds = math.floor(
-                round((rtime - self._time_zero) * 1e9) / 1000
-            )
+            microseconds = math.floor(round((rtime - self._time_zero) * 1e9) / 1000)
         else:
             # No acquisition intervals are configured for this section.
             # Fall back to the relative time of the creation of the
@@ -1221,9 +1217,7 @@ class MainWindow(QObject):
 
         dialog.setParent(None)
 
-    def on_mapping_dialog_lock_toggled(
-        self, dialog: RegionMappingDialog, locked: bool
-    ):
+    def on_mapping_dialog_lock_toggled(self, dialog: RegionMappingDialog, locked: bool):
         if locked:
             return
 
