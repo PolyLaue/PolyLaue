@@ -1232,6 +1232,13 @@ class MainWindow(QObject):
 
     def on_roi_modified(self, id: str):
         for dialog in self.region_mapping_dialogs.get(id, []):
+            if dialog.roi_frozen:
+                # This dialog kept the region it was locked to, so
+                # there is nothing to update. HKL regions are modified
+                # every time the scan number changes, and re-creating
+                # the map re-reads every frame in the domain.
+                continue
+
             dialog.set_stale(True)
 
     def on_mapping_domain_changed(self, i: int, j: int, size_i: int, size_j: int):

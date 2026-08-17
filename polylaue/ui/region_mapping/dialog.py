@@ -185,6 +185,13 @@ class RegionMappingDialog(QDialog):
         self.scan_number = -1
         self.roi_id = id
         self.stale = True
+        # The region a locked dialog was locked to, for regions that
+        # move with the scan number (HKL regions). Without this, such a
+        # locked map would shift to the new scan's region even though
+        # its scan number did not change. Regions that only move when
+        # the user edits them are not frozen, so that editing one still
+        # updates every map of it, locked or not.
+        self._locked_roi = None
         self.roi_size_ij = np.array([1, 1])
         self.map_size_ij = np.array([1, 1])
 
@@ -295,8 +302,42 @@ class RegionMappingDialog(QDialog):
         return self.lock_scan_number_checkbox.isChecked()
 
     def on_lock_toggled(self, locked: bool):
+        # The region may have been removed, in which case there is
+        # nothing to freeze or catch up to.
+        roi = self.roi_manager.rois.get(self.roi_id)
+
+        if locked:
+            if roi is not None and self.roi_manager.rois_move_with_scan_number:
+                self._locked_roi = {
+                    'position': np.array(roi['position']),
+                    'size': np.array(roi['size']),
+                }
+        else:
+            previous_roi = self._locked_roi
+            self._locked_roi = None
+            if (
+                previous_roi is not None
+                and roi is not None
+                and not self._rois_are_same(previous_roi, roi)
+            ):
+                # The region moved while we were locked to it
+                self.set_stale(True)
+
         self._update_window_title()
         self.sigLockToggled.emit(locked)
+
+    @property
+    def roi_frozen(self) -> bool:
+        """Whether this dialog kept the region it was locked with"""
+        return self._locked_roi is not None
+
+    @property
+    def current_roi(self):
+        """The region to map, which is frozen if the region was frozen"""
+        if self._locked_roi is not None:
+            return self._locked_roi
+
+        return self.roi_manager.get_roi(self.roi_id)
 
     def set_scan_number(self, scan_number: int):
         if self.scan_number_locked:
@@ -359,9 +400,7 @@ class RegionMappingDialog(QDialog):
         if self.scan_number < 0:
             return
 
-        _, roi_size_ij, img = self._create_map_image(
-            self.roi_id, self.series, self.scan_number
-        )
+        _, roi_size_ij, img = self._create_map_image(self.series, self.scan_number)
         self.roi_size_ij = roi_size_ij
         self.map_size_ij = np.array(img.shape)
         roi_size_xy = ij_to_xy(roi_size_ij, 'row-major')
@@ -630,10 +669,10 @@ class RegionMappingDialog(QDialog):
             title += ' [STALE]'
         self.setWindowTitle(title)
 
-    def _create_map_image(self, roi_id: str, series: Series, scan_number: int):
+    def _create_map_image(self, series: Series, scan_number: int):
         # NOTE: The image is row-major,
         # flip the cartesian coordinates coming from the roi
-        roi = self.roi_manager.get_roi(roi_id)
+        roi = self.current_roi
 
         scan_position = np.array([0, 0])
         # open first image to figure out width and height

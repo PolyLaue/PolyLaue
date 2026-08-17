@@ -31,6 +31,10 @@ class ROIManager:
     global_roi_count = 0
     unique_id = unique_id_generator(0)
 
+    # Whether the regions move on their own when the scan number
+    # changes, rather than only when the user edits them.
+    rois_move_with_scan_number = False
+
     def __init__(self):
         self.rois: OrderedDict[str, ROI] = OrderedDict()
         self._ordered_keys: list[str] = []
@@ -112,6 +116,11 @@ class ROIManager:
 
 
 class HklROIManager(ROIManager):
+    # An HKL center is computed from the reflections of the current
+    # scan number, so these regions move to a new center whenever the
+    # scan number changes.
+    rois_move_with_scan_number = True
+
     def add_roi(
         self, crystal_id: int, hkl: HKL, position: WorldPoint, size: WorldPoint
     ) -> str:
