@@ -11,6 +11,7 @@ from PySide6.QtCore import (
 )
 from PySide6.QtGui import QCursor
 from PySide6.QtWidgets import (
+    QCheckBox,
     QFileDialog,
     QMenu,
     QMessageBox,
@@ -292,6 +293,7 @@ class ProjectNavigatorView(QTableView):
             self.edit_entry(row)
 
     def delete_rows(self, rows: list[int], confirm_with_user: bool = True):
+        delete_files_cb = None
         if confirm_with_user:
             if len(rows) < 5:
                 names = [self.submodel.entry_list[x].name for x in rows]
@@ -301,14 +303,37 @@ class ProjectNavigatorView(QTableView):
                 msg = f'Delete {len(rows)} entries?'
 
             msg += '\n\nThis cannot be undone.'
-            if QMessageBox.question(self, 'Delete?', msg) == QMessageBox.No:
+            box = QMessageBox(
+                QMessageBox.Icon.Question,
+                'Delete?',
+                msg,
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                self,
+            )
+            if self.submodel.type == 'projects':
+                # The raw data does not live in the project directory,
+                # so it is never deleted.
+                delete_files_cb = QCheckBox(
+                    'Also delete auto-generated files in the\n'
+                    'project directory (raw data is not touched)'
+                )
+                box.setCheckBox(delete_files_cb)
+
+            if box.exec() != QMessageBox.StandardButton.Yes:
                 # User canceled. Return
                 return
+
+        projects_to_clean = []
+        if delete_files_cb is not None and delete_files_cb.isChecked():
+            projects_to_clean = [self.submodel.entry_list[x] for x in rows]
 
         # Perform the delete
         for i, row in enumerate(sorted(rows)):
             # Offset according to previously removed rows
             self.model.removeRows(row - i, 1)
+
+        for project in projects_to_clean:
+            project.delete_auto_generated_files()
 
     # These are custom edit functions for certain columns
     @property

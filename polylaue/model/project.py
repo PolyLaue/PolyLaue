@@ -3,6 +3,7 @@
 from __future__ import annotations
 from functools import lru_cache
 from pathlib import Path
+import shutil
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -113,6 +114,27 @@ class Project(Editable):
             v = None
 
         self.geometry_path = v
+
+    @property
+    def auto_generated_paths(self) -> list[Path]:
+        # Files and directories that PolyLaue automatically generates
+        # inside the project directory. Raw data never lives here.
+        return [
+            self.expected_geometry_file_path,
+            self.directory / 'abc_matrix.npy',
+            self.directory / 'abc_matrix0.npy',
+            self.directory / 'map_data.npy',
+            self.directory / 'indexing.xy',
+            self.directory / 'refinement.xy',
+            self.directory / 'Sections',
+        ]
+
+    def delete_auto_generated_files(self):
+        for path in self.auto_generated_paths:
+            if path.is_dir():
+                shutil.rmtree(path, ignore_errors=True)
+            else:
+                path.unlink(missing_ok=True)
 
     @property
     def geometry_data(self) -> dict:
