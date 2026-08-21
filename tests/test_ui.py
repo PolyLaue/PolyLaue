@@ -7,7 +7,10 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
+from PySide6.QtCore import QPointF
 from PySide6.QtWidgets import QApplication
+
+import pyqtgraph as pg
 
 from polylaue.model.project import Project
 from polylaue.model.project_manager import ProjectManager
@@ -15,6 +18,9 @@ from polylaue.model.roi_manager import HklROIManager, ROIManager
 from polylaue.model.section import Section
 from polylaue.model.series import Series
 from polylaue.ui.acquisition_times_dialog import AcquisitionTimesDialog
+from polylaue.ui.frame_tracker import FrameTracker
+from polylaue.ui.hkl_regions_navigator.dialog import HklRegionsNavigatorDialog
+from polylaue.ui.image_view import PolyLaueImageView
 from polylaue.ui.main_window import MainWindow
 from polylaue.ui.region_mapping.dialog import RegionMappingDialog
 
@@ -149,6 +155,58 @@ def test_settings_serialize_after_project_deletion():
 
     window.series = None
     assert window._serialize_last_loaded_frame() == {}
+
+
+def test_hkl_regions_add_roi(qapp):
+    class StubHklProvider:
+        def get_hkl_center(self, crystal_id, hkl):
+            return np.array([100.0, 200.0], dtype=np.float32)
+
+    image_view = pg.ImageView()
+    roi_manager = HklROIManager()
+    dialog = HklRegionsNavigatorDialog(image_view, roi_manager, StubHklProvider())
+
+    roi_id = dialog.add_hkl_roi(2, (1, 2, 3))
+
+    roi = roi_manager.get_roi(roi_id)
+    assert roi['crystal_id'] == 2
+    assert roi['hkl'] == (1, 2, 3)
+
+    # The region should be centered on the HKL center
+    assert np.array_equal(roi['position'], (25, 125))
+    assert np.array_equal(roi['size'], (150, 150))
+
+    # It should have appeared in the table and in the image view
+    assert dialog.model.rowCount() == 1
+    assert roi_id in dialog.roi_items_manager.roi_items
+
+
+def test_reflection_right_click_menu(qapp):
+    view = PolyLaueImageView(frame_tracker=FrameTracker())
+
+    # One reflection: x, y, h, k, l, energy, first order, last order,
+    # d-spacing, crystal id
+    view.reflections_array = np.array(
+        [[10.0, 20.0, 1, 2, 3, 45.0, 1, 1, 1.5, 4]],
+    )
+
+    emitted = []
+    view.create_hkl_map.connect(lambda cid, hkl: emitted.append((cid, hkl)))
+
+    point = SimpleNamespace(data=lambda: 0)
+    ev = SimpleNamespace(screenPos=lambda: QPointF(0, 0))
+    view.on_reflection_right_clicked(point, ev)
+
+    menu = view._reflection_context_menu
+    try:
+        actions = menu.actions()
+        assert len(actions) == 1
+        assert actions[0].text() == 'Create HKL map for (1 2 3)'
+
+        actions[0].trigger()
+        assert emitted == [(4, (1, 2, 3))]
+    finally:
+        menu.close()
 
 
 def test_acquisition_times_dialog(qapp):

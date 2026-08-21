@@ -168,6 +168,7 @@ class MainWindow(QObject):
             self.on_open_acquisition_times_dialog
         )
         self.image_view.set_frame_as_time_zero.connect(self.on_set_frame_as_time_zero)
+        self.image_view.create_hkl_map.connect(self.on_create_hkl_map)
         self.image_view.time_zero_action_enabled_fn = self.computed_times_active
         self.image_view.go_to_scan_number.connect(self.on_go_to_scan_number)
         self.ui.scan_num_spin_box.valueChanged.connect(
@@ -968,6 +969,10 @@ class MainWindow(QObject):
             self._hkl_regions_navigator_dialog = d
 
         self._hkl_regions_navigator_dialog.show()
+
+    def on_create_hkl_map(self, crystal_id: int, hkl: tuple):
+        self.open_hkl_mapping_regions_manager()
+        self._hkl_regions_navigator_dialog.add_hkl_roi(crystal_id, hkl)
 
     def begin_prediction_matcher(self):
         selected_file, selected_filter = QFileDialog.getOpenFileName(

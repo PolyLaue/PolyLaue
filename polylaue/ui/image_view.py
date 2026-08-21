@@ -1,9 +1,10 @@
 # Copyright © 2026, UChicago Argonne, LLC. See "LICENSE" for full details.
 
+from functools import partial
 import logging
 
 from PySide6.QtCore import QEvent, QPointF, QSettings, Qt, Signal
-from PySide6.QtWidgets import QInputDialog, QMessageBox
+from PySide6.QtWidgets import QInputDialog, QMenu, QMessageBox
 
 from polylaue.model.reflections.base import BaseReflections
 from polylaue.ui.reflections_style import ReflectionsStyle
@@ -14,6 +15,29 @@ import pyqtgraph as pg
 Key = Qt.Key
 
 logger = logging.getLogger(__name__)
+
+
+class ReflectionsScatterPlotItem(pg.ScatterPlotItem):
+    """Adds a context menu to the reflections scatter plot
+
+    Right-clicking a reflection raises a context menu for it, rather
+    than the regular image view context menu.
+    """
+
+    def __init__(self, image_view: 'PolyLaueImageView', *args, **kwargs):
+        self.image_view = image_view
+        super().__init__(*args, **kwargs)
+
+    def mouseClickEvent(self, ev):
+        if ev.button() == Qt.MouseButton.RightButton:
+            points = self.pointsAt(ev.pos())
+            if len(points) > 0:
+                ev.accept()
+                # The topmost point is first
+                self.image_view.on_reflection_right_clicked(points[0], ev)
+                return
+
+        super().mouseClickEvent(ev)
 
 
 class PolyLaueImageView(pg.ImageView):
@@ -49,6 +73,12 @@ class PolyLaueImageView(pg.ImageView):
     """Indicates the current frame should be set as time zero"""
     set_frame_as_time_zero = Signal()
 
+    """Indicates an HKL mapping region should be created
+
+    The arguments are the crystal ID and the HKL (a tuple of 3 ints).
+    """
+    create_hkl_map = Signal(int, object)
+
     def __init__(self, *args, **kwargs):
         frame_tracker = kwargs.pop('frame_tracker')
         super().__init__(*args, **kwargs)
@@ -69,7 +99,8 @@ class PolyLaueImageView(pg.ImageView):
 
         # FIXME: load this from the settings
         self._reflections_style = ReflectionsStyle()
-        self.reflection_artist = artist = pg.ScatterPlotItem(
+        self.reflection_artist = artist = ReflectionsScatterPlotItem(
+            self,
             pxMode=False,
             symbol=self.reflections_style.symbol,
             pen=None,
@@ -325,6 +356,24 @@ class PolyLaueImageView(pg.ImageView):
             pen=pens,
             brush=brush,
         )
+
+    def on_reflection_right_clicked(self, point, ev):
+        if getattr(self, 'reflections_array', None) is None:
+            return
+
+        row = self.reflections_array[point.data()]
+        hkl = tuple(int(x) for x in row[2:5])
+        crystal_id = int(row[9])
+
+        hkl_str = ' '.join(str(x) for x in hkl)
+        menu = QMenu()
+        action = menu.addAction(f'Create HKL map for ({hkl_str})')
+        action.triggered.connect(partial(self.create_hkl_map.emit, crystal_id, hkl))
+
+        # Keep a reference so the menu is not garbage collected while
+        # it is visible
+        self._reflection_context_menu = menu
+        menu.popup(ev.screenPos().toPoint())
 
     def on_reflection_hovered(self, points, ev):
         if len(ev) == 0:
