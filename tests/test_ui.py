@@ -9,8 +9,13 @@ import pytest
 
 from PySide6.QtWidgets import QApplication
 
+from polylaue.model.project import Project
+from polylaue.model.project_manager import ProjectManager
 from polylaue.model.roi_manager import HklROIManager, ROIManager
+from polylaue.model.section import Section
+from polylaue.model.series import Series
 from polylaue.ui.acquisition_times_dialog import AcquisitionTimesDialog
+from polylaue.ui.main_window import MainWindow
 from polylaue.ui.region_mapping.dialog import RegionMappingDialog
 
 
@@ -101,6 +106,49 @@ def test_locked_region_mapping_dialog_does_not_shift(qapp):
     requested_bounds.clear()
     dialog._create_map_image(series, 5)
     assert requested_bounds != bounds_at_lock_time
+
+
+def test_settings_serialize_after_project_deletion():
+    # Deleting the project of the currently loaded series used to make
+    # saving the settings on app close raise a ValueError, since the
+    # series could no longer compute its path from the root.
+    pm = ProjectManager()
+    project = Project(parent=pm, name='P')
+    pm.projects.append(project)
+    section = Section(parent=project, name='S')
+    project.sections.append(section)
+    series = Series(
+        parent=section,
+        name='Ser',
+        dirpath='/tmp/test',
+        scan_start_number=1,
+        scan_shape=(3, 3),
+    )
+    section.series.append(series)
+
+    class FakeMainWindow:
+        current_series_path = MainWindow.current_series_path
+        _serialize_last_loaded_frame = MainWindow._serialize_last_loaded_frame
+
+    window = FakeMainWindow()
+    window.series = series
+    window.scan_num = 1
+    window.scan_pos = np.array([0, 0])
+
+    assert window._serialize_last_loaded_frame() == {
+        'series_path': [0, 0, 0],
+        'scan_num': 1,
+        'scan_pos': [0, 0],
+    }
+
+    # Delete the project. The loaded series is now detached, and the
+    # settings should serialize as if no series were loaded.
+    pm.projects.remove(project)
+    assert window.current_series_path is None
+    assert window._serialize_last_loaded_frame() == {}
+
+    window.series = None
+    assert window._serialize_last_loaded_frame() == {}
 
 
 def test_acquisition_times_dialog(qapp):

@@ -238,15 +238,21 @@ class MainWindow(QObject):
         if self.series is None:
             return None
 
-        return self.series.path_from_root
+        try:
+            return self.series.path_from_root
+        except ValueError:
+            # The series (or one of its ancestors) was removed from the
+            # project manager, so it no longer has a path.
+            return None
 
     def _serialize_last_loaded_frame(self) -> dict:
-        if self.series is None:
+        series_path = self.current_series_path
+        if series_path is None:
             return {}
 
         # Save the path to the currently viewed series
         return {
-            'series_path': self.series.path_from_root,
+            'series_path': series_path,
             'scan_num': self.scan_num,
             'scan_pos': self.scan_pos.tolist(),
         }
