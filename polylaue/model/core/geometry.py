@@ -2,6 +2,117 @@
 
 import numpy as np
 
+from polylaue.typing import PathLike
+
+# The parameters that must be present in a PONI file
+PONI_PARAMETERS = (
+    'pixel_size',
+    'detector_distance',
+    'poni1',
+    'poni2',
+    'rot1',
+    'rot2',
+)
+
+
+def parse_poni(poly_poni_path: PathLike) -> dict:
+    """Parse geometry parameters from a PONI file
+
+    Multiple versions of the PONI format are supported (including ones
+    where the pixel size is stored in a "Detector_config" JSON entry).
+
+    The returned dict contains 'pixel_size' (mm), 'detector_distance'
+    (mm), 'poni1' (m), 'poni2' (m), 'rot1' (rad), and 'rot2' (rad).
+
+    Raises a ValueError if any of these parameters cannot be found.
+    """
+    params = {}
+
+    with open(poly_poni_path, 'r') as rf:
+        poly_poni = rf.read()
+
+    for w in poly_poni.splitlines():
+        ww = w.split()
+        if 'PixelSize1:' in ww:
+            params['pixel_size'] = float(ww[1]) * 1000.0
+        if '"pixel2":' in ww:
+            # The value ends with a trailing comma or brace
+            ss = ww[4]
+            params['pixel_size'] = float(ss[:-1]) * 1000.0
+        if 'Distance:' in ww:
+            params['detector_distance'] = float(ww[1]) * 1000.0
+        if 'Poni1:' in ww:
+            params['poni1'] = float(ww[1])
+        if 'Poni2:' in ww:
+            params['poni2'] = float(ww[1])
+        if 'Rot1:' in ww:
+            params['rot1'] = float(ww[1])
+        if 'Rot2:' in ww:
+            params['rot2'] = float(ww[1])
+
+    missing = [k for k in PONI_PARAMETERS if k not in params]
+    if missing:
+        raise ValueError(
+            'Unknown PONI format. Could not find the following '
+            f'parameters: {", ".join(missing)}'
+        )
+
+    return params
+
+
+def write_geometry_file(
+    output_path: str,
+    pixel_size: float,
+    detector_distance: float,
+    poni1: float,
+    poni2: float,
+    rot1: float,
+    rot2: float,
+    image_size_x: int,
+    image_size_y: int,
+    white_beam_shift: float,
+):
+    """Compute the PolyLaue geometry and save it as an NPZ file
+
+    The pixel size and detector distance are in mm, poni1 and poni2 are
+    in meters, and the rotations are in radians (all matching the output
+    of parse_poni()).
+    """
+    pix = pixel_size
+    sam_det_d = detector_distance
+    imsiy = float(image_size_y)
+    wmbs = float(white_beam_shift)
+
+    PoniX = poni2 * 1000.0 / pix
+    PoniY = imsiy - poni1 * 1000.0 / pix + wmbs / pix
+    beam_x = np.cos(rot2) * np.cos(np.pi / 2.0 + rot1)
+    beam_y = np.cos(np.pi / 2.0 + rot2)
+    beam_z = np.cos(rot2) * np.cos(rot1)
+    det_org = np.array([PoniX, PoniY], dtype=np.float64)
+    beam_dir = np.array([beam_x, beam_y, beam_z], dtype=np.float64)
+    im_corn = np.array(
+        [
+            [0, 0],
+            [image_size_x, 0],
+            [image_size_x, image_size_y],
+            [0, image_size_y],
+        ],
+        dtype=np.float64,
+    )
+    ang_vec1 = np.hstack(
+        (
+            ((im_corn - det_org) * np.float64(pix)),
+            np.full((len(im_corn), 1), sam_det_d, dtype=np.float64),
+        )
+    )
+    ang_vec2 = ang_vec1 / np.expand_dims(
+        np.sqrt(np.sum(np.square(ang_vec1), axis=1)), axis=1
+    )
+    ang_tet = np.acos(float(np.min(ang_vec2 @ beam_dir))) / 2.0
+    ang_sol = float(np.min(ang_vec2[:, 2]))
+    pix_dist = np.array([pix, sam_det_d, ang_tet, ang_sol], dtype=np.float64)
+    np.savez(output_path, iitt1=det_org, iitt2=beam_dir, iitt3=pix_dist)
+
 
 def geo_from_dioptas(
     poly_poni_path: str,
@@ -10,101 +121,23 @@ def geo_from_dioptas(
     image_size_y: int,
     white_beam_shift: float,
 ):
-    imsiy = float(image_size_y)
-    wmbs = float(white_beam_shift)
-    dt = [1, 1, 1, 1, 1, 1]
-
-    with open(poly_poni_path, 'r') as rf:
-        poly_poni = rf.read()
-
-    for w in poly_poni.splitlines():
-        ww = w.split()
-        if 'PixelSize1:' in ww:
-            dt[0] = 0
-            pix = float(ww[1]) * 1000.0
-            print('Pixel size, mm:', pix)
-        if '"pixel2":' in ww:
-            dt[0] = 0
-            ss = ww[4]
-            sss = len(ww[4])
-            pix = float(ss[: (sss - 1)]) * 1000.0
-            print('Pixel size, mm:', pix)
-        if 'Distance:' in ww:
-            dt[1] = 0
-            sam_det_d = float(ww[1]) * 1000.0
-            print('Sample to detector distance, mm:', sam_det_d)
-        if 'Poni1:' in ww:
-            dt[2] = 0
-            PoniY = float(ww[1])
-        if 'Poni2:' in ww:
-            dt[3] = 0
-            PoniX = float(ww[1])
-        if 'Rot1:' in ww:
-            dt[4] = 0
-            rot1 = float(ww[1])
-            print('Rot1, rad:', rot1)
-        if 'Rot2:' in ww:
-            dt[5] = 0
-            rot2 = float(ww[1])
-            print('Rot2, rad:', rot2)
-    if 1 in dt:
+    try:
+        params = parse_poni(poly_poni_path)
+    except ValueError:
         return '...Error! Unknown format'
-    PoniX = PoniX * 1000.0 / pix
-    PoniY = imsiy - PoniY * 1000.0 / pix + wmbs / pix
-    print('PoniX, pix:', PoniX)
-    print('PoniY, pix:', PoniY)
-    beam_x = np.cos(rot2) * np.cos(np.pi / 2.0 + rot1)
-    beam_y = np.cos(np.pi / 2.0 + rot2)
-    beam_z = np.cos(rot2) * np.cos(rot1)
-    dt = []
-    dt.append(PoniX)
-    dt.append(PoniY)
-    det_org = np.array(dt, dtype=np.float64)
-    dt = []
-    dt.append(beam_x)
-    dt.append(beam_y)
-    dt.append(beam_z)
-    beam_dir = np.array(dt, dtype=np.float64)
-    dt = []
-    dtl = []
-    dtl.append(0)
-    dtl.append(0)
-    dt.append(dtl)
-    dtl = []
-    dtl.append(image_size_x)
-    dtl.append(0)
-    dt.append(dtl)
-    dtl = []
-    dtl.append(image_size_x)
-    dtl.append(image_size_y)
-    dt.append(dtl)
-    dtl = []
-    dtl.append(0)
-    dtl.append(image_size_y)
-    dt.append(dtl)
-    im_corn = np.array(dt, dtype=np.float64)
-    dt = []
-    for i in im_corn:
-        dt.append(sam_det_d)
-    ang_vec1 = np.hstack(
-        (
-            ((im_corn - det_org) * np.float64(pix)),
-            np.expand_dims(np.array(dt, dtype=np.float64), axis=1),
-        )
+
+    print('Pixel size, mm:', params['pixel_size'])
+    print('Sample to detector distance, mm:', params['detector_distance'])
+    print('Rot1, rad:', params['rot1'])
+    print('Rot2, rad:', params['rot2'])
+
+    write_geometry_file(
+        output_path,
+        image_size_x=image_size_x,
+        image_size_y=image_size_y,
+        white_beam_shift=white_beam_shift,
+        **params,
     )
-    ang_vec2 = ang_vec1 / np.expand_dims(
-        np.sqrt(np.sum(np.square(ang_vec1), axis=1)), axis=1
-    )
-    ang_tet = np.acos(float(np.min(ang_vec2 @ beam_dir))) / 2.0
-    print('Largest teta, deg.:', round((ang_tet * 180.0 / np.pi), 2))
-    ang_sol = float(np.min(ang_vec2[:, 2]))
-    dt = []
-    dt.append(pix)
-    dt.append(sam_det_d)
-    dt.append(ang_tet)
-    dt.append(ang_sol)
-    pix_dist = np.array(dt, dtype=np.float64)
-    np.savez(output_path, iitt1=det_org, iitt2=beam_dir, iitt3=pix_dist)
 
 
 if __name__ == '__main__':

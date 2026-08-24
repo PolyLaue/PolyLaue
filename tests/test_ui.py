@@ -22,6 +22,7 @@ from polylaue.ui.frame_tracker import FrameTracker
 from polylaue.ui.hkl_regions_navigator.dialog import HklRegionsNavigatorDialog
 from polylaue.ui.image_view import PolyLaueImageView
 from polylaue.ui.main_window import MainWindow
+from polylaue.ui.poni_importer import PoniGeometry
 from polylaue.ui.region_mapping.dialog import RegionMappingDialog
 
 
@@ -207,6 +208,69 @@ def test_reflection_right_click_menu(qapp):
         assert emitted == [(4, (1, 2, 3))]
     finally:
         menu.close()
+
+
+def test_poni_geometry_editor_dialog(qapp):
+    from polylaue.ui.editor import EditorDialog
+
+    geometry = PoniGeometry(
+        pixel_size=0.079,
+        detector_distance=190.0,
+        poni1=0.041,
+        poni2=0.0405,
+        rot1=0.002,
+        rot2=-0.003,
+    )
+
+    dialog = EditorDialog(geometry)
+
+    # The parsed values survive the round trip through the widgets,
+    # including small and negative ones
+    fields = dialog.editor.fields
+    assert np.isclose(fields['pixel_size'].value, 0.079)
+    assert np.isclose(fields['detector_distance'].value, 190.0)
+    assert np.isclose(fields['rot1'].value, 0.002)
+    assert np.isclose(fields['rot2'].value, -0.003)
+
+    # Accepting the dialog applies edits back onto the editable
+    fields['pixel_size'].value = 0.158
+    dialog.on_accepted()
+    assert np.isclose(geometry.pixel_size, 0.158)
+    assert np.isclose(geometry.rot2, -0.003)
+
+
+def test_poni_geometry_write(tmp_path):
+    pm = ProjectManager()
+    project = Project(
+        parent=pm,
+        name='P',
+        directory=tmp_path,
+        frame_shape=(981, 1043),
+    )
+    pm.projects.append(project)
+
+    geometry = PoniGeometry(
+        pixel_size=0.079,
+        detector_distance=190.0,
+        poni1=0.041,
+        poni2=0.0405,
+        rot1=0.002,
+        rot2=-0.003,
+    )
+
+    assert project.geometry_path is None
+    geometry.write_geometry_file(project)
+
+    # The geometry landed in the project directory and loads correctly
+    assert project.geometry_path == tmp_path / 'geometry.npz'
+    data = project.geometry_data
+    assert set(data.keys()) == {'det_org', 'beam_dir', 'pix_dist'}
+    assert np.isclose(data['pix_dist'][0], 0.079)
+
+    # Writing an edited geometry must not serve stale cached data
+    geometry.pixel_size = 0.158
+    geometry.write_geometry_file(project)
+    assert np.isclose(project.geometry_data['pix_dist'][0], 0.158)
 
 
 def test_acquisition_times_dialog(qapp):

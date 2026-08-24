@@ -8,7 +8,13 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from polylaue.model.editable import Editable, ParameterDescription
+from polylaue.model.core.geometry import parse_poni, write_geometry_file
+from polylaue.model.editable import (
+    Editable,
+    ParameterDescription,
+    ValidationError,
+    default_path_validator,
+)
 from polylaue.model.section import Section
 from polylaue.typing import PathLike
 
@@ -45,11 +51,18 @@ class Project(Editable):
         self.description = description
         self.energy_range = energy_range
         self.frame_shape = frame_shape
-        # white_beam_shift is currently unused in the UI, but retained
-        # for potential future use in geometry calculations.
+        # white_beam_shift has no UI, but it is used when converting
+        # an imported PONI file into the geometry file.
         self.white_beam_shift = white_beam_shift
         self.min_find_resolution = min_find_resolution
         self.min_tracking_resolution = min_tracking_resolution
+
+        # If the geometry was imported from a PONI file, this contains
+        # the parameters that were parsed from it, so that the UI can
+        # offer to review and edit them.
+        self.last_poni_import_params: dict | None = None
+
+        self.custom_validators['geometry_path_str'] = geometry_file_validator
 
     @property
     def num_sections(self):
@@ -89,6 +102,9 @@ class Project(Editable):
 
     @geometry_path.setter
     def geometry_path(self, v: PathLike | None):
+        # A new geometry source resets any previous PONI import record
+        self.last_poni_import_params = None
+
         if v is not None:
             v = Path(v).resolve()
 
@@ -99,6 +115,15 @@ class Project(Editable):
         if v is None:
             # Delete the current geometry file in the project directory
             write_path.unlink(missing_ok=True)
+            return
+
+        if v.suffix.lower() == '.poni':
+            # Convert the PONI file into a PolyLaue geometry file, and
+            # keep a record of the parameters, so that the UI can offer
+            # to review and edit them afterward.
+            params = parse_poni(v)
+            self.write_poni_geometry(params)
+            self.last_poni_import_params = params
             return
 
         write_path.write_bytes(v.read_bytes())
@@ -114,6 +139,24 @@ class Project(Editable):
             v = None
 
         self.geometry_path = v
+
+    def write_poni_geometry(self, params: dict):
+        """Write PONI parameters as this project's geometry file
+
+        The params match the output of parse_poni(). The project's
+        frame shape and white beam shift are used for the conversion.
+        """
+        write_geometry_file(
+            str(self.expected_geometry_file_path),
+            image_size_x=self.frame_shape[0],
+            image_size_y=self.frame_shape[1],
+            white_beam_shift=self.white_beam_shift,
+            **params,
+        )
+
+        # The geometry file cache is keyed on the path. Clear it, or a
+        # previously loaded geometry could be served for this path.
+        load_geometry_file.cache_clear()
 
     @property
     def auto_generated_paths(self) -> list[Path]:
@@ -223,13 +266,17 @@ class Project(Editable):
             'geometry_path_str': {
                 'type': 'file',
                 'label': 'Geometry',
-                'extensions': ['npz'],
+                'extensions': ['npz', 'poni'],
                 'required': False,
                 'tooltip': (
-                    'Path to PolyLaue geometry file (NPZ format). This file '
-                    'is necessary for predicting reflections.\n\n'
-                    'The file will be copied into the project directory as '
-                    '"geometry.npz".'
+                    'Path to a PolyLaue geometry file (NPZ format), or to '
+                    'a PONI file to import. This file is necessary for '
+                    'predicting reflections.\n\n'
+                    'An NPZ file will be copied into the project directory '
+                    'as "geometry.npz". A PONI file will instead be '
+                    'converted and written there, and the imported '
+                    'parameters may be reviewed and edited after clicking '
+                    '"OK".'
                 ),
             },
             'min_find_resolution': {
@@ -261,6 +308,23 @@ class Project(Editable):
                 ),
             },
         }
+
+
+def geometry_file_validator(name: str, value, description: ParameterDescription, *args):
+    # Perform the regular file checks first
+    default_path_validator(name, value, description, *args)
+
+    if not isinstance(value, str) or not value.strip():
+        # An empty value already passed the default validation
+        return
+
+    path = Path(value)
+    if path.suffix.lower() == '.poni':
+        # Verify that the PONI file can actually be parsed
+        try:
+            parse_poni(path)
+        except (ValueError, OSError) as e:
+            raise ValidationError(f"{description['label']}:\n{e}")
 
 
 # We probably only need to cache one geometry file, but since they are
