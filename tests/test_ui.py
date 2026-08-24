@@ -22,6 +22,7 @@ from polylaue.ui.frame_tracker import FrameTracker
 from polylaue.ui.hkl_regions_navigator.dialog import HklRegionsNavigatorDialog
 from polylaue.ui.image_view import PolyLaueImageView
 from polylaue.ui.main_window import MainWindow
+from polylaue.ui.point_selector import PointSelectorDialog
 from polylaue.ui.poni_importer import PoniGeometry
 from polylaue.ui.region_mapping.dialog import RegionMappingDialog
 
@@ -208,6 +209,52 @@ def test_reflection_right_click_menu(qapp):
         assert emitted == [(4, (1, 2, 3))]
     finally:
         menu.close()
+
+
+def test_auto_pick_points_do_not_accumulate(qapp, monkeypatch):
+    # Running "Auto-pick Points" multiple times without closing the
+    # dialog used to add the new picks on top of the previous run's
+    # picks, nearly doubling the number of points every time (and then
+    # hanging Find and Track/Refine). A new run must replace the
+    # previous run's picks, while keeping manually picked points.
+    from polylaue.ui import point_selector as point_selector_module
+
+    # The picking algorithm itself is not under test here
+    monkeypatch.setattr(
+        point_selector_module.PointAutoPicker,
+        'run_auto_pick',
+        lambda self: None,
+    )
+
+    image_view = PolyLaueImageView(frame_tracker=FrameTracker())
+    dialog = PointSelectorDialog(image_view)
+
+    # One manually picked point
+    dialog.point_selector.points.append(np.array([1.0, 2.0]))
+    dialog.point_selector.points_changed()
+
+    def run_auto_picker(picks, accept: bool):
+        assert dialog.start_auto_picker()
+        picker = dialog._auto_point_picker
+        picker.points = np.array(picks)
+        picker.points_modified.emit()
+        if accept:
+            picker.ui.accepted.emit()
+        else:
+            picker.ui.rejected.emit()
+
+    run_auto_picker([[10.0, 10.0], [20.0, 20.0]], accept=True)
+    assert len(dialog.points) == 3  # manual + 2 picks
+
+    # A second run replaces the previous picks instead of adding to them
+    run_auto_picker([[10.0, 10.0], [20.0, 20.0], [30.0, 30.0]], accept=True)
+    assert len(dialog.points) == 4  # manual + 3 picks
+
+    # Canceling a run restores all points from before the run
+    run_auto_picker([[50.0, 50.0]], accept=False)
+    assert len(dialog.points) == 4
+
+    dialog.disconnect()
 
 
 def test_poni_geometry_editor_dialog(qapp):
