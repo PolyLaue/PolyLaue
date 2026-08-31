@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 
 from PySide6.QtCore import QPointF
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QDialog, QLabel
 
 import pyqtgraph as pg
 
@@ -336,3 +336,74 @@ def test_acquisition_times_dialog(qapp):
     dialog.settings_serialized = params
     assert dialog.settings_serialized == params
     assert dialog.ui.intervals_widget.isEnabled()
+
+
+def test_acquisition_times_new_section_not_applied(qapp, monkeypatch):
+    # Pretend the user previously applied acquisition times in some
+    # other section, so the last-used values are in QSettings
+    dialog = AcquisitionTimesDialog()
+    dialog.settings_serialized = {
+        'enabled': True,
+        'frame_period': 0.05,
+        'row_break': 2.5,
+        'scan_break': 30.0,
+    }
+    dialog.save_settings()
+
+    dialog = AcquisitionTimesDialog()
+    monkeypatch.setattr(dialog.ui, 'exec', lambda: QDialog.Accepted)
+
+    # A newly created section has no stored intervals. The last-used
+    # interval values are loaded as a convenience, but "Apply
+    # acquisition times" must not carry over from another section.
+    params = dialog.exec(None)
+    assert params['enabled'] is False
+    assert params['frame_period'] == 0.05
+
+    # A section with stored intervals keeps its own enabled state
+    stored = {
+        'enabled': True,
+        'frame_period': 0.1,
+        'row_break': 1.0,
+        'scan_break': 2.0,
+    }
+    params = dialog.exec(stored)
+    assert params == stored
+
+
+def test_set_frame_as_time_zero_with_mtime(qapp):
+    # "Set frame as time zero" used to require the computed
+    # acquisition times. It must also work when the displayed times
+    # are based on the file modification times.
+    class FakeMainWindow:
+        update_time_label = MainWindow.update_time_label
+        on_set_frame_as_time_zero = MainWindow.on_set_frame_as_time_zero
+        time_zero_action_enabled = MainWindow.time_zero_action_enabled
+
+    class MtimeOnlySeries:
+        def computed_frame_time(self, row, column, scan_number):
+            # No acquisition intervals configured for this section
+            return None
+
+        def relative_file_creation_time(self, row, column, scan_number):
+            return 100.0
+
+    window = FakeMainWindow()
+    window.ui = SimpleNamespace(time_label=QLabel())
+    window.series = MtimeOnlySeries()
+    window.scan_pos = np.array([0, 1])
+    window.scan_num = 3
+    window._time_zero = 0.0
+    window._mtime_time_zero = 0.0
+
+    assert window.time_zero_action_enabled()
+
+    window.update_time_label()
+    assert window.ui.time_label.text() == '00h:01m:40s'
+
+    window.on_set_frame_as_time_zero()
+    assert window._mtime_time_zero == 100.0
+    assert window._time_zero == 0.0
+
+    window.update_time_label()
+    assert window.ui.time_label.text() == '00h:00m:00s'

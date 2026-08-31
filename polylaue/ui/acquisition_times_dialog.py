@@ -31,7 +31,11 @@ class AcquisitionTimesDialog:
         if initial_params is not None:
             self.settings_serialized = initial_params
         else:
+            # Load the last-used interval values as a convenience, but
+            # leave "Apply acquisition times" unchecked: acquisition
+            # times have not been configured for this section yet.
             self.load_settings()
+            self.enabled = False
 
         result = self.ui.exec()
         if result != QDialog.Accepted:

@@ -68,6 +68,12 @@ class MainWindow(QObject):
         # This resets to zero whenever a different series is loaded.
         self._time_zero = 0.0
 
+        # The time zero used for file-modification-time based frame
+        # times, in fractional seconds relative to the first file of
+        # the current section. This is tracked separately from the
+        # computed time zero, since the two time bases are unrelated.
+        self._mtime_time_zero = 0.0
+
         # We currently assume all image files in a series will have the
         # same image loader. Cache that image loader so we do not have
         # to identify the image loader every time a new file is opened.
@@ -169,7 +175,7 @@ class MainWindow(QObject):
         )
         self.image_view.set_frame_as_time_zero.connect(self.on_set_frame_as_time_zero)
         self.image_view.create_hkl_map.connect(self.on_create_hkl_map)
-        self.image_view.time_zero_action_enabled_fn = self.computed_times_active
+        self.image_view.time_zero_action_enabled_fn = self.time_zero_action_enabled
         self.image_view.go_to_scan_number.connect(self.on_go_to_scan_number)
         self.ui.scan_num_spin_box.valueChanged.connect(
             self.on_scan_num_spin_box_value_changed
@@ -377,8 +383,9 @@ class MainWindow(QObject):
             return False
 
         if series is not prev_series:
-            # Reset the time zero to the first frame of this series
+            # Reset the time zeros to their defaults
             self._time_zero = 0.0
+            self._mtime_time_zero = 0.0
 
         if reset_settings:
             # Reset scan position
@@ -729,7 +736,7 @@ class MainWindow(QObject):
                 *self.scan_pos, self.scan_num
             )
             # Round to milliseconds
-            microseconds = round(rtime * 1e3) * 1000
+            microseconds = round((rtime - self._mtime_time_zero) * 1e3) * 1000
 
         sign = '-' if microseconds < 0 else ''
         us = abs(int(microseconds))
@@ -823,13 +830,9 @@ class MainWindow(QObject):
         self.save_project_manager()
         self.update_time_label()
 
-    def computed_times_active(self) -> bool:
-        """Whether frame times are currently computed from intervals"""
-        if self.series is None:
-            return False
-
-        first_scan = self.series.scan_start_number
-        return self.series.computed_frame_time(0, 0, first_scan) is not None
+    def time_zero_action_enabled(self) -> bool:
+        """The "set frame as time zero" action requires a loaded series"""
+        return self.series is not None
 
     def on_set_frame_as_time_zero(self):
         if self.series is None:
@@ -837,15 +840,16 @@ class MainWindow(QObject):
             return
 
         time_zero = self.series.computed_frame_time(*self.scan_pos, self.scan_num)
-        if time_zero is None:
-            msg = (
-                'The acquisition times must be set and applied before '
-                'a frame can be set as time zero.'
+        if time_zero is not None:
+            self._time_zero = time_zero
+        else:
+            # Acquisition times are not applied, so the displayed times
+            # are based on the file modification times. Set the time
+            # zero for that time base instead.
+            self._mtime_time_zero = self.series.relative_file_creation_time(
+                *self.scan_pos, self.scan_num
             )
-            QMessageBox.warning(self.ui, 'No Acquisition Times', msg)
-            return
 
-        self._time_zero = time_zero
         self.update_time_label()
 
     def open_reflections_editor(self):
