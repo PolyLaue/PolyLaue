@@ -8,7 +8,11 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from polylaue.model.core.geometry import parse_poni, write_geometry_file
+from polylaue.model.core.geometry import (
+    DEFAULT_DETECTOR_SETUP,
+    parse_poni,
+    write_geometry_file,
+)
 from polylaue.model.editable import (
     Editable,
     ParameterDescription,
@@ -140,7 +144,9 @@ class Project(Editable):
 
         self.geometry_path = v
 
-    def write_poni_geometry(self, params: dict):
+    def write_poni_geometry(
+        self, params: dict, detector_setup: str = DEFAULT_DETECTOR_SETUP
+    ):
         """Write PONI parameters as this project's geometry file
 
         The params match the output of parse_poni(). The project's
@@ -151,6 +157,7 @@ class Project(Editable):
             image_size_x=self.frame_shape[0],
             image_size_y=self.frame_shape[1],
             white_beam_shift=self.white_beam_shift,
+            detector_setup=detector_setup,
             **params,
         )
 

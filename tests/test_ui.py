@@ -283,6 +283,7 @@ def test_poni_geometry_editor_dialog(qapp):
     # The parsed values survive the round trip through the widgets,
     # including small and negative ones
     fields = dialog.editor.fields
+    assert fields['detector_setup'].value == '16BMD'
     assert np.isclose(fields['pixel_size'].value, 0.079)
     assert np.isclose(fields['detector_distance'].value, 190.0)
     assert np.isclose(fields['rot1'].value, 0.002)
@@ -290,9 +291,11 @@ def test_poni_geometry_editor_dialog(qapp):
 
     # Accepting the dialog applies edits back onto the editable
     fields['pixel_size'].value = 0.158
+    fields['detector_setup'].value = '16BMB (before 2016)'
     dialog.on_accepted()
     assert np.isclose(geometry.pixel_size, 0.158)
     assert np.isclose(geometry.rot2, -0.003)
+    assert geometry.detector_setup == '16BMB (before 2016)'
 
 
 def test_poni_geometry_write(tmp_path):

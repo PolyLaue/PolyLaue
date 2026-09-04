@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 from polylaue.model.core.geometry import (
+    DETECTOR_SETUPS,
     geo_from_dioptas,
     parse_poni,
     write_geometry_file,
@@ -72,7 +73,8 @@ def test_parse_poni_unknown_format(tmp_path):
     assert not output_path.exists()
 
 
-def test_write_geometry_file(tmp_path):
+@pytest.mark.parametrize('detector_setup', list(DETECTOR_SETUPS))
+def test_write_geometry_file(detector_setup, tmp_path):
     output_path = tmp_path / 'geometry.npz'
     image_size_x = 981
     image_size_y = 1043
@@ -83,6 +85,7 @@ def test_write_geometry_file(tmp_path):
         image_size_x=image_size_x,
         image_size_y=image_size_y,
         white_beam_shift=white_beam_shift,
+        detector_setup=detector_setup,
         **EXPECTED_PARAMS,
     )
 
@@ -93,11 +96,16 @@ def test_write_geometry_file(tmp_path):
     beam_dir = npz['iitt2']
     pix_dist = npz['iitt3']
 
+    # The setups differ only in where the white beam shift is applied
     pix = EXPECTED_PARAMS['pixel_size']
-    expected_det_org = [
-        EXPECTED_PARAMS['poni2'] * 1000.0 / pix,
-        image_size_y - EXPECTED_PARAMS['poni1'] * 1000.0 / pix + white_beam_shift / pix,
-    ]
+    shift = white_beam_shift / pix
+    poni_x = EXPECTED_PARAMS['poni2'] * 1000.0 / pix
+    poni_y = image_size_y - EXPECTED_PARAMS['poni1'] * 1000.0 / pix
+    expected_det_org = {
+        '16BMD': [poni_x, poni_y - shift],
+        '16BMB (2016-2023)': [poni_x, poni_y + shift],
+        '16BMB (before 2016)': [poni_x - shift, poni_y],
+    }[detector_setup]
     assert np.allclose(det_org, expected_det_org)
 
     # The beam direction is a unit vector, mostly along z
@@ -106,8 +114,6 @@ def test_write_geometry_file(tmp_path):
 
     assert np.isclose(pix_dist[0], pix)
     assert np.isclose(pix_dist[1], EXPECTED_PARAMS['detector_distance'])
-    # The largest two-theta and the smallest z of the frame corner
-    # directions are both angles-related quantities in sane ranges
     assert 0 < pix_dist[2] < np.pi / 2
     assert 0 < pix_dist[3] < 1
 
