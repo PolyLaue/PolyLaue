@@ -220,6 +220,36 @@ class TestSection:
         assert section.series_with_scan_index(999) is None
 
 
+class TestProject:
+    def test_delete_auto_generated_files(self, tmp_path):
+        pm = ProjectManager()
+        project = Project(parent=pm, name='P', directory=tmp_path)
+        pm.projects.append(project)
+
+        # Create the auto-generated files, plus a section directory with
+        # a reflections file in it
+        for path in project.auto_generated_paths:
+            if path.name == 'Sections':
+                (path / 'S').mkdir(parents=True)
+                (path / 'S' / 'reflections.h5').touch()
+            else:
+                path.touch()
+
+        # A file PolyLaue did not generate should survive the cleanup
+        user_file = tmp_path / 'notes.txt'
+        user_file.touch()
+
+        project.delete_auto_generated_files()
+
+        for path in project.auto_generated_paths:
+            assert not path.exists()
+
+        assert user_file.exists()
+
+        # Deleting again when nothing is left should not raise
+        project.delete_auto_generated_files()
+
+
 class TestProjectManager:
     def test_empty_project_manager(self):
         pm = ProjectManager()

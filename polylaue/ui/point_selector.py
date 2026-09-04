@@ -144,6 +144,11 @@ class PointSelectorDialog(QDialog):
 
         self.always_hidden = always_hidden
 
+        # The points that were added by the last accepted auto-pick
+        # run. Running the auto-picker again replaces these, so that
+        # repeated runs do not accumulate near-duplicate points.
+        self._last_auto_picked_points: list = []
+
         layout = QVBoxLayout(self)
         self.setLayout(layout)
 
@@ -255,19 +260,33 @@ class PointSelectorDialog(QDialog):
 
         dialog = PointAutoPicker(self.image_view, self)
 
-        original_points = self.point_selector.points.copy()
+        # If the user cancels, all current points are restored
+        previous_points = self.point_selector.points.copy()
+
+        # Points that were added by the last accepted auto-pick run are
+        # replaced by the new run, instead of accumulating every time.
+        # Only points that were not auto-picked are kept.
+        last_auto_picked = self._last_auto_picked_points
+        kept_points = [
+            p
+            for p in previous_points
+            if not any(np.array_equal(p, x) for x in last_auto_picked)
+        ]
 
         def on_points_modified():
             self.point_selector.points = dialog.points.tolist()
             self.point_selector.points_changed()
 
         def on_accepted():
-            # Add back in the original points
-            self.point_selector.points = original_points + self.point_selector.points
+            auto_picked = self.point_selector.points.copy()
+            self._last_auto_picked_points = auto_picked
+
+            # Add back in the points that were not auto-picked
+            self.point_selector.points = kept_points + auto_picked
             self.point_selector.points_changed()
 
         def on_rejected():
-            self.point_selector.points = original_points
+            self.point_selector.points = previous_points
             self.point_selector.points_changed()
 
         def on_finished():

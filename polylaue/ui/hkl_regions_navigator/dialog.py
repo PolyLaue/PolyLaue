@@ -296,16 +296,31 @@ class HklRegionsNavigatorDialog(QDialog):
         pass
 
     def on_add_clicked(self):
-        hkl = (0, 0, 0)
-        crystal_id = 0
+        self.add_hkl_roi(0, (0, 0, 0))
 
-        center = np.array((OUT_OF_BOUNDS, OUT_OF_BOUNDS), dtype=np.float32)
+    def add_hkl_roi(
+        self,
+        crystal_id: int,
+        hkl: tuple[int, int, int],
+        size: tuple[int, int] = (150, 150),
+    ) -> str:
+        """Add a region for the HKL and return the new region's id
 
-        size = np.array([150, 150])
-        position = center - size // 2
-        id = self.model.add_roi(crystal_id, hkl, position, size)
+        The region is centered on the HKL if its center can be resolved,
+        and placed out of bounds otherwise.
+        """
+        try:
+            center = self.hkl_provider.get_hkl_center(crystal_id, hkl)
+        except InvalidHklError:
+            center = np.array((OUT_OF_BOUNDS, OUT_OF_BOUNDS), dtype=np.float32)
 
-        self.roi_items_manager.create_roi_item(id, position, size)
+        roi_size = np.asarray(size)
+        position = center - roi_size // 2
+        id = self.model.add_roi(crystal_id, hkl, position, roi_size)
+
+        self.roi_items_manager.create_roi_item(id, position, roi_size)
+
+        return id
 
     def on_show_clicked(self):
         self.show_status = not self.show_status

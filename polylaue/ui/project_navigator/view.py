@@ -11,6 +11,7 @@ from PySide6.QtCore import (
 )
 from PySide6.QtGui import QCursor
 from PySide6.QtWidgets import (
+    QCheckBox,
     QFileDialog,
     QMenu,
     QMessageBox,
@@ -20,6 +21,7 @@ from PySide6.QtWidgets import (
 
 from polylaue.model.scan import Scan
 from polylaue.model.series import Series
+from polylaue.ui.poni_importer import review_poni_import
 from polylaue.ui.project_navigator.navigation_bar import NavigationBar
 
 # A few shortcuts to enums
@@ -271,15 +273,28 @@ class ProjectNavigatorView(QTableView):
             # Indicate that the data was modified.
             self.model.data_modified.emit()
 
-            # If it is a series, trigger the series to be re-opened
             entry = self.submodel.entry_list[row]
+            self._review_poni_import(entry)
+
+            # If it is a series, trigger the series to be re-opened
             if isinstance(entry, Series):
                 self.series_modified.emit(entry)
 
     def insert_row(self, row: int):
         # A row of -1 indicates it should be added to the end
         row = row if row != -1 else len(self.submodel.entry_list)
+        num_entries = len(self.submodel.entry_list)
         self.model.insertRows(row, 1)
+
+        if len(self.submodel.entry_list) > num_entries:
+            # An entry was actually created (the user did not cancel)
+            self._review_poni_import(self.submodel.entry_list[row])
+
+    def _review_poni_import(self, entry):
+        # If a PONI file was just imported as a project's geometry, let
+        # the user review and edit the imported parameters.
+        if getattr(entry, 'last_poni_import_params', None) is not None:
+            review_poni_import(entry, self)
 
     def edit_selected_rows(self):
         self.edit_rows(self.selected_rows)
@@ -292,6 +307,7 @@ class ProjectNavigatorView(QTableView):
             self.edit_entry(row)
 
     def delete_rows(self, rows: list[int], confirm_with_user: bool = True):
+        delete_files_cb = None
         if confirm_with_user:
             if len(rows) < 5:
                 names = [self.submodel.entry_list[x].name for x in rows]
@@ -301,14 +317,37 @@ class ProjectNavigatorView(QTableView):
                 msg = f'Delete {len(rows)} entries?'
 
             msg += '\n\nThis cannot be undone.'
-            if QMessageBox.question(self, 'Delete?', msg) == QMessageBox.No:
+            box = QMessageBox(
+                QMessageBox.Icon.Question,
+                'Delete?',
+                msg,
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                self,
+            )
+            if self.submodel.type == 'projects':
+                # The raw data does not live in the project directory,
+                # so it is never deleted.
+                delete_files_cb = QCheckBox(
+                    'Also delete auto-generated files in the\n'
+                    'project directory (raw data is not touched)'
+                )
+                box.setCheckBox(delete_files_cb)
+
+            if box.exec() != QMessageBox.StandardButton.Yes:
                 # User canceled. Return
                 return
+
+        projects_to_clean = []
+        if delete_files_cb is not None and delete_files_cb.isChecked():
+            projects_to_clean = [self.submodel.entry_list[x] for x in rows]
 
         # Perform the delete
         for i, row in enumerate(sorted(rows)):
             # Offset according to previously removed rows
             self.model.removeRows(row - i, 1)
+
+        for project in projects_to_clean:
+            project.delete_auto_generated_files()
 
     # These are custom edit functions for certain columns
     @property
