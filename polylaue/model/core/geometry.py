@@ -4,6 +4,16 @@ import numpy as np
 
 from polylaue.typing import PathLike
 
+# The HPCAT setups that have been used to collect Laue data, mapped to
+# the direction (x, y) in which the white beam shift is applied to the
+# point of normal incidence, in pixels.
+DETECTOR_SETUPS = {
+    '16BMD': (0, -1),
+    '16BMB (2016-2023)': (0, 1),
+    '16BMB (before 2016)': (-1, 0),
+}
+DEFAULT_DETECTOR_SETUP = '16BMD'
+
 # The parameters that must be present in a PONI file
 PONI_PARAMETERS = (
     'pixel_size',
@@ -71,20 +81,23 @@ def write_geometry_file(
     image_size_x: int,
     image_size_y: int,
     white_beam_shift: float,
+    detector_setup: str = DEFAULT_DETECTOR_SETUP,
 ):
     """Compute the PolyLaue geometry and save it as an NPZ file
 
     The pixel size and detector distance are in mm, poni1 and poni2 are
     in meters, and the rotations are in radians (all matching the output
-    of parse_poni()).
+    of parse_poni()). The detector setup must be a key of
+    DETECTOR_SETUPS.
     """
     pix = pixel_size
     sam_det_d = detector_distance
     imsiy = float(image_size_y)
     wmbs = float(white_beam_shift)
+    shift_x, shift_y = DETECTOR_SETUPS[detector_setup]
 
-    PoniX = poni2 * 1000.0 / pix
-    PoniY = imsiy - poni1 * 1000.0 / pix + wmbs / pix
+    PoniX = poni2 * 1000.0 / pix + shift_x * wmbs / pix
+    PoniY = imsiy - poni1 * 1000.0 / pix + shift_y * wmbs / pix
     beam_x = np.cos(rot2) * np.cos(np.pi / 2.0 + rot1)
     beam_y = np.cos(np.pi / 2.0 + rot2)
     beam_z = np.cos(rot2) * np.cos(rot1)

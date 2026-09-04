@@ -2,6 +2,7 @@
 
 from PySide6.QtWidgets import QWidget
 
+from polylaue.model.core.geometry import DEFAULT_DETECTOR_SETUP, DETECTOR_SETUPS
 from polylaue.model.editable import Editable, ParameterDescription
 from polylaue.model.project import Project
 from polylaue.ui.editor import EditorDialog
@@ -21,9 +22,11 @@ class PoniGeometry(Editable):
         poni2: float,
         rot1: float,
         rot2: float,
+        detector_setup: str = DEFAULT_DETECTOR_SETUP,
     ):
         super().__init__()
 
+        self.detector_setup = detector_setup
         self.pixel_size = pixel_size
         self.detector_distance = detector_distance
         self.poni1 = poni1
@@ -34,6 +37,16 @@ class PoniGeometry(Editable):
     @classmethod
     def get_parameters_description(cls) -> dict[str, ParameterDescription]:
         return {
+            'detector_setup': {
+                'type': 'enum',
+                'label': 'Detector Setup',
+                'options': list(DETECTOR_SETUPS),
+                'tooltip': (
+                    'The HPCAT setup that was used to collect the data. '
+                    'The setups differ in how the white beam shift is '
+                    'applied to the point of normal incidence.'
+                ),
+            },
             'pixel_size': {
                 'type': 'float',
                 'label': 'Pixel Size (mm)',
@@ -86,7 +99,9 @@ class PoniGeometry(Editable):
 
     def write_geometry_file(self, project: Project):
         """Write the geometry to the project's geometry file location"""
-        project.write_poni_geometry(self.get_parameters())
+        params = self.get_parameters()
+        detector_setup = params.pop('detector_setup')
+        project.write_poni_geometry(params, detector_setup)
 
 
 def review_poni_import(project: Project, parent: QWidget | None = None):
