@@ -7,7 +7,7 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from PySide6.QtCore import QPointF
+from PySide6.QtCore import QPointF, QSettings
 from PySide6.QtWidgets import QApplication, QDialog, QLabel
 
 import pyqtgraph as pg
@@ -28,8 +28,17 @@ from polylaue.ui.region_mapping.dialog import RegionMappingDialog
 
 
 @pytest.fixture(scope='module')
-def qapp():
+def qapp(tmp_path_factory):
     os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
+
+    # Keep the tests out of the user's real settings, and use the same
+    # settings backend on every platform
+    settings_dir = str(tmp_path_factory.mktemp('settings'))
+    QSettings.setDefaultFormat(QSettings.Format.IniFormat)
+    QSettings.setPath(
+        QSettings.Format.IniFormat, QSettings.Scope.UserScope, settings_dir
+    )
+
     app = QApplication.instance()
     if app is None:
         app = QApplication([])
