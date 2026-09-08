@@ -1188,6 +1188,9 @@ class MainWindow(QObject):
         self, roi_manager: ROIManager, id: str
     ) -> RegionMappingDialog:
         dialog = RegionMappingDialog(id, roi_manager, self.ui)
+        if roi_manager is self.hkl_roi_manager:
+            dialog.hkl_provider = self.hkl_provider
+
         histogram_widget = self.image_view.getHistogramWidget()
 
         if histogram_widget:

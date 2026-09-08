@@ -22,9 +22,12 @@ class HklProvider:
     def reflections(self, v: ExternalReflections | None):
         self._reflections = v
 
-    def get_hkl_center(self, crystal_id: int, hkl: HKL) -> WorldPoint:
+    def get_hkl_center(
+        self, crystal_id: int, hkl: HKL, scan_num: int | None = None
+    ) -> WorldPoint:
         # Extract the HKL center from the reflections table by averaging
-        # together all HKL centers for the current scan number.
+        # together all HKL centers for the scan number (the current one
+        # by default).
         reflections = self.reflections
         if reflections is None:
             raise ReflectionsNotFound
@@ -34,7 +37,8 @@ class HklProvider:
 
         hkl_centers = []
 
-        scan_num = self.frame_tracker.scan_num
+        if scan_num is None:
+            scan_num = self.frame_tracker.scan_num
         for row, col in reflections.iterate_scan_positions(scan_num):
             table = reflections.reflections_table(row, col, scan_num)
             if table.size == 0:

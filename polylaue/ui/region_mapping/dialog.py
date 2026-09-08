@@ -28,6 +28,7 @@ from PySide6.QtGui import (
 
 from PySide6.QtWidgets import (
     QCheckBox,
+    QLabel,
     QMessageBox,
 )
 
@@ -37,6 +38,7 @@ import numpy as np
 
 from polylaue.model.io import Bounds
 from polylaue.model.series import Series
+from polylaue.model.hkl_provider import HklProvider, InvalidHklError
 from polylaue.model.roi_manager import ROIManager
 from polylaue.ui.region_mapping.grid_item import CustomGridItem
 from polylaue.utils.coordinates import world_to_display, ij_to_xy
@@ -126,6 +128,14 @@ class RegionMappingDialog(QDialog):
 
         self.setLayout(QVBoxLayout())
 
+        # Shown instead of the map when the region's HKL cannot be
+        # found on the scan
+        self.notice_label = QLabel(self)
+        self.notice_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.notice_label.setStyleSheet('font-weight: bold; padding: 8px')
+        self.notice_label.hide()
+        self.layout().addWidget(self.notice_label)
+
         w = pg.GraphicsView()
         view = CustomViewBox(invertY=True)
         view.setAspectLocked(True)
@@ -181,6 +191,9 @@ class RegionMappingDialog(QDialog):
             ]
         ] = None
         self.roi_manager = roi_manager
+        # Set for HKL regions, so the dialog can tell whether its HKL
+        # exists on the scan it is mapping
+        self.hkl_provider: HklProvider | None = None
         self.series = None
         self.scan_number = -1
         self.roi_id = id
@@ -332,6 +345,22 @@ class RegionMappingDialog(QDialog):
         return self._locked_roi is not None
 
     @property
+    def hkl_missing(self) -> bool:
+        """Whether this is an HKL region whose HKL is not on the scan"""
+        roi = self.roi_manager.rois.get(self.roi_id)
+        if self.hkl_provider is None or roi is None or 'hkl' not in roi:
+            return False
+
+        try:
+            self.hkl_provider.get_hkl_center(
+                roi['crystal_id'], roi['hkl'], self.scan_number
+            )
+        except InvalidHklError:
+            return True
+
+        return False
+
+    @property
     def current_roi(self):
         """The region to map, which is frozen if the region was frozen"""
         if self._locked_roi is not None:
@@ -400,6 +429,15 @@ class RegionMappingDialog(QDialog):
         if self.scan_number < 0:
             return
 
+        if self.hkl_missing:
+            self.notice_label.setText(f'HKL not found on scan {self.scan_number}')
+            self.notice_label.show()
+            self.image_item.clear()
+            self._current_map_data.clear()
+            self.set_stale(False)
+            return
+
+        self.notice_label.hide()
         _, roi_size_ij, img = self._create_map_image(self.series, self.scan_number)
         self.roi_size_ij = roi_size_ij
         self.map_size_ij = np.array(img.shape)
