@@ -3,6 +3,7 @@
 from PySide6.QtCore import QObject, QSettings, Signal
 
 from polylaue.ui.utils.block_signals import block_signals
+from polylaue.ui.help import add_help_button
 from polylaue.ui.utils.ui_loader import UiLoader
 
 import numpy as np
@@ -18,6 +19,7 @@ class PointAutoPicker(QObject):
     def __init__(self, image_view: pg.ImageView, parent=None):
         super().__init__(parent)
         self.ui = UiLoader().load_file('point_auto_picker.ui', parent)
+        add_help_button(self.ui.button_box, 'point-picking/#auto-pick-points')
 
         self.image_view = image_view
         self.points = []

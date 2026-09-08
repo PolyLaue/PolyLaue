@@ -8,7 +8,13 @@ import numpy as np
 import pytest
 
 from PySide6.QtCore import QPointF, QSettings
-from PySide6.QtWidgets import QApplication, QDialog, QLabel
+from PySide6.QtWidgets import (
+    QApplication,
+    QDialog,
+    QDialogButtonBox,
+    QLabel,
+    QPushButton,
+)
 
 import pyqtgraph as pg
 
@@ -18,7 +24,9 @@ from polylaue.model.roi_manager import HklROIManager, ROIManager
 from polylaue.model.section import Section
 from polylaue.model.series import Series
 from polylaue.ui.acquisition_times_dialog import AcquisitionTimesDialog
+from polylaue.ui.editor import EditorDialog
 from polylaue.ui.frame_tracker import FrameTracker
+from polylaue.ui import help as help_module
 from polylaue.ui.hkl_regions_navigator.dialog import HklRegionsNavigatorDialog
 from polylaue.ui.image_view import PolyLaueImageView
 from polylaue.ui.main_window import MainWindow
@@ -459,3 +467,40 @@ def test_set_frame_as_time_zero_with_mtime(qapp):
 
     window.update_time_label()
     assert window.ui.time_label.text() == '00h:00m:00s'
+
+
+def test_help_buttons(qapp, monkeypatch):
+    from polylaue.model.hkl_provider import HklProvider
+
+    opened = []
+    monkeypatch.setattr(
+        help_module.QDesktopServices,
+        'openUrl',
+        lambda url: opened.append(url.toString()),
+    )
+
+    assert help_module.help_url() == 'https://polylaue.github.io/'
+    assert (
+        help_module.help_url('mapping/#map-windows')
+        == 'https://polylaue.github.io/mapping/#map-windows'
+    )
+
+    # Editors of the documented models get a Help button
+    pm = ProjectManager()
+    dialog = EditorDialog(Project(parent=pm, name='P'))
+    dialog.button_box.button(QDialogButtonBox.StandardButton.Help).click()
+    assert opened[-1] == 'https://polylaue.github.io/projects/#creating-a-project'
+
+    # Dialogs built from .ui files
+    dialog = AcquisitionTimesDialog()
+    dialog.ui.button_box.button(QDialogButtonBox.StandardButton.Help).click()
+    assert opened[-1].endswith('viewing/#acquisition-times')
+
+    # Dialogs with their own button rows
+    dialog = HklRegionsNavigatorDialog(
+        pg.ImageView(), HklROIManager(), HklProvider(FrameTracker())
+    )
+    buttons = [b for b in dialog.findChildren(QPushButton) if b.text() == 'Help']
+    assert len(buttons) == 1
+    buttons[0].click()
+    assert opened[-1].endswith('mapping/#hkl-region-maps')

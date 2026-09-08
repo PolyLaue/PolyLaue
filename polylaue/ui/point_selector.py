@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
 import numpy as np
 import pyqtgraph as pg
 
+from polylaue.ui.help import add_help_button
 from polylaue.ui.point_auto_picker import PointAutoPicker
 from polylaue.ui.utils.keep_dialog_on_top import keep_dialog_on_top
 
@@ -181,6 +182,7 @@ class PointSelectorDialog(QDialog):
         # Add a button box for accept/cancel
         buttons = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
         self.button_box = QDialogButtonBox(buttons, self)
+        add_help_button(self.button_box, 'point-picking/')
         layout.addWidget(self.button_box)
 
         self.setup_connections()

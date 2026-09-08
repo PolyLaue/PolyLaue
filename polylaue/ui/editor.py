@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from polylaue.ui.help import EDITOR_HELP_PAGES, add_help_button
 from polylaue.model.editable import (
     Editable,
     ParameterType,
@@ -334,6 +335,10 @@ class EditorDialog(QDialog):
         buttons = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
         self.button_box = QDialogButtonBox(buttons, self)
         layout.addWidget(self.button_box)
+
+        help_page = EDITOR_HELP_PAGES.get(type(editable).__name__)
+        if help_page is not None:
+            add_help_button(self.button_box, help_page)
 
         self.setMinimumWidth(500)
         self.setFixedHeight(self.sizeHint().height())

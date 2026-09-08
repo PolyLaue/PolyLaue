@@ -3,6 +3,7 @@
 from PySide6.QtCore import QSettings
 from PySide6.QtWidgets import QDialog, QWidget
 
+from polylaue.ui.help import add_help_button
 from polylaue.ui.utils.ui_loader import UiLoader
 
 
@@ -12,6 +13,7 @@ class ScanPositionCoordsDialog:
 
     def __init__(self, parent: QWidget | None = None):
         self.ui = UiLoader().load_file('scan_position_coords_dialog.ui', parent)
+        add_help_button(self.ui.button_box, 'viewing/#scan-position-coordinates')
 
     def exec(self, initial_params: dict | None = None) -> dict | None:
         """Show the dialog and return the parameters if accepted.

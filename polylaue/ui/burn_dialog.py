@@ -1,11 +1,12 @@
 # Copyright © 2026, UChicago Argonne, LLC. See "LICENSE" for full details.
 
-from PySide6.QtCore import QObject, Signal
+from PySide6.QtCore import QObject, Signal, Qt
 
 import numpy as np
 
 from polylaue.model.core import BASIC_STRUCTURE_TYPES, VALID_STRUCTURE_TYPES
 from polylaue.ui.utils.block_signals import block_signals
+from polylaue.ui.help import help_button
 from polylaue.ui.utils.ui_loader import UiLoader
 
 
@@ -24,6 +25,16 @@ class BurnDialog(QObject):
         super().__init__(parent)
 
         self.ui = UiLoader().load_file('burn_dialog.ui', parent)
+
+        grid = self.ui.layout()
+        grid.addWidget(
+            help_button('reflections/#visualization-of-predicted-reflections', self.ui),
+            grid.rowCount(),
+            0,
+            1,
+            grid.columnCount(),
+            Qt.AlignmentFlag.AlignRight,
+        )
 
         self._include_advanced_structures = include_advanced_structures
 

@@ -37,6 +37,7 @@ from polylaue.ui.acquisition_times_dialog import AcquisitionTimesDialog
 from polylaue.ui.find_dialog import FindDialog
 from polylaue.ui.scan_position_coords_dialog import ScanPositionCoordsDialog
 from polylaue.ui.frame_tracker import FrameTracker
+from polylaue.ui.help import open_help
 from polylaue.ui.hkl_regions_navigator.dialog import HklRegionsNavigatorDialog
 from polylaue.ui.image_view import PolyLaueImageView
 from polylaue.ui.reflections_editor import ReflectionsEditor
@@ -129,6 +130,7 @@ class MainWindow(QObject):
         self.ui.action_open_project_navigator.triggered.connect(
             self.open_project_navigator
         )
+        self.ui.action_documentation.triggered.connect(open_help)
         self.ui.action_overlays_reflections.triggered.connect(
             self.open_reflections_editor
         )
