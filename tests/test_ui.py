@@ -332,6 +332,46 @@ def test_poni_geometry_write(tmp_path):
     assert np.isclose(project.geometry_data['pix_dist'][0], 0.158)
 
 
+def test_hkl_map_notice_when_hkl_missing(qapp):
+    # An HKL region keeps its last position when its HKL is not on a
+    # scan. The map window must say so instead of mapping that region.
+    from polylaue.model.hkl_provider import HklNotFound
+
+    class StubHklProvider:
+        def get_hkl_center(self, crystal_id, hkl, scan_num=None):
+            if scan_num == 5:
+                raise HklNotFound
+            return np.array([50.0, 50.0])
+
+    roi_manager = HklROIManager()
+    roi_id = roi_manager.add_roi(0, (1, 1, 1), (10, 20), (30, 30))
+    dialog = RegionMappingDialog(roi_id, roi_manager)
+    dialog.hkl_provider = StubHklProvider()
+
+    frame = np.arange(100 * 100).reshape(100, 100)
+
+    def open_image(series, scan_number, scan_position, bounds=None):
+        if bounds is None:
+            return None, frame
+        return None, frame[bounds[0] : bounds[1], bounds[2] : bounds[3]]
+
+    dialog.open_image_fn = open_image
+    dialog.set_series(SimpleNamespace(scan_shape=(2, 2)))
+
+    dialog.set_scan_number(5)
+    dialog.on_refresh_clicked()
+    assert not dialog.notice_label.isHidden()
+    assert dialog.notice_label.text() == 'HKL not found on scan 5'
+    assert dialog.image_item.image is None
+    assert not dialog.stale
+
+    # Back on a scan where the HKL exists, the map is built again
+    dialog.set_scan_number(6)
+    dialog.on_refresh_clicked()
+    assert dialog.notice_label.isHidden()
+    assert dialog.image_item.image is not None
+
+
 def test_acquisition_times_dialog(qapp):
     dialog = AcquisitionTimesDialog()
 
