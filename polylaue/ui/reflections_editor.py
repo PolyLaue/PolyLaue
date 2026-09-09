@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from PySide6.QtCore import QObject, Signal, Qt
+from PySide6.QtCore import QObject, Signal
 
 import h5py
 
@@ -12,7 +12,7 @@ from polylaue.ui.burn_workflow import BurnWorkflow
 from polylaue.ui.frame_tracker import FrameTracker
 from polylaue.ui.reflections_style import ReflectionsStyle
 from polylaue.ui.reflections_style_editor import ReflectionsStyleEditor
-from polylaue.ui.help import help_button
+from polylaue.ui.help import help_alignment, help_button
 from polylaue.ui.utils.ui_loader import UiLoader
 
 
@@ -43,7 +43,7 @@ class ReflectionsEditor(QObject):
             0,
             1,
             grid.columnCount(),
-            Qt.AlignmentFlag.AlignRight,
+            help_alignment(),
         )
 
         self.frame_tracker = frame_tracker

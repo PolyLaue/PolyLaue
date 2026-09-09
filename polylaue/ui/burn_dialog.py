@@ -1,12 +1,12 @@
 # Copyright © 2026, UChicago Argonne, LLC. See "LICENSE" for full details.
 
-from PySide6.QtCore import QObject, Signal, Qt
+from PySide6.QtCore import QObject, Signal
 
 import numpy as np
 
 from polylaue.model.core import BASIC_STRUCTURE_TYPES, VALID_STRUCTURE_TYPES
 from polylaue.ui.utils.block_signals import block_signals
-from polylaue.ui.help import help_button
+from polylaue.ui.help import help_alignment, help_button
 from polylaue.ui.utils.ui_loader import UiLoader
 
 
@@ -33,7 +33,7 @@ class BurnDialog(QObject):
             0,
             1,
             grid.columnCount(),
-            Qt.AlignmentFlag.AlignRight,
+            help_alignment(),
         )
 
         self._include_advanced_structures = include_advanced_structures

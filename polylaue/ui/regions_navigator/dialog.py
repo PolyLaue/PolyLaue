@@ -36,7 +36,7 @@ from polylaue.model.roi_manager import ROIManager
 from polylaue.typing import WorldPoint
 from polylaue.ui.regions_navigator.model import RegionsNavigatorModel
 from polylaue.ui.regions_navigator.view import RegionsNavigatorView
-from polylaue.ui.help import help_button
+from polylaue.ui.help import insert_help_button
 from polylaue.ui.utils.keep_dialog_on_top import keep_dialog_on_top
 
 DEFAULT_ROI_ITEM_ARGS = {
@@ -268,7 +268,7 @@ class RegionsNavigatorDialog(QDialog):
         add_remove_layout.addWidget(self.show_button)
         add_remove_layout.addWidget(self.remove_button)
         add_remove_layout.addWidget(self.display_button)
-        add_remove_layout.addWidget(help_button('mapping/#region-maps', self))
+        insert_help_button(add_remove_layout, 'mapping/#region-maps', self)
 
         self.resize(600, 300)
 

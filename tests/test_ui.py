@@ -477,6 +477,49 @@ def test_help_url():
     )
 
 
+def test_help_button_side(qapp):
+    """The Help button goes where the platform's dialogs put it"""
+    from PySide6.QtWidgets import QProxyStyle, QStyle, QStyleFactory
+
+    class ForceLayout(QProxyStyle):
+        def __init__(self, value):
+            super().__init__(QStyleFactory.create('Fusion'))
+            self._value = value
+
+        def styleHint(self, hint, option=None, widget=None, returnData=None):
+            if hint == QStyle.StyleHint.SH_DialogButtonLayout:
+                return self._value
+            return super().styleHint(hint, option, widget, returnData)
+
+    Layout = QDialogButtonBox.ButtonLayout
+    # Setting a style deletes the previous one, so restore it by name
+    previous_style = qapp.style().objectName()
+    styles = []
+    try:
+        # Windows keeps Help with the other buttons, the rest lead with it
+        for layout, on_left in [
+            (Layout.WinLayout, False),
+            (Layout.MacLayout, True),
+            (Layout.KdeLayout, True),
+            (Layout.GnomeLayout, True),
+        ]:
+            styles.append(ForceLayout(layout.value))
+            qapp.setStyle(styles[-1])
+            assert help_module.help_button_on_left() is on_left, layout
+
+            # A row of buttons agrees with the dialog button box
+            box = QDialogButtonBox(
+                QDialogButtonBox.StandardButton.Ok
+                | QDialogButtonBox.StandardButton.Help
+            )
+            box.adjustSize()
+            help_button = box.button(QDialogButtonBox.StandardButton.Help)
+            ok_button = box.button(QDialogButtonBox.StandardButton.Ok)
+            assert (help_button.x() < ok_button.x()) is on_left, layout
+    finally:
+        qapp.setStyle(QStyleFactory.create(previous_style))
+
+
 def test_help_buttons(qapp, monkeypatch):
     """Every Help button and the Help menu open their documentation page"""
     from polylaue.model.hkl_provider import HklProvider

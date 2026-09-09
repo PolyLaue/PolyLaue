@@ -2,9 +2,16 @@
 
 from functools import partial
 
-from PySide6.QtCore import QUrl
+from PySide6.QtCore import Qt, QUrl
 from PySide6.QtGui import QAction, QDesktopServices
-from PySide6.QtWidgets import QDialogButtonBox, QPushButton, QWidget
+from PySide6.QtWidgets import (
+    QApplication,
+    QBoxLayout,
+    QDialogButtonBox,
+    QPushButton,
+    QStyle,
+    QWidget,
+)
 
 DOCS_URL = 'https://polylaue.github.io/'
 
@@ -47,4 +54,39 @@ def help_button(page: str, parent: QWidget | None = None) -> QPushButton:
     """Create a Help button that opens the documentation page"""
     button = QPushButton('Help', parent)
     button.clicked.connect(partial(open_help, page))
+    return button
+
+
+def help_button_on_left() -> bool:
+    """Whether this platform puts the Help button first in a dialog
+
+    Windows keeps it with the other buttons on the right, while macOS,
+    KDE and GNOME put it on the left. This is the same rule that
+    QDialogButtonBox follows.
+    """
+    # styleHint() returns a plain int, which never compares equal to the
+    # enum member, so convert it first.
+    hint = QApplication.style().styleHint(QStyle.StyleHint.SH_DialogButtonLayout)
+    layout = QDialogButtonBox.ButtonLayout(hint)
+    return layout != QDialogButtonBox.ButtonLayout.WinLayout
+
+
+def help_alignment() -> Qt.AlignmentFlag:
+    """Where to align a Help button that is on a row of its own"""
+    if help_button_on_left():
+        return Qt.AlignmentFlag.AlignLeft
+
+    return Qt.AlignmentFlag.AlignRight
+
+
+def insert_help_button(
+    layout: QBoxLayout, page: str, parent: QWidget | None = None
+) -> QPushButton:
+    """Add a Help button to a row of buttons, where the platform puts it"""
+    button = help_button(page, parent)
+    if help_button_on_left():
+        layout.insertWidget(0, button)
+    else:
+        layout.addWidget(button)
+
     return button
