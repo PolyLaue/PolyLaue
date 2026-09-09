@@ -5,7 +5,11 @@ from collections.abc import Generator
 import h5py
 import numpy as np
 
-from polylaue.model.core import compute_angle
+from polylaue.model.core import (
+    apply_angular_shift,
+    compute_angle,
+    compute_angular_shift,
+)
 from polylaue.model.reflections.base import BaseReflections
 from polylaue.typing import PathLike
 
@@ -276,6 +280,44 @@ class ExternalReflections(BaseReflections):
 
         table[idx] = angular_shift
         self.set_angular_shifts_table(crystal_id, table)
+
+    def replace_crystal_abc_matrix(
+        self, crystal_id: int, new_abc_matrix: np.ndarray, scan_num: int
+    ):
+        """Replace a crystal's ABC matrix, keeping its tracked orientations
+
+        The new matrix is the crystal's orientation on `scan_num`. The
+        angular shifts are recomputed with respect to it, so that the
+        orientation on every tracked scan is unchanged, and a shift back
+        to the old matrix is stored on the old scan number.
+        """
+        old_abc_matrix = self.crystals_table[crystal_id].copy()
+        old_ang_shifts = self.angular_shifts_table(crystal_id).copy()
+        old_scan_num = self.crystal_scan_number(crystal_id)
+
+        crystals_table = self.crystals_table
+        crystals_table[crystal_id] = new_abc_matrix
+        self.crystals_table = crystals_table
+        self.set_crystal_scan_number(crystal_id, scan_num)
+
+        new_ang_shifts = self.angular_shifts_table(crystal_id)
+        for i, ang_shift in enumerate(old_ang_shifts):
+            if i == scan_num - 1:
+                # The new matrix is the orientation on this scan
+                new_ang_shifts[i] = np.full((9,), np.nan)
+                continue
+
+            if np.isnan(ang_shift[0]):
+                continue
+
+            this_abc_matrix = apply_angular_shift(old_abc_matrix, ang_shift)
+            new_ang_shifts[i] = compute_angular_shift(new_abc_matrix, this_abc_matrix)
+
+        self.set_angular_shifts_table(crystal_id, new_ang_shifts)
+
+        if scan_num != old_scan_num:
+            new_shift = compute_angular_shift(new_abc_matrix, old_abc_matrix)
+            self.set_angular_shift_matrix(crystal_id, old_scan_num, new_shift)
 
     def reflections_table(
         self, row: int, column: int, scan_number: int

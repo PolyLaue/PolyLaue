@@ -101,8 +101,10 @@ class BurnDialog(QObject):
         self.ui.crystal_orientation_label.setEnabled(not using_custom_matrix)
         self.ui.crystal_orientation.setEnabled(not using_custom_matrix)
 
-        enable = (
-            not self.crystal_orientation_is_from_hdf5_file and not using_custom_matrix
+        # Overwriting with the unmodified matrix from the file would be
+        # a no-op, so from the HDF5 file it requires an angular shift.
+        enable = not using_custom_matrix and (
+            not self.crystal_orientation_is_from_hdf5_file or self.apply_angular_shift
         )
         self.ui.overwrite_crystal.setEnabled(enable)
 
