@@ -401,10 +401,11 @@ class BurnWorkflow(QObject):
             self.set_abc_matrix_to_crystals_table_if_missing()
             return
 
-        # Otherwise, we'll overwrite the crystal!
-        crystals_table[crystal_id] = self.abc_matrix
-        self.reflections.crystals_table = crystals_table
-        self.reflections.set_crystal_scan_number(crystal_id, self.scan_num)
+        # Otherwise, we'll overwrite the crystal, keeping its tracked
+        # orientations consistent with the new matrix.
+        self.reflections.replace_crystal_abc_matrix(
+            crystal_id, self.abc_matrix, self.scan_num
+        )
 
     def write_crystal_orientation(self):
         self.load_abc_matrix()

@@ -347,57 +347,9 @@ class TrackDialog:
         return msg
 
     def replace_crystal_abc_matrix(self, new_abc_matrix: np.ndarray):
-        # We have to replace the ABC matrix and recompute all angular shift
-        # matrices.
-        crystal_id = self.selected_crystal_id
-        reflections = self.reflections
-
-        # Store these and use them later. Ensure we have deep copies.
-        old_abc_matrix = self.original_abc_matrix.copy()
-        old_ang_shifts = reflections.angular_shifts_table(crystal_id).copy()
-        old_scan_num = reflections.crystal_scan_number(crystal_id)
-
-        # Set the new ABC matrix to the crystals table
-        crystals_table = reflections.crystals_table
-        crystals_table[crystal_id] = new_abc_matrix
-        reflections.crystals_table = crystals_table
-
-        # Now update the ABC matrix scan number
-        reflections.set_crystal_scan_number(crystal_id, self.scan_num)
-
-        # Now update the angular shifts table.
-        # We will replace rows in the old angular shift table with the new ones
-        new_ang_shifts = reflections.angular_shifts_table(crystal_id)
-
-        for i, ang_shift in enumerate(old_ang_shifts):
-            if i == self.scan_num - 1:
-                # This should be all nans now
-                new_ang_shifts[i] = np.full((9,), np.nan)
-                continue
-
-            if np.isnan(ang_shift[0]):
-                # This one is invalid. Just skip it.
-                continue
-
-            # Compute the ABC matrix for this angular shift
-            this_abc_matrix = apply_angular_shift(old_abc_matrix, ang_shift)
-
-            # Now compute the angular shift between the new ABC matrix and
-            # that one
-            new_shift = compute_angular_shift(new_abc_matrix, this_abc_matrix)
-            new_ang_shifts[i] = new_shift
-
-        # Set the new angular shifts table
-        reflections.set_angular_shifts_table(crystal_id, new_ang_shifts)
-
-        if self.scan_num != old_scan_num:
-            # Now also set the angular shift to get back to the old matrix
-            new_shift = compute_angular_shift(new_abc_matrix, old_abc_matrix)
-            reflections.set_angular_shift_matrix(
-                crystal_id,
-                old_scan_num,
-                new_shift,
-            )
+        self.reflections.replace_crystal_abc_matrix(
+            self.selected_crystal_id, new_abc_matrix, self.scan_num
+        )
 
     def save_angular_shift(self, abc_matrix: np.ndarray):
         # Write the angular shift matrix for this crystal
