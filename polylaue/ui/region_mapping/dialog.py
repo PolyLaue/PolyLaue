@@ -39,6 +39,7 @@ import numpy as np
 from polylaue.model.io import Bounds
 from polylaue.model.series import Series
 from polylaue.model.hkl_provider import HklProvider, InvalidHklError
+from polylaue.ui.help import insert_help_button
 from polylaue.model.roi_manager import ROIManager
 from polylaue.ui.region_mapping.grid_item import CustomGridItem
 from polylaue.utils.coordinates import world_to_display, ij_to_xy
@@ -177,6 +178,7 @@ class RegionMappingDialog(QDialog):
         buttons_layout.addWidget(self.refresh_button)
         buttons_layout.addWidget(self.save_data_button)
         buttons_layout.addWidget(self.lock_scan_number_checkbox)
+        insert_help_button(buttons_layout, 'mapping/#map-windows', self)
 
         self.progress_bar = QProgressBar()
         self.layout().addWidget(self.progress_bar)

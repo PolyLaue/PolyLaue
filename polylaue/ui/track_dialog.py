@@ -27,6 +27,7 @@ from polylaue.model.section import Section
 from polylaue.ui.async_worker import AsyncWorker
 from polylaue.ui.point_selector import PointSelectorDialog
 from polylaue.ui.reflections_editor import ReflectionsEditor
+from polylaue.ui.help import add_help_button
 from polylaue.ui.utils.ui_loader import UiLoader
 
 TrackResults = tuple[np.ndarray | None, float | None]
@@ -41,6 +42,7 @@ class TrackDialog:
         parent: QWidget | None = None,
     ):
         self.ui = UiLoader().load_file('track_dialog.ui', parent)
+        add_help_button(self.ui.button_box, 'identification/#tracking-of-crystals')
 
         # We use an "always hidden" point selector dialog so we
         # don't have to repeat point selector logic.

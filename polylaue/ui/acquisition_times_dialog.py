@@ -3,6 +3,7 @@
 from PySide6.QtCore import QSettings
 from PySide6.QtWidgets import QDialog, QWidget
 
+from polylaue.ui.help import add_help_button
 from polylaue.ui.utils.ui_loader import UiLoader
 
 
@@ -12,6 +13,7 @@ class AcquisitionTimesDialog:
 
     def __init__(self, parent: QWidget | None = None):
         self.ui = UiLoader().load_file('acquisition_times_dialog.ui', parent)
+        add_help_button(self.ui.button_box, 'viewing/#acquisition-times')
 
         # The interval widgets only matter when the acquisition times
         # are applied, so gray them out when they are not

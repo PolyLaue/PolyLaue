@@ -12,6 +12,7 @@ from polylaue.ui.burn_workflow import BurnWorkflow
 from polylaue.ui.frame_tracker import FrameTracker
 from polylaue.ui.reflections_style import ReflectionsStyle
 from polylaue.ui.reflections_style_editor import ReflectionsStyleEditor
+from polylaue.ui.help import help_alignment, help_button
 from polylaue.ui.utils.ui_loader import UiLoader
 
 
@@ -34,6 +35,16 @@ class ReflectionsEditor(QObject):
     ):
         super().__init__(parent)
         self.ui = UiLoader().load_file('reflections_editor.ui', parent)
+
+        grid = self.ui.layout()
+        grid.addWidget(
+            help_button('reflections/#visualization-of-predicted-reflections', self.ui),
+            grid.rowCount(),
+            0,
+            1,
+            grid.columnCount(),
+            help_alignment(),
+        )
 
         self.frame_tracker = frame_tracker
         self._section = None

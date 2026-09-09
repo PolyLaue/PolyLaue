@@ -10,6 +10,7 @@ from PySide6.QtWidgets import (
 
 from polylaue.model.project_manager import ProjectManager
 from polylaue.ui.project_navigator.model import ProjectNavigatorModel
+from polylaue.ui.help import insert_help_button
 from polylaue.ui.project_navigator.navigation_bar import NavigationBar
 from polylaue.ui.project_navigator.view import ProjectNavigatorView
 from polylaue.ui.utils.keep_dialog_on_top import keep_dialog_on_top
@@ -43,6 +44,7 @@ class ProjectNavigatorDialog(QDialog):
         add_remove_layout.addWidget(self.add_button)
         add_remove_layout.addWidget(self.edit_button)
         add_remove_layout.addWidget(self.remove_button)
+        insert_help_button(add_remove_layout, 'projects/#the-navigator', self)
 
         # This seems like a reasonable default.
         # Can we come up with something without hard-coding, though?
