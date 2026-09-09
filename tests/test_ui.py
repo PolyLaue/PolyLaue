@@ -469,8 +469,27 @@ def test_set_frame_as_time_zero_with_mtime(qapp):
     assert window.ui.time_label.text() == '00h:00m:00s'
 
 
+def test_help_url():
+    assert help_module.help_url() == 'https://polylaue.github.io/'
+    assert (
+        help_module.help_url('mapping/#map-windows')
+        == 'https://polylaue.github.io/mapping/#map-windows'
+    )
+
+
 def test_help_buttons(qapp, monkeypatch):
+    """Every Help button and the Help menu open their documentation page"""
     from polylaue.model.hkl_provider import HklProvider
+    from polylaue.model.roi_manager import ROIManager
+    from polylaue.ui.burn_dialog import BurnDialog
+    from polylaue.ui.find_dialog import FindDialog
+    from polylaue.ui.main_window import MainWindow
+    from polylaue.ui.point_auto_picker import PointAutoPicker
+    from polylaue.ui.poni_importer import PoniGeometry
+    from polylaue.ui.project_navigator.dialog import ProjectNavigatorDialog
+    from polylaue.ui.regions_navigator.dialog import RegionsNavigatorDialog
+    from polylaue.ui.scan_position_coords_dialog import ScanPositionCoordsDialog
+    from polylaue.ui.track_dialog import TrackDialog
 
     opened = []
     monkeypatch.setattr(
@@ -479,28 +498,113 @@ def test_help_buttons(qapp, monkeypatch):
         lambda url: opened.append(url.toString()),
     )
 
-    assert help_module.help_url() == 'https://polylaue.github.io/'
-    assert (
-        help_module.help_url('mapping/#map-windows')
-        == 'https://polylaue.github.io/mapping/#map-windows'
-    )
+    def box_button(widget):
+        """The Help button of the widget's own button box"""
+        return widget.button_box.button(QDialogButtonBox.StandardButton.Help)
 
-    # Editors of the documented models get a Help button
+    def owning_dialog(widget):
+        """The dialog a widget belongs to, ignoring intermediate layouts"""
+        parent = widget.parent()
+        while parent is not None and not isinstance(parent, QDialog):
+            parent = parent.parent()
+        return parent
+
+    def own_button(dialog):
+        """The Help button the dialog added to its own button row
+
+        Buttons of nested dialogs, such as the point selector inside the
+        Find dialog, are not counted.
+        """
+        buttons = [
+            b
+            for b in dialog.findChildren(QPushButton)
+            if b.text() == 'Help' and owning_dialog(b) is dialog
+        ]
+        assert len(buttons) == 1, f'{dialog}: {len(buttons)} Help buttons'
+        return buttons[0]
+
+    window = MainWindow()
+    image_view = window.image_view
+    editor = window.reflections_editor
     pm = ProjectManager()
-    dialog = EditorDialog(Project(parent=pm, name='P'))
-    dialog.button_box.button(QDialogButtonBox.StandardButton.Help).click()
-    assert opened[-1] == 'https://polylaue.github.io/projects/#creating-a-project'
+    project = Project(parent=pm, name='P')
+    pm.projects.append(project)
+    section = Section(parent=project, name='S')
+    project.sections.append(section)
+    series = Series(parent=section, name='Ser', dirpath='/tmp/test', scan_shape=(1, 1))
+    section.series.append(series)
+    poni = PoniGeometry(0.079, 190.0, 0.041, 0.0405, 0.002, -0.003)
+    roi_manager = ROIManager()
+    roi_id = roi_manager.add_roi((10, 20), (30, 30))
+    point_selector = PointSelectorDialog(image_view)
+    find = FindDialog(image_view, editor, window.ui)
+    track = TrackDialog(image_view, editor, window.ui)
 
-    # Dialogs built from .ui files
-    dialog = AcquisitionTimesDialog()
-    dialog.ui.button_box.button(QDialogButtonBox.StandardButton.Help).click()
-    assert opened[-1].endswith('viewing/#acquisition-times')
+    reflections_page = 'reflections/#visualization-of-predicted-reflections'
 
-    # Dialogs with their own button rows
-    dialog = HklRegionsNavigatorDialog(
-        pg.ImageView(), HklROIManager(), HklProvider(FrameTracker())
-    )
-    buttons = [b for b in dialog.findChildren(QPushButton) if b.text() == 'Help']
-    assert len(buttons) == 1
-    buttons[0].click()
-    assert opened[-1].endswith('mapping/#hkl-region-maps')
+    # Dialogs must be kept alive for as long as their buttons are used
+    kept = []
+
+    def keep(dialog):
+        kept.append(dialog)
+        return dialog
+
+    entry_points = [
+        (window.ui.action_documentation.trigger, ''),
+        (box_button(keep(EditorDialog(project))).click, 'projects/#creating-a-project'),
+        (box_button(keep(EditorDialog(section))).click, 'projects/#creating-a-section'),
+        (box_button(keep(EditorDialog(series))).click, 'projects/#creating-a-series'),
+        (
+            box_button(keep(EditorDialog(poni))).click,
+            'projects/#importing-a-poni-file-as-the-geometry',
+        ),
+        (
+            own_button(keep(ProjectNavigatorDialog(pm, window.ui))).click,
+            'projects/#the-navigator',
+        ),
+        (
+            box_button(keep(AcquisitionTimesDialog()).ui).click,
+            'viewing/#acquisition-times',
+        ),
+        (
+            box_button(keep(ScanPositionCoordsDialog()).ui).click,
+            'viewing/#scan-position-coordinates',
+        ),
+        (box_button(point_selector).click, 'point-picking/'),
+        (
+            box_button(keep(PointAutoPicker(image_view)).ui).click,
+            'point-picking/#auto-pick-points',
+        ),
+        (box_button(find.ui).click, 'identification/#finding-crystal-orientation'),
+        (box_button(track.ui).click, 'identification/#tracking-of-crystals'),
+        (own_button(editor.ui).click, reflections_page),
+        (own_button(keep(BurnDialog(False)).ui).click, reflections_page),
+        (
+            own_button(keep(RegionsNavigatorDialog(image_view, roi_manager))).click,
+            'mapping/#region-maps',
+        ),
+        (
+            own_button(
+                keep(
+                    HklRegionsNavigatorDialog(
+                        image_view, HklROIManager(), HklProvider(FrameTracker())
+                    )
+                )
+            ).click,
+            'mapping/#hkl-region-maps',
+        ),
+        (
+            own_button(keep(RegionMappingDialog(roi_id, roi_manager))).click,
+            'mapping/#map-windows',
+        ),
+    ]
+
+    for activate, page in entry_points:
+        activate()
+        assert opened[-1] == f'https://polylaue.github.io/{page}'
+
+    assert len(opened) == len(entry_points)
+
+    point_selector.disconnect()
+    find.point_selector_dialog.disconnect()
+    track.point_selector_dialog.disconnect()

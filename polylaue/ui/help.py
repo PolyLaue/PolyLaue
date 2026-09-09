@@ -3,7 +3,7 @@
 from functools import partial
 
 from PySide6.QtCore import QUrl
-from PySide6.QtGui import QDesktopServices
+from PySide6.QtGui import QAction, QDesktopServices
 from PySide6.QtWidgets import QDialogButtonBox, QPushButton, QWidget
 
 DOCS_URL = 'https://polylaue.github.io/'
@@ -25,6 +25,15 @@ def help_url(page: str = '') -> str:
 def open_help(page: str = ''):
     """Open a documentation page in the web browser"""
     QDesktopServices.openUrl(QUrl(help_url(page)))
+
+
+def add_help_action(action: QAction, page: str = ''):
+    """Connect a menu action to open the documentation page
+
+    The page is bound here, so that the `checked` argument of
+    `triggered` is not mistaken for it.
+    """
+    action.triggered.connect(partial(open_help, page))
 
 
 def add_help_button(button_box: QDialogButtonBox, page: str) -> QPushButton:
