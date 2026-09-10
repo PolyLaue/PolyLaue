@@ -1,13 +1,13 @@
 # Copyright © 2026, UChicago Argonne, LLC. See "LICENSE" for full details.
 
 import sys
+import traceback
 from typing import Callable
 
-from PySide6.QtCore import QSettings, QThreadPool, Qt
+from PySide6.QtCore import QSettings, QThreadPool
 from PySide6.QtWidgets import (
     QDialogButtonBox,
     QMessageBox,
-    QProgressDialog,
     QWidget,
 )
 
@@ -24,10 +24,10 @@ from polylaue.model.core import (
 from polylaue.model.project import Project
 from polylaue.model.reflections.external import ExternalReflections
 from polylaue.model.section import Section
-from polylaue.ui.async_worker import AsyncWorker
 from polylaue.ui.point_selector import PointSelectorDialog
 from polylaue.ui.reflections_editor import ReflectionsEditor
 from polylaue.ui.help import add_help_button
+from polylaue.ui.utils.run_with_progress import run_with_progress
 from polylaue.ui.utils.ui_loader import UiLoader
 
 TrackResults = tuple[np.ndarray | None, float | None]
@@ -214,31 +214,21 @@ class TrackDialog:
         if not self.validate():
             return
 
-        progress = QProgressDialog('Running track. Please wait...', '', 0, 0, self.ui)
-        progress.setCancelButton(None)
-        # No close button in the corner
-        flags = progress.windowFlags()
-        progress.setWindowFlags(
-            (flags | Qt.CustomizeWindowHint) & ~Qt.WindowCloseButtonHint
+        results, error = run_with_progress(
+            'Running track. Please wait...', self.run_track, self.ui
         )
-
-        worker = AsyncWorker(self.run_track)
-
-        def on_finished():
-            progress.reject()
-
-        def on_error(error: tuple):
+        if error is not None:
             print(error[2], file=sys.stderr)
             QMessageBox.critical(self.ui, 'PolyLaue', str(error[1]))
+            return
 
-        # Get the results and close the progress dialog when finished
-        worker.signals.result.connect(self.on_track_finished)
-        worker.signals.error.connect(on_error)
-        worker.signals.finished.connect(on_finished)
-
-        self.thread_pool.start(worker)
-
-        progress.exec()
+        # This is done after the progress dialog has closed, so that a
+        # failure here cannot leave it on the screen.
+        try:
+            self.on_track_finished(results)
+        except Exception as e:
+            traceback.print_exc()
+            QMessageBox.critical(self.ui, 'PolyLaue', str(e))
 
     def on_track_finished(self, results: TrackResults):
         abc_matrix = results[0]

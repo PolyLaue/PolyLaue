@@ -1,13 +1,13 @@
 # Copyright © 2026, UChicago Argonne, LLC. See "LICENSE" for full details.
 
 import sys
+import traceback
 from typing import Callable
 
-from PySide6.QtCore import QSettings, QThreadPool, Qt
+from PySide6.QtCore import QSettings, QThreadPool
 from PySide6.QtWidgets import (
     QDialogButtonBox,
     QMessageBox,
-    QProgressDialog,
     QWidget,
 )
 
@@ -17,10 +17,10 @@ import pyqtgraph as pg
 from polylaue.model.core import find, find_py
 from polylaue.model.project import Project
 from polylaue.model.section import Section
-from polylaue.ui.async_worker import AsyncWorker
 from polylaue.ui.point_selector import PointSelectorDialog
 from polylaue.ui.reflections_editor import ReflectionsEditor
 from polylaue.ui.help import add_help_button
+from polylaue.ui.utils.run_with_progress import run_with_progress
 from polylaue.ui.utils.ui_loader import UiLoader
 
 
@@ -117,31 +117,21 @@ class FindDialog:
         if not self.validate():
             return
 
-        progress = QProgressDialog('Running find. Please wait...', '', 0, 0, self.ui)
-        progress.setCancelButton(None)
-        # No close button in the corner
-        flags = progress.windowFlags()
-        progress.setWindowFlags(
-            (flags | Qt.CustomizeWindowHint) & ~Qt.WindowCloseButtonHint
+        abc_matrix, error = run_with_progress(
+            'Running find. Please wait...', self.run_find, self.ui
         )
-
-        worker = AsyncWorker(self.run_find)
-
-        def on_finished():
-            progress.reject()
-
-        def on_error(error: tuple):
+        if error is not None:
             print(error[2], file=sys.stderr)
             QMessageBox.critical(self.ui, 'PolyLaue', str(error[1]))
+            return
 
-        # Get the results and close the progress dialog when finished
-        worker.signals.result.connect(self.on_find_finished)
-        worker.signals.error.connect(on_error)
-        worker.signals.finished.connect(on_finished)
-
-        self.thread_pool.start(worker)
-
-        progress.exec()
+        # This is done after the progress dialog has closed, so that a
+        # failure here cannot leave it on the screen.
+        try:
+            self.on_find_finished(abc_matrix)
+        except Exception as e:
+            traceback.print_exc()
+            QMessageBox.critical(self.ui, 'PolyLaue', str(e))
 
     def on_find_finished(self, abc_matrix: np.ndarray):
         if abc_matrix is None:
