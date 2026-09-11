@@ -328,6 +328,9 @@ class BurnDialog(QObject):
             self.update_slider_value()
 
     def update_slider_value(self):
+        if self.max_dmin <= 0:
+            return
+
         with block_signals(self.ui.dmin_slider):
             # Remap the dmin to slider value
             self.slider_value = self.slider_max - (

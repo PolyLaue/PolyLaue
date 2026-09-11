@@ -3,8 +3,10 @@
 from abc import ABC, abstractmethod
 
 from PySide6.QtCore import QModelIndex, Qt
+from PySide6.QtWidgets import QMessageBox
 
 from polylaue.model.editable import Editable
+from polylaue.model.serializable import ValidationError
 from polylaue.ui.editor import EditorDialog
 
 # Enum shortcuts
@@ -72,11 +74,28 @@ class BaseSubmodel(ABC):
 
         return flags
 
-    def set_data(self, index: QModelIndex, value: object, role: int):
+    def set_data(self, index: QModelIndex, value: object, role: int) -> bool:
         # Convert column integer
         key = self.column_to_key(index.column())
         obj = self.entry_list[index.row()]
-        setattr(obj, key, value)
+
+        # Validate the change like the editor dialog would
+        params = obj.get_parameters()
+        if key in params:
+            params[key] = value
+            try:
+                obj.validate_parameters(params)
+            except ValidationError as e:
+                QMessageBox.critical(None, 'Validation Error', str(e))
+                return False
+
+        try:
+            setattr(obj, key, value)
+        except Exception as e:
+            QMessageBox.critical(None, 'Failed to Edit Field', str(e))
+            return False
+
+        return True
 
     def data(self, index: QModelIndex, role: int):
         if role not in (Qt.DisplayRole, Qt.EditRole):

@@ -105,8 +105,14 @@ class ProjectNavigatorModel(QAbstractTableModel):
 
     def setData(self, index: QModelIndex, value: Any, role: int = Qt.EditRole):
         self.beginResetModel()
-        self.submodel.set_data(index, value, role)
-        self.endResetModel()
+        try:
+            ok = self.submodel.set_data(index, value, role)
+        finally:
+            self.endResetModel()
+
+        if ok is False:
+            return False
+
         self.data_modified.emit()
         return True
 
@@ -125,7 +131,7 @@ class ProjectNavigatorModel(QAbstractTableModel):
     def insertRows(
         self, row: int, count: int, parent: QModelIndex = QModelIndex()
     ) -> bool:
-        entries = self.submodel.create_entries(count)
+        entries = self.submodel.create_entries(row, count)
         self.beginInsertRows(parent, row, row + len(entries) - 1)
         self.submodel.insert_entries(row, entries)
         self.endInsertRows()

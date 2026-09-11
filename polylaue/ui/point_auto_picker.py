@@ -44,6 +44,9 @@ class PointAutoPicker(QObject):
         self.ui.accepted.connect(self.on_accepted)
 
     def run_auto_pick(self):
+        if self.img is None:
+            return
+
         # First, binarize the image using the threshold
         bin_img = (self.img > self.threshold) & (self.img < self.max_threshold)
 
@@ -61,11 +64,14 @@ class PointAutoPicker(QObject):
         # center of mass will be computed very incorrectly.
         # Subtract the image from itself first to fix this.
         props = measure.regionprops(labels, self.img - self.img.min())
-        coms = np.vstack([x.weighted_centroid for x in props])
-        areas = np.hstack([x.area for x in props])
+        if props:
+            coms = np.vstack([x.weighted_centroid for x in props])
+            areas = np.hstack([x.area for x in props])
 
-        # Only keep peaks whose areas are greater than the minimum area
-        coms = coms[areas > self.min_area]
+            # Only keep peaks whose areas are greater than the minimum area
+            coms = coms[areas > self.min_area]
+        else:
+            coms = np.empty((0, 2))
 
         # Now make these the selected points
         # Round to 4 decimal places
