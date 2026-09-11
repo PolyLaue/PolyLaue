@@ -100,6 +100,18 @@ class FindDialog:
         self.ui.num_points_label.setText(f'Number of points: {num_points}')
 
     def validate(self) -> bool:
+        if self.section is None:
+            msg = 'No series is loaded.'
+            print(msg, file=sys.stderr)
+            QMessageBox.critical(None, 'Validation Error', msg)
+            return False
+
+        if len(self.points) < 2:
+            msg = 'At least two points must be picked.'
+            print(msg, file=sys.stderr)
+            QMessageBox.critical(None, 'Validation Error', msg)
+            return False
+
         min_res = self.project.min_find_resolution
         if self.resolution_limit < min_res:
             msg = (

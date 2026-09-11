@@ -365,6 +365,9 @@ class ExternalReflections(BaseReflections):
         removes all reflections that used the specified crystal ID
         """
         with h5py.File(self.filepath, 'a') as f:
+            if '/predictions' not in f:
+                return
+
             for scan_num in f['/predictions'].keys():
                 for i in f[f'/predictions/{scan_num}'].keys():
                     for j in f[f'/predictions/{scan_num}/{i}'].keys():
@@ -395,7 +398,7 @@ class ExternalReflections(BaseReflections):
             path = f'/predictions/{scan_number}'
             if path not in f:
                 # Nothing
-                raise StopIteration
+                return
 
             scan = f[path]
             for column in scan.keys():

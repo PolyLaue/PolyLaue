@@ -242,7 +242,9 @@ class Series(Editable):
         file_dict = {}
 
         # Identify all files that match the full regex
-        full_regex = re.compile(file_prefix + IMAGE_FILE_SUFFIX_REGEX, re.IGNORECASE)
+        full_regex = re.compile(
+            '^' + re.escape(file_prefix) + IMAGE_FILE_SUFFIX_REGEX, re.IGNORECASE
+        )
 
         # Start after the number of frames to skip
         start_idx = skip_frames + 1
@@ -261,6 +263,12 @@ class Series(Editable):
                 file_dict[idx] = name
 
         indices = sorted(list(file_dict))
+        if not indices:
+            msg = (
+                f'No image files with prefix "{file_prefix}" remain in '
+                f'"{dirpath}" after skipping {skip_frames} frames'
+            )
+            raise ValidationError(msg)
 
         # The indices should be continuous from the start to the max.
         # Verify this.
@@ -388,6 +396,14 @@ class Series(Editable):
         dry=False,
         check_dark_file=True,
     ):
+        if scan_range_tuple[1] < scan_range_tuple[0]:
+            msg = 'The end of the scan range must not be smaller than its start'
+            raise ValidationError(msg)
+
+        if any(int(x) < 1 for x in scan_shape):
+            msg = 'The scan shape must be at least 1 in each direction'
+            raise ValidationError(msg)
+
         dirpath = Path(dirpath_str)
         file_prefix, file_list = self.generate_file_list(dirpath, skip_frames)
         num_files = len(file_list)

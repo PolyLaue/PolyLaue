@@ -255,6 +255,8 @@ def track(
         obs_axi2 = obs_axi2[vec_sel[0], :]
         obs_axi3 = obs_axi3[vec_sel[0], :]
         n_foun = 0
+        nang = None
+        abc_dir_n = None
         s1 = int(np.shape(obs_axi1)[0])
         for i in range(s1):
             if n_foun < int(com_sel[np.int64(i)]):
@@ -296,6 +298,10 @@ def track(
                     nang = ang
                     abc_dir_n = abc_dir_m
                     n_foun = int(com_sel[np.int64(i)])
+        if abc_dir_n is None:
+            print(' ')
+            print('No solution within the angular limit')
+            return None, None
         print(' ')
         print('Indexed reflections:', n_foun)
         print('Angular shift, deg.:', round(nang, 2))
@@ -524,7 +530,8 @@ def track_py(
                             np.radians(np.float64(ang_tol))
                         )
                         obs_fou = obs_vec[vec_sel, :]
-                        if n_foun < int(np.shape(obs_fou)[0]):
+                        n_fou = int(np.shape(obs_fou)[0])
+                        if n_fou > int(ref_thr) and n_foun < n_fou:
                             abc_dir_m = abc_dir @ hkl_mat
                             abc_dir_m = abc_dir_m @ obs_mat.T
                             shkl_vec1 = shkl.astype(np.float64)

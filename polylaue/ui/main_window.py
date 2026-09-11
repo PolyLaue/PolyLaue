@@ -389,6 +389,11 @@ class MainWindow(QObject):
             self._time_zero = 0.0
             self._mtime_time_zero = 0.0
 
+        if not reset_settings:
+            # The new series may have a smaller scan shape
+            max_pos = np.asarray(series.scan_shape) - 1
+            self.scan_pos = np.clip(self.scan_pos, 0, max_pos)
+
         if reset_settings:
             # Reset scan position
             self.reset_scan_position()
@@ -469,8 +474,9 @@ class MainWindow(QObject):
 
         # Set the scan number
         self.scan_num = scan.number
+        self.on_series_or_scan_changed()
         self.on_frame_changed()
-        self.set_mapping_dialogs_stale()
+        self.on_hkls_changed()
 
     def save_project_manager(self):
         save_project_manager(self.project_manager)
@@ -764,6 +770,9 @@ class MainWindow(QObject):
         self.ui.status_bar.showMessage(message)
 
     def set_current_image_to_series_background(self):
+        if self.series is None:
+            return
+
         filepath = self.series.filepath(*self.scan_pos, self.scan_num)
         self.series.background_image_path = filepath
 
@@ -775,6 +784,9 @@ class MainWindow(QObject):
             self.on_action_apply_background_subtraction_toggled()
 
     def set_current_image_to_section_background(self):
+        if self.series is None:
+            return
+
         filepath = self.series.filepath(*self.scan_pos, self.scan_num)
 
         for series in self.section.series:
@@ -869,6 +881,9 @@ class MainWindow(QObject):
         self.on_hkls_changed()
 
     def on_action_apply_background_subtraction_toggled(self):
+        if self.series is None:
+            return
+
         self.load_current_image()
         # We don't want to call self.image_view.autoRange(),
         # so don't call self.reset_image_view_settings() for this.
@@ -932,7 +947,8 @@ class MainWindow(QObject):
         # self_validate(), which re-lists the entire directory.
         series.extend_file_list(num_new)
         self.save_project_manager()
-        self.on_shift_scan_number(num_new)
+        # Jump to the newest scan, wherever the user was
+        self.on_shift_scan_number(newest - self.scan_num)
 
     def on_action_include_advanced_structures_toggled(self):
         self.reflections_editor.include_advanced_structures = (
@@ -1006,7 +1022,7 @@ class MainWindow(QObject):
             return
 
         # Now figure out what crystal ID should be used.
-        num_crystals = self.image_view.reflections.num_crystals
+        num_crystals = self.reflections_editor.reflections.num_crystals
         crystal_id, accepted = QInputDialog.getInt(
             self.ui,
             'Select Crystal ID',
@@ -1067,6 +1083,7 @@ class MainWindow(QObject):
         d = self._point_selector_dialog
         if not d.points:
             # No points, just return
+            d.disconnect()
             return
 
         if d.indexing_selected or d.refinement_selected:
@@ -1102,6 +1119,7 @@ class MainWindow(QObject):
 
             if not path:
                 # User canceled
+                d.disconnect()
                 return
         else:
             path = Path(project_dir) / filename

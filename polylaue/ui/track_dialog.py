@@ -86,8 +86,8 @@ class TrackDialog:
         return self.ui.show()
 
     def auto_pick_points(self):
-        self.point_selector_dialog.start_auto_picker()
-        self.ui.hide()
+        if self.point_selector_dialog.start_auto_picker():
+            self.ui.hide()
 
     def on_auto_pick_points_finished(self):
         self.ui.show()
@@ -103,6 +103,21 @@ class TrackDialog:
         self.ui.num_points_label.setText(f'Number of points: {num_points}')
 
     def validate(self) -> bool:
+        if self.reflections is None:
+            msg = (
+                'No reflections file is loaded. Open a series and run Find '
+                'before tracking.'
+            )
+            print(msg, file=sys.stderr)
+            QMessageBox.critical(None, 'Validation Error', msg)
+            return False
+
+        if len(self.points) < 2:
+            msg = 'At least two points must be picked.'
+            print(msg, file=sys.stderr)
+            QMessageBox.critical(None, 'Validation Error', msg)
+            return False
+
         crystal_id = self.selected_crystal_id
         crystals_table = self.reflections.crystals_table
         num_crystals = len(crystals_table)
@@ -535,6 +550,9 @@ class TrackDialog:
     def selected_crystal_id(self, v: int):
         # Verify that it is valid within the table. If not,
         # skip setting it.
+        if self.reflections is None:
+            return
+
         crystals_table = self.reflections.crystals_table
 
         if v < len(crystals_table):

@@ -84,10 +84,13 @@ class Project(Editable):
     @directory.setter
     def directory(self, v: PathLike):
         self._directory = Path(v).resolve()
+        # An empty value resolves to the working directory, which must
+        # not be presented to the user as a chosen directory
+        self._directory_is_set = bool(str(v))
 
     @property
     def directory_str(self) -> str:
-        return str(self.directory)
+        return str(self.directory) if self._directory_is_set else ''
 
     @directory_str.setter
     def directory_str(self, v: str):
@@ -223,7 +226,9 @@ class Project(Editable):
         # we have verified that PolyLaue has been ran on all relevant
         # computers that had the old setup.
         if 'directory' in d:
-            d['directory_str'] = d.pop('directory')
+            # Keep it first, so that the sections see the right directory
+            rest = {k: v for k, v in d.items() if k != 'directory'}
+            d = {'directory_str': d['directory'], **rest}
 
         return super().deserialize(d)
 

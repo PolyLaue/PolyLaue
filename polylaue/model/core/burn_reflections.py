@@ -349,7 +349,7 @@ def burn(
                             ch_ch = -2
                             if abs(h) in ref_cond2:
                                 ch_ch = ch_ch + 1
-                            if abs(l) in ref_cond2:
+                            if abs(l) in ref_cond3:
                                 ch_ch = ch_ch + 1
                     if ch_ch == 0:
                         if ch_ch_ch == 1:
@@ -460,6 +460,10 @@ def burn(
             ':',
             np.shape(hkl)[0],
         )
+    if hkl.shape[0] == 0:
+        print('No reflections predicted')
+        return np.array([], dtype=int), np.array([])
+
     hkl_n1 = hkl_nnn[:, 0]
     hkl = hkl * np.expand_dims(hkl_n1, axis=1)
     hkl_enr = hkl_enr * hkl_n1.astype(np.float64)

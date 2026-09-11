@@ -730,3 +730,93 @@ def test_help_buttons(qapp, monkeypatch):
     point_selector.disconnect()
     find.point_selector_dialog.disconnect()
     track.point_selector_dialog.disconnect()
+
+
+def test_track_dialog_opens_without_reflections(qapp):
+    """Saved settings must not make the dialog crash when nothing is loaded"""
+    from polylaue.ui.track_dialog import TrackDialog
+
+    editor = ReflectionsEditor(FrameTracker(), False)
+    view = PolyLaueImageView(frame_tracker=FrameTracker())
+    first = TrackDialog(view, editor)
+    first.save_settings()
+    first.point_selector_dialog.disconnect()
+
+    second = TrackDialog(view, editor)
+    assert second.reflections is None
+    second.point_selector_dialog.disconnect()
+
+
+def test_find_and_track_validation_messages(qapp, monkeypatch):
+    from polylaue.ui.find_dialog import FindDialog
+    from polylaue.ui.track_dialog import TrackDialog
+
+    reported = []
+    monkeypatch.setattr(
+        QMessageBox, 'critical', lambda parent, title, text, *a: reported.append(text)
+    )
+    editor = ReflectionsEditor(FrameTracker(), False)
+    view = PolyLaueImageView(frame_tracker=FrameTracker())
+
+    find = FindDialog(view, editor)
+    assert find.validate() is False
+    assert reported[-1] == 'No series is loaded.'
+    find.point_selector_dialog.disconnect()
+
+    track = TrackDialog(view, editor)
+    assert track.validate() is False
+    assert 'No reflections file' in reported[-1]
+    track.point_selector_dialog.disconnect()
+
+
+def test_auto_picker_with_no_image_or_no_spots(qapp):
+    from polylaue.ui.point_auto_picker import PointAutoPicker
+
+    view = PolyLaueImageView(frame_tracker=FrameTracker())
+    picker = PointAutoPicker(view)
+    picker.run_auto_pick()  # no image yet
+    assert len(picker.points) == 0
+
+    view.setImage(np.zeros((40, 40)))
+    picker.ui.threshold.setValue(picker.ui.threshold.maximum())
+    picker.run_auto_pick()  # nothing above the threshold
+    assert len(picker.points) == 0
+
+
+def test_tooltip_defaults_match_the_widgets():
+    """Tooltips that state a default must agree with the widget's value"""
+    import re
+    import xml.etree.ElementTree as ET
+    from pathlib import Path
+
+    ui_root = Path(__file__).parent.parent / 'polylaue' / 'ui' / 'resources' / 'ui'
+    checked = 0
+    for path in ui_root.glob('*.ui'):
+        widgets = {
+            w.get('name'): w for w in ET.parse(path).iter('widget') if w.get('name')
+        }
+        for name, widget in widgets.items():
+            tip = widget.find("property[@name='toolTip']/string")
+            if tip is None or tip.text is None:
+                continue
+            match = re.search(r'Default: ([0-9.]+)', tip.text)
+            if not match:
+                continue
+            target = widgets.get(name.removesuffix('_label'), widget)
+            value = target.find("property[@name='value']/double")
+            if value is None:
+                continue
+            assert float(value.text) == float(match.group(1)), (path.name, name)
+            checked += 1
+    assert checked >= 8
+
+
+def test_burn_dialog_rejects_a_non_positive_slider_maximum(qapp):
+    from polylaue.ui.burn_dialog import BurnDialog
+
+    dialog = BurnDialog(False)
+    dialog.max_dmin = 0
+    assert dialog.max_dmin > 0
+    dialog.max_dmin = -5
+    assert dialog.max_dmin > 0
+    dialog.update_slider_value()

@@ -45,4 +45,5 @@ def compute_angle(angular_shift: np.ndarray) -> float:
         return np.nan
 
     w = R.from_matrix(angular_shift.reshape(3, -1)).as_quat()[3]
-    return 2 * np.arccos(w)
+    # Either sign of the quaternion describes the same rotation
+    return 2 * np.arccos(min(abs(w), 1.0))
