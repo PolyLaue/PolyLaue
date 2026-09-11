@@ -741,6 +741,10 @@ class RegionMappingDialog(QDialog):
         j0 = self._domain_roi["position"][1]
         j1 = j0 + self._domain_roi["size"][1]
 
+        # The domain may have been set on a series with a larger scan shape
+        i0, i1 = max(int(i0), 0), min(int(i1), n_y)
+        j0, j1 = max(int(j0), 0), min(int(j1), n_x)
+
         self.progress_bar.setRange(i0, i1)
         self.progress_bar.setValue(i0)
 

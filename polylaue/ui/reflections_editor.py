@@ -3,6 +3,7 @@
 from pathlib import Path
 
 from PySide6.QtCore import QObject, Signal
+from PySide6.QtWidgets import QMessageBox
 
 import h5py
 
@@ -163,6 +164,11 @@ class ReflectionsEditor(QObject):
         self.load_reflections()
 
     def start_burn(self):
+        if self.section is None:
+            msg = 'Open a series before burning reflections.'
+            QMessageBox.warning(None, 'No Series Loaded', msg)
+            return
+
         if self.reflections is None:
             # We ought to make some default reflections
             self.create_empty_reflections_file()

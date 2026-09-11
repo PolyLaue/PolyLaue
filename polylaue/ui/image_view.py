@@ -636,6 +636,9 @@ class PolyLaueImageView(pg.ImageView):
         action.triggered.connect(auto_level)
 
     def perform_saturation_check(self):
+        if self.image_data is None:
+            return
+
         settings = QSettings()
         # Re-use the last saturation level the user selected
         saturation_level = int(settings.value('last_saturation_level', 60000))
