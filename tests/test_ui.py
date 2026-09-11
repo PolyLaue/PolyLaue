@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
     QLabel,
+    QMessageBox,
     QPushButton,
 )
 
@@ -32,6 +33,7 @@ from polylaue.ui.image_view import PolyLaueImageView
 from polylaue.ui.main_window import MainWindow
 from polylaue.ui.point_selector import PointSelectorDialog
 from polylaue.ui.poni_importer import PoniGeometry
+from polylaue.ui.reflections_editor import ReflectionsEditor
 from polylaue.ui.region_mapping.dialog import RegionMappingDialog
 
 
@@ -378,6 +380,83 @@ def test_hkl_map_notice_when_hkl_missing(qapp):
     dialog.on_refresh_clicked()
     assert dialog.notice_label.isHidden()
     assert dialog.image_item.image is not None
+
+
+def test_run_with_progress(qapp):
+    """The progress dialog closes whether the worker succeeds or fails"""
+    from polylaue.ui.utils.run_with_progress import run_with_progress
+
+    result, error = run_with_progress('Working...', lambda: 42)
+    assert result == 42
+    assert error is None
+    assert qapp.activeModalWidget() is None
+
+    def fail():
+        raise ValueError('no good')
+
+    result, error = run_with_progress('Working...', fail)
+    assert result is None
+    assert error[0] is ValueError
+    assert str(error[1]) == 'no good'
+    assert qapp.activeModalWidget() is None
+
+
+def test_run_with_progress_cannot_be_dismissed(qapp):
+    """Escape and closing the window do not end the wait early"""
+    import time
+    from PySide6.QtCore import Qt, QTimer
+    from PySide6.QtTest import QTest
+    from polylaue.ui.utils.run_with_progress import run_with_progress
+
+    attempted = []
+
+    def try_to_dismiss():
+        dialog = qapp.activeModalWidget()
+        attempted.append(type(dialog).__name__)
+        QTest.keyClick(dialog, Qt.Key_Escape)
+        dialog.close()
+
+    QTimer.singleShot(50, try_to_dismiss)
+
+    def slow():
+        time.sleep(0.3)
+        return 'late result'
+
+    result, error = run_with_progress('Working...', slow)
+    assert attempted == ['UndismissableProgressDialog']
+    assert result == 'late result'
+    assert error is None
+    assert qapp.activeModalWidget() is None
+
+
+def test_find_dialog_survives_a_failing_result(qapp, monkeypatch):
+    """A failure after the find cannot leave the progress dialog up"""
+    from polylaue.ui.find_dialog import FindDialog
+
+    reported = []
+    monkeypatch.setattr(
+        QMessageBox,
+        'critical',
+        lambda parent, title, text, *args: reported.append(text),
+    )
+
+    editor = ReflectionsEditor(FrameTracker(), False)
+    dialog = FindDialog(PolyLaueImageView(frame_tracker=FrameTracker()), editor)
+    monkeypatch.setattr(dialog, 'validate', lambda: True)
+    monkeypatch.setattr(dialog, 'run_find', lambda: 'abc matrix')
+
+    def explode(abc_matrix):
+        raise RecursionError('maximum recursion depth exceeded')
+
+    monkeypatch.setattr(dialog, 'on_find_finished', explode)
+
+    dialog.on_apply()
+
+    # The error is reported rather than lost, and nothing is left modal
+    assert reported == ['maximum recursion depth exceeded']
+    assert qapp.activeModalWidget() is None
+
+    dialog.point_selector_dialog.disconnect()
 
 
 def test_acquisition_times_dialog(qapp):
