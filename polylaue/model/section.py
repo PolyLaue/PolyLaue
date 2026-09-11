@@ -38,6 +38,15 @@ class Section(Editable):
         # "frame_period", "row_break", and "scan_break".
         self.acquisition_intervals = acquisition_intervals
 
+    def deserialize(self, d: dict):
+        # Assign the name directly, so that loading a saved project
+        # never creates or renames directories
+        d = dict(d)
+        if 'name' in d:
+            self._name = d.pop('name')
+
+        super().deserialize(d)
+
     @property
     def num_series(self):
         return len(self.series)
@@ -72,16 +81,18 @@ class Section(Editable):
         if value == prev_value:
             return
 
+        if not value:
+            raise ValueError('A section name cannot be empty')
+
         current_dir = self.directory
-
-        self._name = value
-
-        destination_dir = self.directory
+        destination_dir = self.parent.directory.resolve() / f'Sections/{value}'
 
         if prev_value != '' and current_dir.is_dir():
             Path.rename(current_dir, destination_dir)
         elif not destination_dir.exists():
             Path.mkdir(destination_dir, parents=True)
+
+        self._name = value
 
     @property
     def expected_reflections_file_path(self) -> Path:
