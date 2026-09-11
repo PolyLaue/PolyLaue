@@ -15,6 +15,10 @@ def find(
     ref_thr: float = 3,
 ) -> np.ndarray | None:
 
+    if len(obs_xy) < 2:
+        print('At least two observed reflections are required')
+        return None
+
     abc = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     a = float(cell_parameters[0])
     b = float(cell_parameters[1])
@@ -294,6 +298,10 @@ def find_py(
 ) -> np.ndarray | None:
     """This version of find() takes up substantially less RAM, but
     may run slower"""
+
+    if len(obs_xy) < 2:
+        print('At least two observed reflections are required')
+        return None
 
     abc = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     a = float(cell_parameters[0])
